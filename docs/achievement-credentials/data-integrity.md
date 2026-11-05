@@ -25,14 +25,14 @@ flowchart LR
   loader -.-> safe["validateJsonLd:<br/>what safe mode drops"]
 ```
 
-| Export                 | Does                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `addProof`             | Signs a credential over a `Signer` and returns it with its proof                                                                |
-| `deriveDisclosure`     | Derives a disclosure from a credential with an `ecdsa-sd-2023` base proof                                                       |
-| `verifyProof`          | Verifies the proofs of a credential and says whether the key belongs to the issuer                                              |
-| `validateJsonLd`       | Lists what JSON-LD processing in safe mode would drop or refuse                                                                 |
-| `createContextLoader`  | Makes the `ContextLoader` that serves a context only after its document matches its pin                                         |
-| `KNOWN_CONTEXTS`      | The pinned contexts: address and SHA-256 of the canonical JSON of the document                                                  |
+| Export                | Does                                                                                    |
+| --------------------- | --------------------------------------------------------------------------------------- |
+| `addProof`            | Signs a credential over a `Signer` and returns it with its proof                        |
+| `deriveDisclosure`    | Derives a disclosure from a credential with an `ecdsa-sd-2023` base proof               |
+| `verifyProof`         | Verifies the proofs of a credential and says whether the key belongs to the issuer      |
+| `validateJsonLd`      | Lists what JSON-LD processing in safe mode would drop or refuse                         |
+| `createContextLoader` | Makes the `ContextLoader` that serves a context only after its document matches its pin |
+| `KNOWN_CONTEXTS`      | The pinned contexts: address and SHA-256 of the canonical JSON of the document          |
 
 ## Quick start
 
@@ -53,7 +53,8 @@ const document = {
 const clock = { now: () => Date.UTC(2024, 5, 14) };
 const keys = createKeyResolver({
   clock,
-  fetch: async (url) => new Response(url === issuer ? JSON.stringify(document) : "", { status: url === issuer ? 200 : 404 }),
+  fetch: async (url) =>
+    new Response(url === issuer ? JSON.stringify(document) : "", { status: url === issuer ? 200 : 404 }),
 });
 
 // A host passes the W3C and 1EdTech contexts as documents, which the loader checks against the pins of KNOWN_CONTEXTS. This
@@ -104,14 +105,14 @@ credential with the proof. `eddsa-rdfc-2022` adds it to the proofs the credentia
 `ecdsa-sd-2023` refuses a credential that has a proof already, since a disclosure carries one derived proof. The proof names the signer's `keyId` as its `verificationMethod`, has the purpose
 `assertionMethod`, and its `created` is the time of the clock. The result holds the proof as a list, as the model does.
 
-| Option              | Meaning                                                                                                                                         | Default                                    |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `cryptosuite`       | `eddsa-rdfc-2022` signs with an Ed25519 signer (`EdDSA`). `ecdsa-sd-2023` writes a base proof with an ES256 signer                               | `"eddsa-rdfc-2022"`                        |
-| `mandatoryPointers` | For `ecdsa-sd-2023`: the JSON Pointers to what a holder can never hide                                                                          | The required properties that the credential holds, so that a disclosure stays a valid credential |
-| `contexts`          | The `ContextLoader` that returns the contexts of the credential and of the proof                                                                | Required                                   |
-| `clock`             | The `Clock` that `created` is written from                                                                                                       | `SYSTEM_CLOCK`                                   |
-| `maxJsonLdTokens`   | The most tokens of JSON in the credential, counted before a JSON-LD processor reads it (see Limits)                                              | `20000`                                    |
-| `signal`            | Ends the caller's wait, and reaches the signer: the wait for the signer and for a context ends when it aborts, whether they stop or not           | None                                       |
+| Option              | Meaning                                                                                                                                 | Default                                                                                          |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `cryptosuite`       | `eddsa-rdfc-2022` signs with an Ed25519 signer (`EdDSA`). `ecdsa-sd-2023` writes a base proof with an ES256 signer                      | `"eddsa-rdfc-2022"`                                                                              |
+| `mandatoryPointers` | For `ecdsa-sd-2023`: the JSON Pointers to what a holder can never hide                                                                  | The required properties that the credential holds, so that a disclosure stays a valid credential |
+| `contexts`          | The `ContextLoader` that returns the contexts of the credential and of the proof                                                        | Required                                                                                         |
+| `clock`             | The `Clock` that `created` is written from                                                                                              | `SYSTEM_CLOCK`                                                                                   |
+| `maxJsonLdTokens`   | The most tokens of JSON in the credential, counted before a JSON-LD processor reads it (see Limits)                                     | `20000`                                                                                          |
+| `signal`            | Ends the caller's wait, and reaches the signer: the wait for the signer and for a context ends when it aborts, whether they stop or not | None                                                                                             |
 
 The default mandatory pointers are `/@context`, `/id`, `/type`, `/issuer/id`, `/issuer/type`, `/validFrom`, `/name`,
 `/credentialSubject/type`, the `id` and `identifier` of the subject, and for an achievement credential the `id`, `type`, `criteria`,
@@ -136,33 +137,33 @@ a `previousProof` is checked over the credential with the proofs that it names, 
 Integrity 4.5). At most four proofs are checked, those that a chain names among them, and the reason says so. The credential is
 canonicalized once for all the proofs of a set.
 
-| A proof is not valid when                                                                         | Reason                                        |
-| ------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| The credential has no proof, or is not a credential                                                | Said in the reason                            |
-| It has more tokens of JSON than a JSON-LD processor may read, or needs more than 1,000 runs of Hash N-Degree Quads to canonicalize | The limit, and the option that sets it |
-| Its type is not `DataIntegrityProof` (or `Ed25519Signature2020` with `legacyProofs`)               | Said in the reason                            |
-| No suite verifies its cryptosuite                                                                  | `eddsa-rdfc-2022`, `ecdsa-rdfc-2019`, `ecdsa-sd-2023` and `suites` |
-| It is an `ecdsa-sd-2023` base proof                                                                | Derive a disclosure first                     |
-| Its purpose is not `assertionMethod`, it names no key, or `expires` has passed                      | Said in the reason                            |
-| The resolver finds no key for its `verificationMethod`                                             | Said in the reason                            |
-| Its signature does not verify with that key                                                        | Said in the reason                            |
-| It names a `previousProof` that the credential lacks or that is not valid, or proofs that name each other in a cycle | Said in the reason                     |
-| The key is not published by the issuer, unless `allowUnboundKeys`                                  | The reason of `verifyIssuerKey`               |
+| A proof is not valid when                                                                                                          | Reason                                                             |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| The credential has no proof, or is not a credential                                                                                | Said in the reason                                                 |
+| It has more tokens of JSON than a JSON-LD processor may read, or needs more than 1,000 runs of Hash N-Degree Quads to canonicalize | The limit, and the option that sets it                             |
+| Its type is not `DataIntegrityProof` (or `Ed25519Signature2020` with `legacyProofs`)                                               | Said in the reason                                                 |
+| No suite verifies its cryptosuite                                                                                                  | `eddsa-rdfc-2022`, `ecdsa-rdfc-2019`, `ecdsa-sd-2023` and `suites` |
+| It is an `ecdsa-sd-2023` base proof                                                                                                | Derive a disclosure first                                          |
+| Its purpose is not `assertionMethod`, it names no key, or `expires` has passed                                                     | Said in the reason                                                 |
+| The resolver finds no key for its `verificationMethod`                                                                             | Said in the reason                                                 |
+| Its signature does not verify with that key                                                                                        | Said in the reason                                                 |
+| It names a `previousProof` that the credential lacks or that is not valid, or proofs that name each other in a cycle               | Said in the reason                                                 |
+| The key is not published by the issuer, unless `allowUnboundKeys`                                                                  | The reason of `verifyIssuerKey`                                    |
 
-| Option             | Meaning                                                                                                              | Default       |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `keys`             | The `KeyResolver` (see the [keys guide](keys.md))                                                                    | Required      |
-| `clock`            | The `Clock` that `expires` is compared with                                                                          | `SYSTEM_CLOCK`      |
-| `contexts`         | The `ContextLoader`                                                                                                   | Required      |
-| `clockSkewSeconds` | The seconds by which `expires` may differ from the clock                                                              | `60`          |
-| `allowUnboundKeys` | Accept a key that the issuer does not publish; the binding is not looked up and the result has `bound: false`         | `false`       |
-| `legacyProofs`     | Accept `Ed25519Signature2020` proofs, which Open Badges 3.0.0 to 3.0.2 used                                            | `false`       |
-| `suites`           | More `DataIntegritySuite`s beside the built-in ones; a suite only checks the proof, the glue resolves and binds the key | None          |
-| `maxInputBytes`    | The most characters of the credential as JSON                                                                         | `1048576`     |
-| `maxTokens`        | The most tokens of JSON in the credential, counted before the readers walk it                                          | `1000000`     |
-| `maxJsonLdTokens`  | The most tokens of JSON in the credential that a JSON-LD processor reads to check a proof (see Limits)                 | `20000`       |
-| `maxDepth`         | The most levels that the credential nests                                                                             | `64`          |
-| `signal`           | Ends the caller's wait                                                                                                | None          |
+| Option             | Meaning                                                                                                                 | Default        |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `keys`             | The `KeyResolver` (see the [keys guide](keys.md))                                                                       | Required       |
+| `clock`            | The `Clock` that `expires` is compared with                                                                             | `SYSTEM_CLOCK` |
+| `contexts`         | The `ContextLoader`                                                                                                     | Required       |
+| `clockSkewSeconds` | The seconds by which `expires` may differ from the clock                                                                | `60`           |
+| `allowUnboundKeys` | Accept a key that the issuer does not publish; the binding is not looked up and the result has `bound: false`           | `false`        |
+| `legacyProofs`     | Accept `Ed25519Signature2020` proofs, which Open Badges 3.0.0 to 3.0.2 used                                             | `false`        |
+| `suites`           | More `DataIntegritySuite`s beside the built-in ones; a suite only checks the proof, the glue resolves and binds the key | None           |
+| `maxInputBytes`    | The most characters of the credential as JSON                                                                           | `1048576`      |
+| `maxTokens`        | The most tokens of JSON in the credential, counted before the readers walk it                                           | `1000000`      |
+| `maxJsonLdTokens`  | The most tokens of JSON in the credential that a JSON-LD processor reads to check a proof (see Limits)                  | `20000`        |
+| `maxDepth`         | The most levels that the credential nests                                                                               | `64`           |
+| `signal`           | Ends the caller's wait                                                                                                  | None           |
 
 ### A suite of the host
 
@@ -182,15 +183,15 @@ and of the `pins` option. An address with no pin is refused before anything is r
 set, and a document that differs from its pin is refused always. Nothing is loaded from a hint in a credential: the processors
 of JSON-LD call the loader and no other.
 
-| Option         | Meaning                                                                                                          | Default                                  |
-| -------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `fetch`        | The `Fetch` that gets a context the loader does not hold                                                          | None: only `documents` serve             |
-| `documents`    | Contexts the host holds, by address, checked against their pins                                                   | None                                     |
-| `pins`         | More pins, address to SHA-256 of the canonical JSON, for the contexts of an extension; a pin here takes the place of a known one | None                                     |
-| `allowUnknown` | Serve a context that has no pin                                                                                    | `false`                                  |
-| `timeoutMs`    | The time a fetch may take                                                                                         | `10000`                                  |
-| `maxTokens`    | The most tokens of JSON in a context, counted before it is parsed                                                  | `1000000`    |
-| `maxBytes`     | The most bytes of a context                                                                                        | `262144`                                 |
+| Option         | Meaning                                                                                                                          | Default                      |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| `fetch`        | The `Fetch` that gets a context the loader does not hold                                                                         | None: only `documents` serve |
+| `documents`    | Contexts the host holds, by address, checked against their pins                                                                  | None                         |
+| `pins`         | More pins, address to SHA-256 of the canonical JSON, for the contexts of an extension; a pin here takes the place of a known one | None                         |
+| `allowUnknown` | Serve a context that has no pin                                                                                                  | `false`                      |
+| `timeoutMs`    | The time a fetch may take                                                                                                        | `10000`                      |
+| `maxTokens`    | The most tokens of JSON in a context, counted before it is parsed                                                                | `1000000`                    |
+| `maxBytes`     | The most bytes of a context                                                                                                      | `262144`                     |
 
 W3C asks that its context addresses are not fetched on every request: a host passes the W3C and 1EdTech contexts in `documents`,
 or keeps what it fetches in the `fetch` it passes, as a `fetch` that reads a store before the network does; every source is checked against its pin. A verified context stays in memory (100 at most), and callers that ask while it loads share one fetch.
@@ -210,14 +211,14 @@ The vectors of the Recommendations and of the `did:key` specification run throug
 [ECDSA Cryptosuites](https://www.w3.org/TR/2025/REC-vc-di-ecdsa-20250515/) (appendix A) and
 [the did:key Method v0.9](https://w3c-ccg.github.io/did-key-spec/). What a vector can show depends on the cryptosuite:
 
-| Vector                                              | Through                                  | Result                                                                                                              |
-| --------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `eddsa-rdfc-2022`, the alumni credential            | `addProof`, then `verifyProof`           | The proof equals the printed one byte for byte: EdDSA is deterministic. The signature verifies, with `bound: false` |
-| `Ed25519Signature2020`                              | `verifyProof` with `legacyProofs`        | The signature verifies; without the option it is refused                                                             |
-| `ecdsa-rdfc-2019`, the alumni credential, P-256 and P-384 | `verifyProof`                      | The signature verifies, and a changed credential does not. Not compared byte for byte: Web Crypto signs with a random nonce, and `addProof` writes no `ecdsa-rdfc-2019` proof |
-| `did:key` of Ed25519                                | `createKeyResolver`                      | The method, the controller, the four relationships and the key equal the document that the specification prints; its key agreement key is not a key for a signature and is not resolved |
-| `did:key` of P-256 and P-384                        | `createKeyResolver`                      | The key equals the point that an independent decompression of the compressed key gives                              |
-| `eddsa-jcs-2022`, `ecdsa-jcs-2019`                  | `verifyProof`                            | No suite verifies them: Open Badges names `eddsa-rdfc-2022` and `ecdsa-sd-2023`. A host adds a suite in `suites`     |
+| Vector                                                                                                                            | Through                                       | Result                                                                                                                                                                                                                          |
+| --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `eddsa-rdfc-2022`, the alumni credential                                                                                          | `addProof`, then `verifyProof`                | The proof equals the printed one byte for byte: EdDSA is deterministic. The signature verifies, with `bound: false`                                                                                                             |
+| `Ed25519Signature2020`                                                                                                            | `verifyProof` with `legacyProofs`             | The signature verifies; without the option it is refused                                                                                                                                                                        |
+| `ecdsa-rdfc-2019`, the alumni credential, P-256 and P-384                                                                         | `verifyProof`                                 | The signature verifies, and a changed credential does not. Not compared byte for byte: Web Crypto signs with a random nonce, and `addProof` writes no `ecdsa-rdfc-2019` proof                                                   |
+| `did:key` of Ed25519                                                                                                              | `createKeyResolver`                           | The method, the controller, the four relationships and the key equal the document that the specification prints; its key agreement key is not a key for a signature and is not resolved                                         |
+| `did:key` of P-256 and P-384                                                                                                      | `createKeyResolver`                           | The key equals the point that an independent decompression of the compressed key gives                                                                                                                                          |
+| `eddsa-jcs-2022`, `ecdsa-jcs-2019`                                                                                                | `verifyProof`                                 | No suite verifies them: Open Badges names `eddsa-rdfc-2022` and `ecdsa-sd-2023`. A host adds a suite in `suites`                                                                                                                |
 | The employment authorization and permanent resident card of the EdDSA and ECDSA pages, including both examples of `ecdsa-sd-2023` | `addProof`, `verifyProof`, `deriveDisclosure` | Refused: the `issuer` of these credentials is an object with an `id` and an `image` and no `type`, and the Profile of Open Badges requires a type. They are no credentials of the model, and the glue does not bypass the check |
 
 The two examples of `ecdsa-sd-2023` are reproduced byte for byte by the tests of `@interopkit/selective-disclosure`, which knows no
@@ -226,18 +227,18 @@ a Profile or an address.
 
 ## Limits
 
-| Limit                                                   | Value                | Refused with                            |
-| ------------------------------------------------------- | -------------------- | --------------------------------------- |
-| Characters of the credential as JSON                    | `maxInputBytes`, 1,048,576 | `valid: false`, before it is read |
-| Levels that the credential nests                        | `maxDepth`, 64       | `valid: false`, before it is read; signing, deriving and validating: `LimitError`, at 64, before anything copies it |
-| Tokens of JSON in the credential                        | `maxTokens`, 1,000,000 | `valid: false`, before it is read     |
-| Tokens of JSON in a credential that a JSON-LD processor reads | `maxJsonLdTokens`, 20,000 | `valid: false` with the limit; signing, deriving and validating: `LimitError` |
-| Runs of Hash N-Degree Quads in one canonicalization     | 1,000, fixed         | `valid: false` with the limit; signing: `LimitError` (`maxDeepIterations`) |
-| Proofs of a credential that are checked                 | 4, fixed             | The rest are not looked at, and the reason says so |
-| Bytes of a context, levels of a context                 | `maxBytes`, 64       | `ServiceError`, `LimitError`            |
-| Tokens of JSON in a context                             | `maxTokens`, 1,000,000 | `LimitError`, before it is parsed     |
-| Contexts kept in memory                                 | 100                  | The oldest goes first                   |
-| Findings of `validateJsonLd`                            | 100                  | The rest are not reported               |
+| Limit                                                         | Value                      | Refused with                                                                                                        |
+| ------------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Characters of the credential as JSON                          | `maxInputBytes`, 1,048,576 | `valid: false`, before it is read                                                                                   |
+| Levels that the credential nests                              | `maxDepth`, 64             | `valid: false`, before it is read; signing, deriving and validating: `LimitError`, at 64, before anything copies it |
+| Tokens of JSON in the credential                              | `maxTokens`, 1,000,000     | `valid: false`, before it is read                                                                                   |
+| Tokens of JSON in a credential that a JSON-LD processor reads | `maxJsonLdTokens`, 20,000  | `valid: false` with the limit; signing, deriving and validating: `LimitError`                                       |
+| Runs of Hash N-Degree Quads in one canonicalization           | 1,000, fixed               | `valid: false` with the limit; signing: `LimitError` (`maxDeepIterations`)                                          |
+| Proofs of a credential that are checked                       | 4, fixed                   | The rest are not looked at, and the reason says so                                                                  |
+| Bytes of a context, levels of a context                       | `maxBytes`, 64             | `ServiceError`, `LimitError`                                                                                        |
+| Tokens of JSON in a context                                   | `maxTokens`, 1,000,000     | `LimitError`, before it is parsed                                                                                   |
+| Contexts kept in memory                                       | 100                        | The oldest goes first                                                                                               |
+| Findings of `validateJsonLd`                                  | 100                        | The rest are not reported                                                                                           |
 
 `maxTokens` bounds what a parse builds, and it is far too generous for a JSON-LD processor, whose work grows with the square of the
 values of one property: 10,000 values of one property take about a second, 20,000 take four seconds and 60,000 take 35. So a
@@ -256,33 +257,33 @@ canonicalized once for all of them. Bounded as it is, a credential at the token 
 
 ## Errors
 
-| Case                                                                                        | Result                                                             |
-| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| An option or an argument has the wrong type; a signer of another algorithm or with no `keyId` | `DataError` that names it                                         |
-| The credential to sign is not valid, or its graph cannot be canonicalized                    | `DataError`: `The credential is invalid ...`, `... cannot be processed as JSON-LD: ...` |
+| Case                                                                                                        | Result                                                                                                                                   |
+| ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| An option or an argument has the wrong type; a signer of another algorithm or with no `keyId`               | `DataError` that names it                                                                                                                |
+| The credential to sign is not valid, or its graph cannot be canonicalized                                   | `DataError`: `The credential is invalid ...`, `... cannot be processed as JSON-LD: ...`                                                  |
 | The credential has more tokens than `maxJsonLdTokens`, or needs more than 1,000 runs of Hash N-Degree Quads | While signing, deriving or validating: `LimitError` with the limit and its value. While verifying: `valid: false` with the same sentence |
-| A context has no pin or is not the pinned document                                           | While signing or deriving: `DataError`. While verifying: `valid: false` |
-| A context, a key or what the issuer publishes cannot be fetched                              | `ServiceError`                                                     |
-| A disclosure hides what the model requires                                                   | `DataError` that names the pointers to add                         |
-| The signal aborts                                                                            | The `reason` of the signal                                         |
+| A context has no pin or is not the pinned document                                                          | While signing or deriving: `DataError`. While verifying: `valid: false`                                                                  |
+| A context, a key or what the issuer publishes cannot be fetched                                             | `ServiceError`                                                                                                                           |
+| A disclosure hides what the model requires                                                                  | `DataError` that names the pointers to add                                                                                               |
+| The signal aborts                                                                                           | The `reason` of the signal                                                                                                               |
 
 ## Not included
 
-| Not included                                           | Why                                                                                                                                |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Signing with `ecdsa-rdfc-2019`, `eddsa-jcs-2022` and `ecdsa-jcs-2019`; verifying the two JCS suites | Open Badges names `eddsa-rdfc-2022` and `ecdsa-sd-2023` for issuers; `ecdsa-rdfc-2019` is verified |
-| Presentations                                          | Open Badges and CLR define none                                                                                                    |
-| Other cryptosuites                                     | A host passes a `DataIntegritySuite` in `suites`                                                                                   |
-| Signing a proof of a chain                             | No role of Open Badges or CLR adds a proof to another party's credential: `addProof` adds a proof to a set, and `verifyProof` verifies chains |
-| Where a request goes                                   | The host's `fetch` refuses private addresses                                                                                       |
+| Not included                                                                                        | Why                                                                                                                                           |
+| --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Signing with `ecdsa-rdfc-2019`, `eddsa-jcs-2022` and `ecdsa-jcs-2019`; verifying the two JCS suites | Open Badges names `eddsa-rdfc-2022` and `ecdsa-sd-2023` for issuers; `ecdsa-rdfc-2019` is verified                                            |
+| Presentations                                                                                       | Open Badges and CLR define none                                                                                                               |
+| Other cryptosuites                                                                                  | A host passes a `DataIntegritySuite` in `suites`                                                                                              |
+| Signing a proof of a chain                                                                          | No role of Open Badges or CLR adds a proof to another party's credential: `addProof` adds a proof to a set, and `verifyProof` verifies chains |
+| Where a request goes                                                                                | The host's `fetch` refuses private addresses                                                                                                  |
 
 ## Differences from the references
 
-| Case                             | The references                                                                                     | This package                                                                                             |
-| -------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| The controller of the key        | VC Data Integrity 2.6: the method's `controller` is the issuer, checked by the proof purpose        | The key must be among what the issuer itself publishes under `assertionMethod`, and its controller must be the issuer |
-| A base proof of `ecdsa-sd-2023`  | Verify Derived Proof is the only algorithm defined                                                  | A credential that carries a base proof is not valid, and the reason says to derive a disclosure first      |
-| Contexts                         | A processor loads a context by its address                                                           | Only at a pinned hash                                                                                    |
-| Proofs                           | The compacted form writes a single proof as an object                                                | The result of `addProof` holds a list of one                                                              |
-| The number of proofs             | Data Integrity 4.5 checks all of them, or a subset whose chains it follows                           | At most four, those that a chain names among them; each costs a canonicalization and may cost a fetch of a key |
-| Canonicalization                 | RDF Dataset Canonicalization 4.8: a work factor bounds the runs of Hash N-Degree Quads                | A fixed count of 1,000 runs, and a count of the tokens that a processor reads                             |
+| Case                            | The references                                                                               | This package                                                                                                          |
+| ------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| The controller of the key       | VC Data Integrity 2.6: the method's `controller` is the issuer, checked by the proof purpose | The key must be among what the issuer itself publishes under `assertionMethod`, and its controller must be the issuer |
+| A base proof of `ecdsa-sd-2023` | Verify Derived Proof is the only algorithm defined                                           | A credential that carries a base proof is not valid, and the reason says to derive a disclosure first                 |
+| Contexts                        | A processor loads a context by its address                                                   | Only at a pinned hash                                                                                                 |
+| Proofs                          | The compacted form writes a single proof as an object                                        | The result of `addProof` holds a list of one                                                                          |
+| The number of proofs            | Data Integrity 4.5 checks all of them, or a subset whose chains it follows                   | At most four, those that a chain names among them; each costs a canonicalization and may cost a fetch of a key        |
+| Canonicalization                | RDF Dataset Canonicalization 4.8: a work factor bounds the runs of Hash N-Degree Quads       | A fixed count of 1,000 runs, and a count of the tokens that a processor reads                                         |

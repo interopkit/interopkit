@@ -51,16 +51,16 @@ requests[0].body.data[0].id === event.id; // => true
 `sendCaliper(data, options)` posts one envelope (section 5.2) with the events and entity describes as its `data`, over HTTPS
 (section 5.4).
 
-| Option      | Meaning                                                                                                                                               | Default                               |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| `endpoint`  | The address of the endpoint, an `https` URL                                                                                                           | required                              |
-| `token`     | The bearer token that the endpoint validates: letters, digits and `-._~+/`, then `=` ([RFC 6750](https://www.rfc-editor.org/rfc/rfc6750#section-2.1)). Caliper recommends one | none: no `Authorization` header       |
-| `fetch`     | The `fetch` that makes the request: the global one, or a function with the signature of `Fetch` of `@interopkit/core`                                 | required                              |
-| `sensor`    | The absolute IRI that identifies the sensor (section 5.2), which is checked                                                                           | required                              |
-| `sendTime`  | The time of sending in epoch milliseconds. A resend has the time of the resend                                                                        | required                              |
-| `timeoutMs` | The most time in milliseconds from the request to the last byte of the answer                                                                         | `10000` |
-| `maxPayloadBytes` | The most bytes of the envelope that the endpoint takes, which its configuration gives in kilobytes of 1,024 bytes. A larger envelope is a `LimitError` before any request | none |
-| `signal`    | An `AbortSignal` that ends this caller's wait                                                                                                         | none                                  |
+| Option            | Meaning                                                                                                                                                                       | Default                         |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `endpoint`        | The address of the endpoint, an `https` URL                                                                                                                                   | required                        |
+| `token`           | The bearer token that the endpoint validates: letters, digits and `-._~+/`, then `=` ([RFC 6750](https://www.rfc-editor.org/rfc/rfc6750#section-2.1)). Caliper recommends one | none: no `Authorization` header |
+| `fetch`           | The `fetch` that makes the request: the global one, or a function with the signature of `Fetch` of `@interopkit/core`                                                         | required                        |
+| `sensor`          | The absolute IRI that identifies the sensor (section 5.2), which is checked                                                                                                   | required                        |
+| `sendTime`        | The time of sending in epoch milliseconds. A resend has the time of the resend                                                                                                | required                        |
+| `timeoutMs`       | The most time in milliseconds from the request to the last byte of the answer                                                                                                 | `10000`                         |
+| `maxPayloadBytes` | The most bytes of the envelope that the endpoint takes, which its configuration gives in kilobytes of 1,024 bytes. A larger envelope is a `LimitError` before any request     | none                            |
+| `signal`          | An `AbortSignal` that ends this caller's wait                                                                                                                                 | none                            |
 
 One object may hold the options of `sendCaliper` and `pingEndpoint`, without `signal`, which belongs to one call and which a ping
 takes in its second argument; a property that neither takes, such as a misspelled option, is refused with a `DataError`.
@@ -107,14 +107,14 @@ sequenceDiagram
 
 ## Limits of a send
 
-| Limit                  | Value                                                                                                                                   | Replaceable |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| Time of a call         | `timeoutMs`, `10000` ms by default                                                                                                      | Per call    |
-| Bytes of the answer    | 65,536                                                                                                                                  | No          |
-| Redirects              | None followed; any 3xx is an error                                                                                                      | No          |
-| Events and describes in an envelope | At least 1. No greatest number: `maxPayloadBytes` limits the bytes, which the endpoint announces                           | Per call    |
-| Times                  | `0000-01-01T00:00:00.000Z` to `9999-12-31T23:59:59.999Z`, in whole milliseconds, for `sendTime` and `formatDateTime`; the form `YYYY-MM-DDTHH:mm:ss.SSSZ` for a time in an entity |             |
-| Parts of an identifier | At least one; strings and finite numbers                                                                                                | No          |
+| Limit                               | Value                                                                                                                                                                             | Replaceable |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| Time of a call                      | `timeoutMs`, `10000` ms by default                                                                                                                                                | Per call    |
+| Bytes of the answer                 | 65,536                                                                                                                                                                            | No          |
+| Redirects                           | None followed; any 3xx is an error                                                                                                                                                | No          |
+| Events and describes in an envelope | At least 1. No greatest number: `maxPayloadBytes` limits the bytes, which the endpoint announces                                                                                  | Per call    |
+| Times                               | `0000-01-01T00:00:00.000Z` to `9999-12-31T23:59:59.999Z`, in whole milliseconds, for `sendTime` and `formatDateTime`; the form `YYYY-MM-DDTHH:mm:ss.SSSZ` for a time in an entity |             |
+| Parts of an identifier              | At least one; strings and finite numbers                                                                                                                                          | No          |
 
 ## Asking the endpoint
 
@@ -133,32 +133,36 @@ const fetch = async () =>
     }),
     { status: 200 },
   );
-const result = await pingEndpoint({ endpoint: "https://lrs.example/caliper", fetch, sensor: "https://exam.example/sensors/1" });
+const result = await pingEndpoint({
+  endpoint: "https://lrs.example/caliper",
+  fetch,
+  sensor: "https://exam.example/sensors/1",
+});
 result.status; // => "available"
 ```
 
-| The endpoint answers                | The result                                                                                                                           |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| 200 and its configuration           | `{ status: "available", configuration }`: `caliperMaximumPayloadSize` (kilobytes), `caliperSupportedVersions` (contexts, required), `caliperSupportedExtensions` |
-| 401                                 | `{ status: "unauthorized" }`                                                                                                         |
-| Any other status                    | `{ status: "unavailable", httpStatus }`                                                                                              |
-| A redirect                          | `ServiceError` with the status: no redirect is followed                                                                              |
-| Nothing, or not within `timeoutMs`  | `ServiceError` with status `0`                                                                                                       |
-| 200 and a body that is not the configuration | `DataError`: not JSON, a property of its own, or no `caliperSupportedVersions`; a `LimitError` for JSON nested deeper than 64 levels |
+| The endpoint answers                         | The result                                                                                                                                                       |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 200 and its configuration                    | `{ status: "available", configuration }`: `caliperMaximumPayloadSize` (kilobytes), `caliperSupportedVersions` (contexts, required), `caliperSupportedExtensions` |
+| 401                                          | `{ status: "unauthorized" }`                                                                                                                                     |
+| Any other status                             | `{ status: "unavailable", httpStatus }`                                                                                                                          |
+| A redirect                                   | `ServiceError` with the status: no redirect is followed                                                                                                          |
+| Nothing, or not within `timeoutMs`           | `ServiceError` with status `0`                                                                                                                                   |
+| 200 and a body that is not the configuration | `DataError`: not JSON, a property of its own, or no `caliperSupportedVersions`; a `LimitError` for JSON nested deeper than 64 levels                             |
 
 A sender that learns `caliperMaximumPayloadSize` from the ping gives `maxPayloadBytes` its value times 1,024. Splitting the data
 into several envelopes is the host's: `sendCaliper` refuses an envelope that is too large and sends nothing.
 
 ## Errors
 
-| Error                              | When                                                                                                                                                                                                                                                                                                                                     | What to do                                                                                             |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Error                              | When                                                                                                                                                                                                                                                                                        | What to do                                                                                             |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | `DataError`                        | An argument has the wrong type or value: an item without a Caliper `@context` or an `id`, data that JSON cannot write, a time not in the form, a token with a space, an `http` endpoint, an empty list, a size limit that is not a positive integer, or an envelope above `maxPayloadBytes` | Fix the input, or send fewer events and entities in each envelope. Nothing was sent                    |
-| `ServiceError`, status `0`         | The endpoint did not answer, or not within `timeoutMs`                                                                                                                                                                                                                                                                                   | Check the address and the network. Resend the same events with a new `sendTime`                        |
-| `ServiceError`, status 400 to 499  | The endpoint refused the envelope; `body` holds what it said                                                                                                                                                                                                                                                                             | 401 is a bad token. 415 and 422 are an envelope that the endpoint cannot read. Resending does not help |
-| `ServiceError`, status 500 or more | The endpoint failed                                                                                                                                                                                                                                                                                                                      | Resend the same events later with a new `sendTime`                                                     |
-| `ServiceError`, status 3xx         | The endpoint redirected                                                                                                                                                                                                                                                                                                                  | Use the address it redirects to                                                                        |
-| The `reason` of the signal         | The caller aborted                                                                                                                                                                                                                                                                                                                       | Nothing. The request may have reached the endpoint, so a resend can leave a copy                       |
+| `ServiceError`, status `0`         | The endpoint did not answer, or not within `timeoutMs`                                                                                                                                                                                                                                      | Check the address and the network. Resend the same events with a new `sendTime`                        |
+| `ServiceError`, status 400 to 499  | The endpoint refused the envelope; `body` holds what it said                                                                                                                                                                                                                                | 401 is a bad token. 415 and 422 are an envelope that the endpoint cannot read. Resending does not help |
+| `ServiceError`, status 500 or more | The endpoint failed                                                                                                                                                                                                                                                                         | Resend the same events later with a new `sendTime`                                                     |
+| `ServiceError`, status 3xx         | The endpoint redirected                                                                                                                                                                                                                                                                     | Use the address it redirects to                                                                        |
+| The `reason` of the signal         | The caller aborted                                                                                                                                                                                                                                                                          | Nothing. The request may have reached the endpoint, so a resend can leave a copy                       |
 
 `ServiceError.body` is text from the endpoint: log it as untrusted, and do not show it to a user.
 
@@ -178,16 +182,16 @@ host gives, so do not put a secret in the parts.
 
 ## Not included
 
-| Not included                                 | Why                                                                                                                  |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Splitting an envelope that is too large      | The host decides how to batch: `sendCaliper` refuses an envelope above `maxPayloadBytes` and sends nothing            |
-| Retries and a queue of events                | Nothing is kept between calls; the host decides whether and when to send again, and the same events give the same identifiers |
-| Several endpoints registered with a sensor   | A host calls `sendCaliper` once for each endpoint                                                                    |
-| Following a redirect                         | Any 3xx is an error: a redirect could lead from HTTPS to another scheme                                              |
+| Not included                               | Why                                                                                                                           |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| Splitting an envelope that is too large    | The host decides how to batch: `sendCaliper` refuses an envelope above `maxPayloadBytes` and sends nothing                    |
+| Retries and a queue of events              | Nothing is kept between calls; the host decides whether and when to send again, and the same events give the same identifiers |
+| Several endpoints registered with a sensor | A host calls `sendCaliper` once for each endpoint                                                                             |
+| Following a redirect                       | Any 3xx is an error: a redirect could lead from HTTPS to another scheme                                                       |
 
 ## Differences from the references
 
-| Reference               | Difference                                                                                                                                                                                  |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ims-caliper`           | Reads the clock for the time of sending and keeps several endpoints in a sensor; `sendCaliper` takes `sendTime` from the host and keeps nothing between calls                                  |
-| `@timeback/caliper`     | A client of one vendor's API, with a queue of jobs and the listing of what a server stored; `sendCaliper` sends the four properties of section 5.2 and no other, and Caliper defines no reading of what an endpoint keeps. Its tokens come from `requestClientCredentialsToken` and `createTokenCache` of `@interopkit/core/oauth` |
+| Reference           | Difference                                                                                                                                                                                                                                                                                                                         |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ims-caliper`       | Reads the clock for the time of sending and keeps several endpoints in a sensor; `sendCaliper` takes `sendTime` from the host and keeps nothing between calls                                                                                                                                                                      |
+| `@timeback/caliper` | A client of one vendor's API, with a queue of jobs and the listing of what a server stored; `sendCaliper` sends the four properties of section 5.2 and no other, and Caliper defines no reading of what an endpoint keeps. Its tokens come from `requestClientCredentialsToken` and `createTokenCache` of `@interopkit/core/oauth` |

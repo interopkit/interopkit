@@ -37,17 +37,17 @@ flowchart BT
   root --> pv
 ```
 
-| Module        | Files                                                       | Holds                                                                                                             |
-| ------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `proof-value` | `header.ts`, `cbor.ts`, `fields.ts`, `label-map.ts`         | The headers `0xd9 0x5d 0x00` and `0x01`, the CBOR reader and its options, the checks of each component            |
-|               | `base.ts`, `derived.ts`, `is-base-proof.ts`, `sign-data.ts` | Writing and reading the two proof values, `isBaseProof`, and the bytes that the issuer's key signs                |
+| Module        | Files                                                       | Holds                                                                                                                                   |
+| ------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `proof-value` | `header.ts`, `cbor.ts`, `fields.ts`, `label-map.ts`         | The headers `0xd9 0x5d 0x00` and `0x01`, the CBOR reader and its options, the checks of each component                                  |
+|               | `base.ts`, `derived.ts`, `is-base-proof.ts`, `sign-data.ts` | Writing and reading the two proof values, `isBaseProof`, and the bytes that the issuer's key signs                                      |
 | `keys`        | `proof-key.ts`, `multikey.ts`, `statements.ts`              | The key of a proof, which Web Crypto makes and signs with, the multikey form of a public key, the check of the signatures of statements |
-|               | `issuer-key.ts`, `algorithm.ts`                             | The import of the issuer's JWK, the check of the base signature, and ES256 in the words of Web Crypto             |
-| `document`    | `options.ts`, `read-document.ts`, `pointers.ts`             | The checks every function makes of its options, the copy of a document as JSON, and JSON pointers                 |
-|               | `loader.ts`, `labels.ts`, `primitives.ts`                   | The loader of the caller as the loader of `jsonld`, the HMAC labels, and the typed functions of the primitives    |
-| `base`        | `add-base-proof.ts`, `secrets.ts`                           | `addBaseProof`, and the two secrets that make a base proof                                                        |
-| `derive`      | `derive-proof.ts`, `disclosure-data.ts`                     | `deriveProof`, and the statements, signatures and labels that a disclosure keeps                                  |
-| `verify`      | `suite.ts`, `verify-data.ts`                                | `selectiveDisclosureSuite`, and the data that its signatures are checked against                                  |
+|               | `issuer-key.ts`, `algorithm.ts`                             | The import of the issuer's JWK, the check of the base signature, and ES256 in the words of Web Crypto                                   |
+| `document`    | `options.ts`, `read-document.ts`, `pointers.ts`             | The checks every function makes of its options, the copy of a document as JSON, and JSON pointers                                       |
+|               | `loader.ts`, `labels.ts`, `primitives.ts`                   | The loader of the caller as the loader of `jsonld`, the HMAC labels, and the typed functions of the primitives                          |
+| `base`        | `add-base-proof.ts`, `secrets.ts`                           | `addBaseProof`, and the two secrets that make a base proof                                                                              |
+| `derive`      | `derive-proof.ts`, `disclosure-data.ts`                     | `deriveProof`, and the statements, signatures and labels that a disclosure keeps                                                        |
+| `verify`      | `suite.ts`, `verify-data.ts`                                | `selectiveDisclosureSuite`, and the data that its signatures are checked against                                                        |
 
 `suite.ts` and `limits.ts` sit beside the modules: the names and sizes of the suite, and the limits.
 

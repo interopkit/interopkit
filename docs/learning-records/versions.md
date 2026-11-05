@@ -50,21 +50,21 @@ readStatement(legacy, { version: "1.0.3" }).version; // => "1.0.0"
 
 ## What differs
 
-| Of                       | xAPI 2.0                                                  | xAPI 1.0.3                                                                                      |
-| ------------------------ | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| A Timestamp              | RFC 3339 with an offset                                   | ISO 8601 with a time zone: extended or basic, seconds and minutes may be left out               |
-| The offset `-00:00`      | The reader takes it; the LRS refuses it                   | Refused, with `-00` and `-0000`                                                                 |
-| A context                | `contextAgents`, `contextGroups`                          | Neither: each is an `unknown-property`                                                          |
-| `version` for an LRS     | Any text for the reader; the LRS takes 1.0.x and 2.0.x    | `1.0` or `1.0.x`, or an error                                                                   |
-| `version` for a provider | 2.0.0, with a warning                                     | 1.0.0, with a warning                                                                           |
-| The time of a provider   | UTC, with a warning below milliseconds                    | RFC 3339; no rule on UTC or precision                                                           |
-| An empty object          | A warning for a provider                                  | A warning for every Statement                                                                   |
-| A repeated component id  | A warning                                                 | A warning for an LRS, an error for a provider                                                   |
-| Default `version`        | 2.0.0                                                     | 1.0.0                                                                                           |
-| A State PUT with no tag  | 409 over a document                                       | Replaces the document, with the `unconditional` write of `DocumentStore`                        |
-| A profile PUT with no tag | 409 over a document; written where there is none         | 409 over a document; 400 where there is none                                                    |
-| Alternate request syntax | None: 400                                                 | [Read from the form](#the-alternate-request-syntax)                                             |
-| Answers                  | `X-Experience-API-Version: 2.0.0`                         | `X-Experience-API-Version: 1.0.3`                                                               |
+| Of                        | xAPI 2.0                                               | xAPI 1.0.3                                                                        |
+| ------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| A Timestamp               | RFC 3339 with an offset                                | ISO 8601 with a time zone: extended or basic, seconds and minutes may be left out |
+| The offset `-00:00`       | The reader takes it; the LRS refuses it                | Refused, with `-00` and `-0000`                                                   |
+| A context                 | `contextAgents`, `contextGroups`                       | Neither: each is an `unknown-property`                                            |
+| `version` for an LRS      | Any text for the reader; the LRS takes 1.0.x and 2.0.x | `1.0` or `1.0.x`, or an error                                                     |
+| `version` for a provider  | 2.0.0, with a warning                                  | 1.0.0, with a warning                                                             |
+| The time of a provider    | UTC, with a warning below milliseconds                 | RFC 3339; no rule on UTC or precision                                             |
+| An empty object           | A warning for a provider                               | A warning for every Statement                                                     |
+| A repeated component id   | A warning                                              | A warning for an LRS, an error for a provider                                     |
+| Default `version`         | 2.0.0                                                  | 1.0.0                                                                             |
+| A State PUT with no tag   | 409 over a document                                    | Replaces the document, with the `unconditional` write of `DocumentStore`          |
+| A profile PUT with no tag | 409 over a document; written where there is none       | 409 over a document; 400 where there is none                                      |
+| Alternate request syntax  | None: 400                                              | [Read from the form](#the-alternate-request-syntax)                               |
+| Answers                   | `X-Experience-API-Version: 2.0.0`                      | `X-Experience-API-Version: 1.0.3`                                                 |
 
 The ETag of a document is the quoted SHA-1 hex of its content on both routes: 1.0.3 asks for it, and 2.0 accepts any value, so
 one stored document answers both alike.
@@ -75,7 +75,7 @@ One LRS holds the Statements of both routes. `StoredStatement.version` says whic
 
 | Statement stored through | Read on the route of 2.0                  | Read on the route of 1.0.3                                                        |
 | ------------------------ | ----------------------------------------- | --------------------------------------------------------------------------------- |
-| 2.0                      | As it is                                  | `convertStatementVersion`: no `contextAgents` or `contextGroups`, `version` 1.0.0      |
+| 2.0                      | As it is                                  | `convertStatementVersion`: no `contextAgents` or `contextGroups`, `version` 1.0.0 |
 | 1.0.3                    | As it is, with the `version` it came with | As it is                                                                          |
 
 A resend compares by the route: on 1.0.3 with `convertStatementVersion` of the Statement held, and on 2.0 with the whole Statement.
@@ -107,16 +107,16 @@ flowchart LR
   carried --> routed["Routed as any request"]
 ```
 
-| Part                         | Rule                                                                                                 |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------- |
-| The method                   | `GET`, `HEAD`, `PUT`, `POST` or `DELETE`, in the query, in upper case                                |
-| The query                    | `method` and nothing else                                                                            |
-| The headers of the form      | Replace those of the request; their names match in any case                                          |
-| `Content-Length` of the form | Ignored: the body has its own length                                                                 |
-| `content`                    | The body, UTF-8 text; binary data and Attachments cannot be sent this way                            |
-| The type of the content      | `Content-Type` of the form, or `application/json` when the form names none                           |
-| The size                     | `limits.maxBodyBytes`, before the form is read: 413                                                  |
-| The parameters               | 32 at most, counted before the form is read: 400                                                     |
+| Part                         | Rule                                                                                                  |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------- |
+| The method                   | `GET`, `HEAD`, `PUT`, `POST` or `DELETE`, in the query, in upper case                                 |
+| The query                    | `method` and nothing else                                                                             |
+| The headers of the form      | Replace those of the request; their names match in any case                                           |
+| `Content-Length` of the form | Ignored: the body has its own length                                                                  |
+| `content`                    | The body, UTF-8 text; binary data and Attachments cannot be sent this way                             |
+| The type of the content      | `Content-Type` of the form, or `application/json` when the form names none                            |
+| The size                     | `limits.maxBodyBytes`, before the form is read: 413                                                   |
+| The parameters               | 32 at most, counted before the form is read: 400                                                      |
 | The version                  | From the form or the request; a version of 2.0 is 400, and an LRS whose `versions` lacks 1.0.3 is 400 |
 
 The JSON of `content` and of a parameter such as `agent` is read as any request reads it, so `limits.maxTokens`, `maxDepth` and
@@ -124,14 +124,14 @@ The JSON of `content` and of a parameter such as `agent` is read as any request 
 
 ## Options
 
-| Option     | Of                                                                            | Default              | Meaning                                                        |
-| ---------- | ----------------------------------------------------------------------------- | -------------------- | -------------------------------------------------------------- |
-| `version`  | `readStatement`, `validateStatement`, `validateStatements`                    | `"2.0.0"`            | The rules that apply                                           |
-| `version`  | `buildStatement`, `buildVoidingStatement`                                          | `"2.0.0"`            | The provider rules, and the `version` that the Statement carries |
-| `version`  | `signStatement`                                                               | `"2.0.0"`            | The provider rules that the Statement is read with             |
-| `version`  | `verifyStatementSignature`                                                    | `"2.0.0"`            | The route the Statement came from; 1.0.3 compares in its form  |
-| `version`  | `createLrsClient`                                                             | `"2.0.0"`            | The header, the rules of Statements and of preconditions       |
-| `versions` | `handleLrsRequest`                                                            | `["2.0.0", "1.0.3"]` | The versions the LRS serves, the latest first                  |
+| Option     | Of                                                         | Default              | Meaning                                                          |
+| ---------- | ---------------------------------------------------------- | -------------------- | ---------------------------------------------------------------- |
+| `version`  | `readStatement`, `validateStatement`, `validateStatements` | `"2.0.0"`            | The rules that apply                                             |
+| `version`  | `buildStatement`, `buildVoidingStatement`                  | `"2.0.0"`            | The provider rules, and the `version` that the Statement carries |
+| `version`  | `signStatement`                                            | `"2.0.0"`            | The provider rules that the Statement is read with               |
+| `version`  | `verifyStatementSignature`                                 | `"2.0.0"`            | The route the Statement came from; 1.0.3 compares in its form    |
+| `version`  | `createLrsClient`                                          | `"2.0.0"`            | The header, the rules of Statements and of preconditions         |
+| `versions` | `handleLrsRequest`                                         | `["2.0.0", "1.0.3"]` | The versions the LRS serves, the latest first                    |
 
 The 1.0.3 rules take `maxFindings` as the 2.0 rules do.
 
@@ -141,24 +141,24 @@ does not break it.
 
 ## Errors
 
-| Error                                                                                                  | When                                                                 | What to do                                     |
-| ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- | ---------------------------------------------- |
-| 400: `The header X-Experience-API-Version must be 2.0 or 2.0.x, or 1.0 or 1.0.x, found ...`            | The request names no version that the LRS serves                     | Name one that About lists                      |
-| 400: `The alternate request syntax is a part of xAPI 1.0.3, and xAPI 2.0.0 has no such syntax.`        | A POST with `method` in its query names 2.0                          | Send the request itself, or name 1.0.3         |
-| 400: `A request in the alternate syntax has no query parameter but method, ...`                        | A parameter is in the query                                          | Put it in the form                             |
-| 400: `The parameter method must be one of GET, HEAD, PUT, POST, DELETE, ...`                           | The method is another, or in lower case                              | Name one of these                              |
-| 400: `A PUT of a profile needs a precondition on xAPI 1.0.3: ...`                                      | A PUT of a profile has neither header, and no document exists        | Send `If-None-Match: *`                        |
-| `DataError`: `The version must be "1.0.3", the version whose form is returned, found ...`              | `convertStatementVersion` is asked for another version                    | Pass `"1.0.3"`                                 |
-| `DataError`: `The answer of DocumentStore.write must be "written" for an unconditional write, ...`     | A store judged an `unconditional` condition                          | Fix the store: it always writes                |
+| Error                                                                                              | When                                                          | What to do                             |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | -------------------------------------- |
+| 400: `The header X-Experience-API-Version must be 2.0 or 2.0.x, or 1.0 or 1.0.x, found ...`        | The request names no version that the LRS serves              | Name one that About lists              |
+| 400: `The alternate request syntax is a part of xAPI 1.0.3, and xAPI 2.0.0 has no such syntax.`    | A POST with `method` in its query names 2.0                   | Send the request itself, or name 1.0.3 |
+| 400: `A request in the alternate syntax has no query parameter but method, ...`                    | A parameter is in the query                                   | Put it in the form                     |
+| 400: `The parameter method must be one of GET, HEAD, PUT, POST, DELETE, ...`                       | The method is another, or in lower case                       | Name one of these                      |
+| 400: `A PUT of a profile needs a precondition on xAPI 1.0.3: ...`                                  | A PUT of a profile has neither header, and no document exists | Send `If-None-Match: *`                |
+| `DataError`: `The version must be "1.0.3", the version whose form is returned, found ...`          | `convertStatementVersion` is asked for another version        | Pass `"1.0.3"`                         |
+| `DataError`: `The answer of DocumentStore.write must be "written" for an unconditional write, ...` | A store judged an `unconditional` condition                   | Fix the store: it always writes        |
 
 ## Not included
 
-| Not included                                 | Why                                                                                                     |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| 0.9 and 0.95                                 | 1.0.3 asks an LRS to refuse a version before 1.0.0, and only an LRS that meets the rules of that version may serve it |
-| Converting a Statement of 1.0.3 to 2.0       | A Statement of 1.0.x is a Statement of 2.0 but for its `version` and the forms of a time, and is kept as it was |
-| OAuth 1.0 and Common Access Cards            | The host's, through `access`; `readBasicAuthorization` reads the Basic of 1.0.3 Communication 4.0        |
-| `convertStatementVersion` to a version other than 1.0.3 | The package speaks two versions                                                                  |
+| Not included                                            | Why                                                                                                                   |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| 0.9 and 0.95                                            | 1.0.3 asks an LRS to refuse a version before 1.0.0, and only an LRS that meets the rules of that version may serve it |
+| Converting a Statement of 1.0.3 to 2.0                  | A Statement of 1.0.x is a Statement of 2.0 but for its `version` and the forms of a time, and is kept as it was       |
+| OAuth 1.0 and Common Access Cards                       | The host's, through `access`; `readBasicAuthorization` reads the Basic of 1.0.3 Communication 4.0                     |
+| `convertStatementVersion` to a version other than 1.0.3 | The package speaks two versions                                                                                       |
 
 ## Differences from the references
 

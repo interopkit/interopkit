@@ -27,10 +27,10 @@ flowchart LR
 | Vocabularies                         | Information Model 7.3, 7.4         | Ten association types, `ext:` terms, `TargetType`, `caseVersion`                                                                                                                       |
 | 1.1 additions                        | Information Model 1.3              | `frameworkType`, `caseVersion`, item `subject` and `subjectURI`, association `notes`, `targetType`, `isTranslationOf`, `extensions` on 13 classes, Markdown and LaTeX as text          |
 | Package integrity                    | Information Model 3.3, Guide 3.1   | One document, unique identifiers, links that resolve, `isChildOf` without loops, nodes that agree in URI, items in the tree                                                            |
-| CASE 1.0 consumers                   | Information Model 1.3              | Reading 1.0, `convertCaseVersion` for a package, an entity and a set, and the forms that 1.0 refuses reported                                                                               |
-| Hierarchy, associations, crosswalks  | Implementation Guide 3.3, 4.7      | `buildFrameworkTree`, `listAssociations`, `crosswalk`                                                                                                                                         |
-| Change management                    | Implementation Guide 4.2, 4.3      | `diffPackages` for items and `replacedBy`, `readAdoptionStatus` with `Adopted` and `Deprecated` read as their successors                                                                   |
-| Caching                              | Implementation Guide 4.1, 4.10     | `isNewer`, `buildEntityUri`                                                                                                                                                             |
+| CASE 1.0 consumers                   | Information Model 1.3              | Reading 1.0, `convertCaseVersion` for a package, an entity and a set, and the forms that 1.0 refuses reported                                                                          |
+| Hierarchy, associations, crosswalks  | Implementation Guide 3.3, 4.7      | `buildFrameworkTree`, `listAssociations`, `crosswalk`                                                                                                                                  |
+| Change management                    | Implementation Guide 4.2, 4.3      | `diffPackages` for items and `replacedBy`, `readAdoptionStatus` with `Adopted` and `Deprecated` read as their successors                                                               |
+| Caching                              | Implementation Guide 4.1, 4.10     | `isNewer`, `buildEntityUri`                                                                                                                                                            |
 | Endpoints, as a consumer             | REST binding 2.1, 2.2              | The client: the twelve endpoints at `/ims/case/v1p1` and `/ims/case/v1p0`, with the set types of 2.4                                                                                   |
 | Paging, sorting, filtering, fields   | REST binding 3                     | The client: `limit` and `offset` with `X-Total-Count` and `Link`, `sort` and `orderBy`, the seven predicates with one `AND` or `OR`, dot paths, `fields`                               |
 | HTTP codes and status, as a consumer | REST binding 2.4                   | The client: 404 as an absent value, other statuses as `ServiceError`, `imsx_StatusInfo` and `Retry-After` through `readStatusInfo`                                                     |
@@ -48,12 +48,12 @@ flowchart LR
 
 ## Not included
 
-| Not included                                 | Why                                                             |
-| -------------------------------------------- | --------------------------------------------------------------- |
-| Rendering Markdown and LaTeX                 | The consumer's interface does it, through a sanitizing renderer |
-| The JSON-LD form of CASE 1.0                 | A document form of 1.0 that 1.1 does not have                   |
+| Not included                                 | Why                                                                                                        |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Rendering Markdown and LaTeX                 | The consumer's interface does it, through a sanitizing renderer                                            |
+| The JSON-LD form of CASE 1.0                 | A document form of 1.0 that 1.1 does not have                                                              |
 | Writing identifiers for a framework          | The host's identifiers are its own; the readers check them, and `buildEntityUri` writes the address of one |
-| A store, writing a framework, authentication | The host's: the provider takes a store and an `authorize`       |
+| A store, writing a framework, authentication | The host's: the provider takes a store and an `authorize`                                                  |
 
 [The comparators](comparators.md) map what `@timeback/case` and OpenSALT do against the package: has, partly, excluded with the
 reason, or missing.

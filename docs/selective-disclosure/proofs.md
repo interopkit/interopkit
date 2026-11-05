@@ -37,7 +37,10 @@ import { createCryptoKeySigner } from "@interopkit/core";
 import { addBaseProof, deriveProof } from "@interopkit/selective-disclosure";
 
 const contexts = new Map([
-  ["https://example.org/contexts/v1", { "@context": { "@vocab": "https://example.org/vocab#", id: "@id", type: "@type" } }],
+  [
+    "https://example.org/contexts/v1",
+    { "@context": { "@vocab": "https://example.org/vocab#", id: "@id", type: "@type" } },
+  ],
 ]);
 const credential = {
   "@context": ["https://example.org/contexts/v1"],
@@ -46,7 +49,10 @@ const credential = {
   credentialSubject: { type: "Person", name: "Sam Taylor", birthDate: "2001-05-17" },
 };
 const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
-const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId: "https://example.org/issuers/1#key-1" });
+const signer = createCryptoKeySigner(pair.privateKey, {
+  algorithm: "ES256",
+  keyId: "https://example.org/issuers/1#key-1",
+});
 
 // The type of the subject is mandatory too, so that every disclosure says what it is about.
 const base = await addBaseProof(credential, {
@@ -89,17 +95,17 @@ the verification method into the JWK that `verify` takes, binding that key to th
 
 ## Options
 
-| Option              | Function       | Default   | Meaning                                                                                                                                    |
-| ------------------- | -------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `signer`            | `addBaseProof` | required  | A `Signer` of `@interopkit/core` with `algorithm` `"ES256"`; its `keyId` is the `verificationMethod` of the proof                          |
+| Option              | Function       | Default   | Meaning                                                                                                                                                                             |
+| ------------------- | -------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `signer`            | `addBaseProof` | required  | A `Signer` of `@interopkit/core` with `algorithm` `"ES256"`; its `keyId` is the `verificationMethod` of the proof                                                                   |
 | `created`           | `addBaseProof` | none      | The `created` of the proof, a date and time with an offset, such as `2026-11-01T09:30:00Z`. Without it, the proof has none; see [what a disclosure shows](#what-a-disclosure-shows) |
-| `mandatoryPointers` | `addBaseProof` | none      | JSON pointers to what a holder can never hide. The empty pointer `""` makes the whole document mandatory                                   |
-| `selectivePointers` | `deriveProof`  | required  | JSON pointers to what to reveal besides the mandatory parts. `[]` reveals the mandatory parts alone                                        |
-| `publicKeyJwk`      | `verify`       | required  | The public key of the issuer's verification method, a P-256 key as a JWK. A JWK with `d` is a `DataError`                                  |
-| `contexts`          | all three      | required  | `(url, { signal }) => Promise<unknown>`: the JSON-LD context behind a URL, as an object. The processors read no context from anywhere else |
-| `maxBytes`          | all three      | 1,048,576 | The most bytes of the document with its proof, as JSON                                                                                     |
-| `maxTokens`         | all three      | 20,000    | The most tokens of the document with its proof, as JSON: strings, numbers, literals and the six structural characters                      |
-| `signal`            | all three      | none      | Ends the caller's wait with its `reason`. The loader and the signer receive it too                                                         |
+| `mandatoryPointers` | `addBaseProof` | none      | JSON pointers to what a holder can never hide. The empty pointer `""` makes the whole document mandatory                                                                            |
+| `selectivePointers` | `deriveProof`  | required  | JSON pointers to what to reveal besides the mandatory parts. `[]` reveals the mandatory parts alone                                                                                 |
+| `publicKeyJwk`      | `verify`       | required  | The public key of the issuer's verification method, a P-256 key as a JWK. A JWK with `d` is a `DataError`                                                                           |
+| `contexts`          | all three      | required  | `(url, { signal }) => Promise<unknown>`: the JSON-LD context behind a URL, as an object. The processors read no context from anywhere else                                          |
+| `maxBytes`          | all three      | 1,048,576 | The most bytes of the document with its proof, as JSON                                                                                                                              |
+| `maxTokens`         | all three      | 20,000    | The most tokens of the document with its proof, as JSON: strings, numbers, literals and the six structural characters                                                               |
+| `signal`            | all three      | none      | Ends the caller's wait with its `reason`. The loader and the signer receive it too                                                                                                  |
 
 The proof of a base proof has the `type` `DataIntegrityProof`, the `cryptosuite` `ecdsa-sd-2023` and the `proofPurpose`
 `assertionMethod`. The last two are fixed: the suite is for credentials.
@@ -137,13 +143,13 @@ the caller say why.
 
 ## Limits
 
-| Limit                                              | Value      | Applies to                                                                                                              |
-| -------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `maxBytes`                                         | 1,048,576  | The document with its proof, as JSON, in bytes; a `LimitError`, and `false` from `verify`                               |
-| `maxTokens`                                        | 20,000     | The document with its proof, as JSON, in tokens, counted before any processing; a `LimitError`, and `false` from `verify` |
-| Levels that a document, a proof or a context nests | 64         | Checked before any processing; a `DataError`, and `false` from `verify`; not replaceable                                |
+| Limit                                              | Value      | Applies to                                                                                                                                                                                                    |
+| -------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `maxBytes`                                         | 1,048,576  | The document with its proof, as JSON, in bytes; a `LimitError`, and `false` from `verify`                                                                                                                     |
+| `maxTokens`                                        | 20,000     | The document with its proof, as JSON, in tokens, counted before any processing; a `LimitError`, and `false` from `verify`                                                                                     |
+| Levels that a document, a proof or a context nests | 64         | Checked before any processing; a `DataError`, and `false` from `verify`; not replaceable                                                                                                                      |
 | Deep iterations of RDF canonicalization            | 1,000      | `maxDeepIterations` of `rdf-canonize`: blank nodes that take more runs of Hash N-Degree Quads to tell apart are refused with a `LimitError` (`maxDeepIterations`), and `false` from `verify`; not replaceable |
-| Bytes of a signature, an HMAC key, a label         | 64, 32, 32 | Fixed by the Recommendation; a proof value with other lengths does not parse                                            |
+| Bytes of a signature, an HMAC key, a label         | 64, 32, 32 | Fixed by the Recommendation; a proof value with other lengths does not parse                                                                                                                                  |
 
 The work of the JSON-LD processors grows faster than the size of a document, so bytes alone do not bound it. `jsonld` adds
 each value of a property after a search of the values the property holds, so its time grows with the square of the values of
@@ -162,36 +168,36 @@ key twice and every tag but 64, and it needs exactly one array of five items and
 for a call that is wrong and returns `false` for a document or a proof that is. The error of the caller's loader or signer
 reaches the caller as it was.
 
-| Error type of the Recommendation | Raised by                                                                                   | Here                                                                          |
-| -------------------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `PROOF_GENERATION_ERROR`         | 3.6.4: a `type` or `cryptosuite` of another suite, a `created` that is no date and time      | A `DataError` of `addBaseProof`, which writes the `type` and `cryptosuite` itself |
-| `PROOF_VERIFICATION_ERROR`       | 3.5.3 and 3.5.8: a proof value without `u`, its header or its five components; 3.6.7: a count of signatures that differs from the statements | `false` from `verify`; a `DataError` of `deriveProof` for a base proof value  |
+| Error type of the Recommendation | Raised by                                                                                                                                    | Here                                                                              |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `PROOF_GENERATION_ERROR`         | 3.6.4: a `type` or `cryptosuite` of another suite, a `created` that is no date and time                                                      | A `DataError` of `addBaseProof`, which writes the `type` and `cryptosuite` itself |
+| `PROOF_VERIFICATION_ERROR`       | 3.5.3 and 3.5.8: a proof value without `u`, its header or its five components; 3.6.7: a count of signatures that differs from the statements | `false` from `verify`; a `DataError` of `deriveProof` for a base proof value      |
 
-| Message begins                                                  | When                                                                      | What to do                                                                                     |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `The options of <function> must be an object`                   | The options are `null`, a string, an array                                | Pass an options object                                                                         |
-| `The option contexts must be a function`                        | `contexts` is missing or is not a function                                | Pass a loader                                                                                  |
-| `The option signal must be an AbortSignal`                      | `signal` is another kind of value                                         | Pass an `AbortSignal`, or leave it out                                                         |
-| `The option maxBytes must be a positive integer`                | `maxBytes` is not one (also `maxTokens`)                                  | Pass a count of bytes, or of tokens                                                            |
-| `The document must be an object`                                | The document, or a proof, is `null`, a string or an array                 | Pass the parsed JSON object                                                                    |
-| `The document must be JSON, but ...`                            | A value is not JSON, or nests more than 64 levels                         | Pass data that `JSON.stringify` writes                                                         |
-| `The document with its proof has ... bytes as JSON`             | The document is larger than `maxBytes`                                    | Reduce it, or raise `maxBytes` when the source is trusted                                      |
-| `The document with its proof has more tokens of JSON`           | The document has more tokens than `maxTokens`                             | Reduce it, or raise `maxTokens` when the source is trusted                                     |
-| `The document has no @context`                                  | The document has no `@context`                                            | Add the contexts that define its terms                                                         |
-| `The document already has a proof`                              | `addBaseProof` got a document with a `proof`                              | Sign the document without it                                                                   |
-| `The option signer must ...`, `The keyId of the option signer`  | The signer is not an ES256 signer with a `keyId`                          | Pass a `Signer` with `algorithm` `"ES256"` and the verification method as `keyId`              |
-| `The option created must be a date and time with an offset`     | `created` is not one                                                      | Write it as `2026-11-01T09:30:00Z`                                                             |
-| `The signer must return the signature as 64 bytes`              | The signer answered with DER, a string or another length                  | Return the 64 bytes of R and S; convert the DER of a KMS first                                 |
-| `The option mandatoryPointers must hold JSON pointers`          | A pointer is not a JSON pointer (also `selectivePointers`)                | Write `/`, then the names and indexes                                                          |
-| `... holds the pointer "...", which points at nothing`          | A pointer does not lead to a member of the document                       | Check the name, the index and the escapes `~0` and `~1`                                        |
-| `The document must have one proof, as an object`                | `deriveProof` got a document without a proof, or with a proof set         | Pass the document that holds one base proof                                                    |
-| `The proof must be a base proof of ecdsa-sd-2023`               | `deriveProof` got a derived proof or a proof of another suite             | Derive from the base proof the issuer gave; a disclosure cannot be derived again               |
-| `The proofValue of a base proof ...`                            | The value does not parse: not base64url, not CBOR, wrong items or lengths | Ask the issuer for the proof again                                                             |
-| `Nothing is selected to reveal`                                 | No mandatory pointers and no `selectivePointers`                          | Choose at least one pointer                                                                    |
-| `The base proof has ... signatures`                             | The proof does not belong to the document: the statements do not match    | Derive from the document as the issuer signed it                                               |
+| Message begins                                                  | When                                                                                                                                                          | What to do                                                                                     |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `The options of <function> must be an object`                   | The options are `null`, a string, an array                                                                                                                    | Pass an options object                                                                         |
+| `The option contexts must be a function`                        | `contexts` is missing or is not a function                                                                                                                    | Pass a loader                                                                                  |
+| `The option signal must be an AbortSignal`                      | `signal` is another kind of value                                                                                                                             | Pass an `AbortSignal`, or leave it out                                                         |
+| `The option maxBytes must be a positive integer`                | `maxBytes` is not one (also `maxTokens`)                                                                                                                      | Pass a count of bytes, or of tokens                                                            |
+| `The document must be an object`                                | The document, or a proof, is `null`, a string or an array                                                                                                     | Pass the parsed JSON object                                                                    |
+| `The document must be JSON, but ...`                            | A value is not JSON, or nests more than 64 levels                                                                                                             | Pass data that `JSON.stringify` writes                                                         |
+| `The document with its proof has ... bytes as JSON`             | The document is larger than `maxBytes`                                                                                                                        | Reduce it, or raise `maxBytes` when the source is trusted                                      |
+| `The document with its proof has more tokens of JSON`           | The document has more tokens than `maxTokens`                                                                                                                 | Reduce it, or raise `maxTokens` when the source is trusted                                     |
+| `The document has no @context`                                  | The document has no `@context`                                                                                                                                | Add the contexts that define its terms                                                         |
+| `The document already has a proof`                              | `addBaseProof` got a document with a `proof`                                                                                                                  | Sign the document without it                                                                   |
+| `The option signer must ...`, `The keyId of the option signer`  | The signer is not an ES256 signer with a `keyId`                                                                                                              | Pass a `Signer` with `algorithm` `"ES256"` and the verification method as `keyId`              |
+| `The option created must be a date and time with an offset`     | `created` is not one                                                                                                                                          | Write it as `2026-11-01T09:30:00Z`                                                             |
+| `The signer must return the signature as 64 bytes`              | The signer answered with DER, a string or another length                                                                                                      | Return the 64 bytes of R and S; convert the DER of a KMS first                                 |
+| `The option mandatoryPointers must hold JSON pointers`          | A pointer is not a JSON pointer (also `selectivePointers`)                                                                                                    | Write `/`, then the names and indexes                                                          |
+| `... holds the pointer "...", which points at nothing`          | A pointer does not lead to a member of the document                                                                                                           | Check the name, the index and the escapes `~0` and `~1`                                        |
+| `The document must have one proof, as an object`                | `deriveProof` got a document without a proof, or with a proof set                                                                                             | Pass the document that holds one base proof                                                    |
+| `The proof must be a base proof of ecdsa-sd-2023`               | `deriveProof` got a derived proof or a proof of another suite                                                                                                 | Derive from the base proof the issuer gave; a disclosure cannot be derived again               |
+| `The proofValue of a base proof ...`                            | The value does not parse: not base64url, not CBOR, wrong items or lengths                                                                                     | Ask the issuer for the proof again                                                             |
+| `Nothing is selected to reveal`                                 | No mandatory pointers and no `selectivePointers`                                                                                                              | Choose at least one pointer                                                                    |
+| `The base proof has ... signatures`                             | The proof does not belong to the document: the statements do not match                                                                                        | Derive from the document as the issuer signed it                                               |
 | `The document cannot be processed as JSON-LD with its contexts` | A term no context defines, a context that does not parse, more than 1,000 deep iterations, which is a `LimitError`; the `cause` is the error of the processor | Define the term in a context, or correct the document; the sentence after the colon says which |
-| `The context loader must return the context of ...`             | The loader answered with something other than a JSON object               | Return the parsed context document                                                             |
-| `The option publicKeyJwk holds a private key (d)`               | `verify` got a private JWK                                                | Pass the public key                                                                            |
+| `The context loader must return the context of ...`             | The loader answered with something other than a JSON object                                                                                                   | Return the parsed context document                                                             |
+| `The option publicKeyJwk holds a private key (d)`               | `verify` got a private JWK                                                                                                                                    | Pass the public key                                                                            |
 
 ## Failure paths
 
@@ -206,27 +212,27 @@ anywhere, so there is nothing to undo.
 
 ## Not included
 
-| Not included                                                | Why                                                                                                            |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| SD-JWT, BBS and other suites                                | They are other standards with other trust and privacy properties; this package implements `ecdsa-sd-2023`      |
-| `ecdsa-sd-2023` on P-384                                    | The Recommendation defines the suite on P-256 only                                                             |
-| Resolving a verification method, binding a key to an issuer | The caller reads the credential and knows where keys live; `verify` takes the key it resolved                  |
-| Fetching, pinning and caching JSON-LD contexts              | A loader is a port. It enforces pins and size limits, and decides whether a context may be fetched             |
-| Proof sets and chains                                       | A document has one proof; `deriveProof` refuses a set, and `verify` takes one proof                            |
+| Not included                                                         | Why                                                                                                                                                                                                                                         |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SD-JWT, BBS and other suites                                         | They are other standards with other trust and privacy properties; this package implements `ecdsa-sd-2023`                                                                                                                                   |
+| `ecdsa-sd-2023` on P-384                                             | The Recommendation defines the suite on P-256 only                                                                                                                                                                                          |
+| Resolving a verification method, binding a key to an issuer          | The caller reads the credential and knows where keys live; `verify` takes the key it resolved                                                                                                                                               |
+| Fetching, pinning and caching JSON-LD contexts                       | A loader is a port. It enforces pins and size limits, and decides whether a context may be fetched                                                                                                                                          |
+| Proof sets and chains                                                | A document has one proof; `deriveProof` refuses a set, and `verify` takes one proof                                                                                                                                                         |
 | `challenge`, `domain`, `expires` and `previousProof` in a base proof | A credential says how long it holds in `validFrom` and `validUntil`, which the proof signs; `challenge` and `domain` bind a presentation and `previousProof` a chain, and a base proof is neither. `verify` hashes any property a proof has |
-| `proofPurpose` other than `assertionMethod`                 | A credential is an assertion by its issuer                                                                     |
-| The data model of a credential                              | The package signs JSON-LD. Checking that a document is a valid credential is for the code that reads it        |
-| Unlinkable disclosure                                       | The suite does not give it; see above                                                                          |
+| `proofPurpose` other than `assertionMethod`                          | A credential is an assertion by its issuer                                                                                                                                                                                                  |
+| The data model of a credential                                       | The package signs JSON-LD. Checking that a document is a valid credential is for the code that reads it                                                                                                                                     |
+| Unlinkable disclosure                                                | The suite does not give it; see above                                                                                                                                                                                                       |
 
 ## Differences from the references
 
-| Reference                                        | Difference                                                                                                                                                                                                |
-| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The Recommendation                               | Places where it contradicts itself or is silent are in [spec-gaps](spec-gaps.md), each with the choice made and a test                                                                                    |
-| Digital Bazaar `ecdsa-sd-2023-cryptosuite` 3.4.1 | Every combination of this package and that suite signing, deriving and verifying gives a valid proof (a test). This package is stricter where a proof is malleable or a pointer is loose                  |
-| Digital Bazaar                                   | `verify` takes a JWK, not a verification method, and the three roles are plain functions over plain data, not suites of `jsonld-signatures`                                                               |
+| Reference                                        | Difference                                                                                                                                                                                                                                                             |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The Recommendation                               | Places where it contradicts itself or is silent are in [spec-gaps](spec-gaps.md), each with the choice made and a test                                                                                                                                                 |
+| Digital Bazaar `ecdsa-sd-2023-cryptosuite` 3.4.1 | Every combination of this package and that suite signing, deriving and verifying gives a valid proof (a test). This package is stricter where a proof is malleable or a pointer is loose                                                                               |
+| Digital Bazaar                                   | `verify` takes a JWK, not a verification method, and the three roles are plain functions over plain data, not suites of `jsonld-signatures`                                                                                                                            |
 | Digital Bazaar                                   | Mandatory positions must ascend and name a statement; signatures, keys and labels are checked for their lengths; pointers are checked; `maxBytes`, `maxTokens` and a fixed count of deep iterations bound a call, where Digital Bazaar's suite has no limit of its own |
-| Digital Bazaar and the primitives                | Statements are sorted by UTF-16 code unit, as `Array.prototype.sort` does, and not by code point: they differ only for a statement that compares a character outside the BMP with one in U+E000 to U+FFFF |
+| Digital Bazaar and the primitives                | Statements are sorted by UTF-16 code unit, as `Array.prototype.sort` does, and not by code point: they differ only for a statement that compares a character outside the BMP with one in U+E000 to U+FFFF                                                              |
 
 ## Runtimes and dependencies
 

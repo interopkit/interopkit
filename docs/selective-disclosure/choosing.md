@@ -14,17 +14,17 @@ flowchart TD
   stack -->|"no: plain functions,<br/>a key and a loader you pass"| pkg["@interopkit/selective-disclosure"]
 ```
 
-| You need | Use |
-| --- | --- |
-| A base proof, a derived proof and their verification as plain functions over plain data, on any runtime with Web Crypto | This package |
-| Open Badges 3.0 or CLR 2.0 credentials with selective disclosure | [`@interopkit/achievement-credentials`](../achievement-credentials/choosing.md), which builds on this package |
-| The suite as a cryptosuite of `jsonld-signatures`, beside the other suites of `@digitalbazaar/vc` | Digital Bazaar's `@digitalbazaar/ecdsa-sd-2023-cryptosuite` 3.4.1 |
-| SD-JWT or BBS | Another library: the package implements `ecdsa-sd-2023` alone |
+| You need                                                                                                                | Use                                                                                                           |
+| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| A base proof, a derived proof and their verification as plain functions over plain data, on any runtime with Web Crypto | This package                                                                                                  |
+| Open Badges 3.0 or CLR 2.0 credentials with selective disclosure                                                        | [`@interopkit/achievement-credentials`](../achievement-credentials/choosing.md), which builds on this package |
+| The suite as a cryptosuite of `jsonld-signatures`, beside the other suites of `@digitalbazaar/vc`                       | Digital Bazaar's `@digitalbazaar/ecdsa-sd-2023-cryptosuite` 3.4.1                                             |
+| SD-JWT or BBS                                                                                                           | Another library: the package implements `ecdsa-sd-2023` alone                                                 |
 
 ## What the others have that the package lacks
 
-| Library | What it has | Here |
-| --- | --- | --- |
+| Library                      | What it has                                                                                                                           | Here                                                                                                                    |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | Digital Bazaar's suite 3.4.1 | A suite object that `jsonld-signatures` and `@digitalbazaar/vc` take, with a verification method resolved through the document loader | Excluded: `verify` takes a JWK, and the resolution and binding of keys are the caller's (or `achievement-credentials`') |
 
 ## Where the evidence is

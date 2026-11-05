@@ -22,7 +22,8 @@ flowchart LR
 ```ts
 import { requestClientCredentialsToken } from "@interopkit/core/oauth";
 
-const fetch = async () => Response.json({ access_token: "at-1", token_type: "Bearer", expires_in: 3600, scope: "read" });
+const fetch = async () =>
+  Response.json({ access_token: "at-1", token_type: "Bearer", expires_in: 3600, scope: "read" });
 const token = await requestClientCredentialsToken(
   { tokenEndpoint: "https://as.example/token" },
   { clientId: "client-1", authentication: { method: "client_secret_basic", clientSecret: "secret" } },
@@ -40,11 +41,20 @@ The grant that LTI tools use, with a JWT assertion that a `Signer` signs (the `S
 import { createCryptoKeySigner } from "@interopkit/core";
 import { requestClientCredentialsToken } from "@interopkit/core/oauth";
 
-const rsa = { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" };
+const rsa = {
+  name: "RSASSA-PKCS1-v1_5",
+  modulusLength: 2048,
+  publicExponent: new Uint8Array([1, 0, 1]),
+  hash: "SHA-256",
+};
 const pair = await crypto.subtle.generateKey(rsa, false, ["sign", "verify"]);
 const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "RS256", keyId: "tool-key-1" });
 const client = { clientId: "tool-1", authentication: { method: "private_key_jwt", signer } };
-const fetch = async (_url, init) => Response.json({ access_token: init.body.includes("&client_assertion=") ? "signed" : "unsigned", token_type: "Bearer" });
+const fetch = async (_url, init) =>
+  Response.json({
+    access_token: init.body.includes("&client_assertion=") ? "signed" : "unsigned",
+    token_type: "Bearer",
+  });
 const options = { fetch, timeoutMs: 10_000, clock: { now: () => 1_700_000_000_000 } };
 const token = await requestClientCredentialsToken({ tokenEndpoint: "https://lms.example/token" }, client, [], options);
 token.accessToken; // => "signed"
@@ -57,39 +67,42 @@ import { startAuthorization } from "@interopkit/core/oauth";
 
 const server = { tokenEndpoint: "https://as.example/token", authorizationEndpoint: "https://as.example/authorize" };
 const client = { clientId: "client-1", authentication: { method: "none" } };
-const pending = await startAuthorization(server, client, { redirectUri: "https://app.example/callback", scopes: ["read"] });
+const pending = await startAuthorization(server, client, {
+  redirectUri: "https://app.example/callback",
+  scopes: ["read"],
+});
 new URL(pending.url).searchParams.get("code_challenge_method"); // => "S256"
 ```
 
 ## API
 
-| Function                                                      | Does                                                                                                                  |
-| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `requestClientCredentialsToken(server, client, scopes, options)`     | Gets a token for the client itself (RFC 6749 section 4.4); with `private_key_jwt` it is the LTI token request         |
-| `startAuthorization(server, client, request)`               | Builds the address of the authorization endpoint with PKCE S256 and a random `state` (RFC 6749 section 4.1, RFC 7636) |
-| `exchangeCode(server, client, callbackUrl, pending, options)` | Checks the callback and exchanges its code for a token                                                                |
-| `refreshAccessToken(server, client, refreshToken, options)`   | Gets a new token with a refresh token (RFC 6749 section 6)                                                            |
-| `revokeToken(server, client, token, options)`                 | Revokes an access token or a refresh token (RFC 7009)                                                                 |
-| `registerClient(server, metadata, options)`                   | Registers a client (RFC 7591) and returns it as a client that the other calls take                                    |
-| `createTokenCache(obtain, options)`                           | Makes a function that gives a current token and obtains a new one only when needed                                    |
+| Function                                                         | Does                                                                                                                  |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `requestClientCredentialsToken(server, client, scopes, options)` | Gets a token for the client itself (RFC 6749 section 4.4); with `private_key_jwt` it is the LTI token request         |
+| `startAuthorization(server, client, request)`                    | Builds the address of the authorization endpoint with PKCE S256 and a random `state` (RFC 6749 section 4.1, RFC 7636) |
+| `exchangeCode(server, client, callbackUrl, pending, options)`    | Checks the callback and exchanges its code for a token                                                                |
+| `refreshAccessToken(server, client, refreshToken, options)`      | Gets a new token with a refresh token (RFC 6749 section 6)                                                            |
+| `revokeToken(server, client, token, options)`                    | Revokes an access token or a refresh token (RFC 7009)                                                                 |
+| `registerClient(server, metadata, options)`                      | Registers a client (RFC 7591) and returns it as a client that the other calls take                                    |
+| `createTokenCache(obtain, options)`                              | Makes a function that gives a current token and obtains a new one only when needed                                    |
 
-| Type                   | Fields                                                                                                                                                     |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AuthorizationServer`  | `tokenEndpoint`; optional `authorizationEndpoint`, `registrationEndpoint`, `revocationEndpoint`, `audience`, `issuer`                                      |
-| `OAuthClient`          | `clientId`, `authentication`                                                                                                                               |
-| `ClientAuthentication` | `client_secret_basic` or `client_secret_post` with `clientSecret`; `private_key_jwt` with `signer`, `assertionLifetimeSeconds` and `claims`; `none`        |
-| `OAuthCallOptions`     | `fetch`, `timeoutMs` and `signal` of [service calls](service.md), and `clock`                                                                              |
-| `AccessToken`          | `accessToken`; `expiresAt`, in epoch milliseconds, when the server gave an `expires_in`; `refreshToken` when it sent one; `scopes`                         |
-| `PendingAuthorization` | `url`, `state`, `codeVerifier`, `redirectUri`: what the host keeps in the user's session between the redirect and the callback                             |
+| Type                   | Fields                                                                                                                                                                   |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `AuthorizationServer`  | `tokenEndpoint`; optional `authorizationEndpoint`, `registrationEndpoint`, `revocationEndpoint`, `audience`, `issuer`                                                    |
+| `OAuthClient`          | `clientId`, `authentication`                                                                                                                                             |
+| `ClientAuthentication` | `client_secret_basic` or `client_secret_post` with `clientSecret`; `private_key_jwt` with `signer`, `assertionLifetimeSeconds` and `claims`; `none`                      |
+| `OAuthCallOptions`     | `fetch`, `timeoutMs` and `signal` of [service calls](service.md), and `clock`                                                                                            |
+| `AccessToken`          | `accessToken`; `expiresAt`, in epoch milliseconds, when the server gave an `expires_in`; `refreshToken` when it sent one; `scopes`                                       |
+| `PendingAuthorization` | `url`, `state`, `codeVerifier`, `redirectUri`: what the host keeps in the user's session between the redirect and the callback                                           |
 | `ClientMetadata`       | `redirectUris`, `clientName`, `clientUri`, `scopes`; optional `grantTypes`, `logoUri`, `tosUri`, `policyUri`, `softwareId`, `softwareVersion`, `tokenEndpointAuthMethod` |
-| `RegisteredClient`     | An `OAuthClient`, with `registrationAccessToken` and `clientSecretExpiresAt` when the server gave them                                                     |
+| `RegisteredClient`     | An `OAuthClient`, with `registrationAccessToken` and `clientSecretExpiresAt` when the server gave them                                                                   |
 
 ## The server
 
 | Field                   | Meaning                                                                                                                                 | Default                                      |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
 | `tokenEndpoint`         | The token endpoint, an `https` URL                                                                                                      | Required                                     |
-| `authorizationEndpoint` | The authorization endpoint; `startAuthorization` needs it                                                                             | none                                         |
+| `authorizationEndpoint` | The authorization endpoint; `startAuthorization` needs it                                                                               | none                                         |
 | `registrationEndpoint`  | The registration endpoint; `registerClient` needs it                                                                                    | none                                         |
 | `revocationEndpoint`    | The revocation endpoint; `revokeToken` needs it                                                                                         | none                                         |
 | `audience`              | The `aud` of a JWT client assertion                                                                                                     | `tokenEndpoint`                              |
@@ -109,14 +122,14 @@ the documentation of the API or from the server's metadata; discovery is not inc
 
 Each request with `private_key_jwt` gets an assertion of its own:
 
-| Part         | Value                                                                                |
-| ------------ | ------------------------------------------------------------------------------------ |
-| Header       | `alg` of the signer, `kid` when the signer has a `keyId`, `typ` `JWT`                |
-| `iss`, `sub` | The `clientId`                                                                       |
-| `aud`        | `server.audience`, else `server.tokenEndpoint`                                       |
-| `iat`        | The clock's time in whole seconds                                                    |
-| `exp`        | `iat` plus `assertionLifetimeSeconds`, which is 300 unless the client says otherwise |
-| `jti`        | A new random UUID, so that no assertion can be replayed                              |
+| Part         | Value                                                                                             |
+| ------------ | ------------------------------------------------------------------------------------------------- |
+| Header       | `alg` of the signer, `kid` when the signer has a `keyId`, `typ` `JWT`                             |
+| `iss`, `sub` | The `clientId`                                                                                    |
+| `aud`        | `server.audience`, else `server.tokenEndpoint`                                                    |
+| `iat`        | The clock's time in whole seconds                                                                 |
+| `exp`        | `iat` plus `assertionLifetimeSeconds`, which is 300 unless the client says otherwise              |
+| `jti`        | A new random UUID, so that no assertion can be replayed                                           |
 | Others       | The `claims` of the client, none by default, such as the deployment of LTI 1.3 Core section 6.2.1 |
 
 The assertion carries no claim beyond these. `claims` must be JSON and must not name `iss`, `sub`, `aud`, `exp`, `nbf`, `iat`
@@ -139,12 +152,12 @@ sequenceDiagram
   A-->>H: access token and refresh token
 ```
 
-| Step                   | Rule                                                                                                                                                                                                                                                                       |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `startAuthorization` | The `state` and the code verifier are random (`crypto.getRandomValues`) and new for each request; the challenge is S256; the query of the endpoint is kept; no scope parameter when `scopes` is empty                                                                      |
-| The callback           | `state` must equal the request's. The `iss` must equal `server.issuer` when the server names one. An `error` in the callback is the server's refusal. A callback with no `code`, or with an `id_token` or `token` (implicit and hybrid flows), does not answer the request |
-| `exchangeCode`         | Sends the code, the redirect URI of the request and the verifier. `scopes` are those the server names, else those of the request                                                                                                                                           |
-| Where `pending` lives  | It holds the verifier, a secret until the token request: keep it in a server-side session, not in a cookie that a script can read                                                                                                                                          |
+| Step                  | Rule                                                                                                                                                                                                                                                                       |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `startAuthorization`  | The `state` and the code verifier are random (`crypto.getRandomValues`) and new for each request; the challenge is S256; the query of the endpoint is kept; no scope parameter when `scopes` is empty                                                                      |
+| The callback          | `state` must equal the request's. The `iss` must equal `server.issuer` when the server names one. An `error` in the callback is the server's refusal. A callback with no `code`, or with an `id_token` or `token` (implicit and hybrid flows), does not answer the request |
+| `exchangeCode`        | Sends the code, the redirect URI of the request and the verifier. `scopes` are those the server names, else those of the request                                                                                                                                           |
+| Where `pending` lives | It holds the verifier, a secret until the token request: keep it in a server-side session, not in a cookie that a script can read                                                                                                                                          |
 
 ## Tokens
 

@@ -24,13 +24,13 @@ flowchart LR
   lrs -->|"satisfied, abandoned"| store
 ```
 
-| File              | Holds                                                                                                                       |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `src/lms.ts`      | `createLms`: the store, the LMS's own client of xAPI in the same process, the LRS of cmi5, the fetch URL and the administrator who reads everything |
-| `src/stores.ts`   | `createMemoryCmi5Store`: the `Cmi5Store` in memory, whose puts compare the revision                                         |
-| `src/au.ts`       | `openUnit` and `playLesson`: what the page of a unit does with the runtime                                                 |
-| `src/course.ts`   | The `cmi5.xml` of the geology course                                                                                        |
-| `scenario.ts`     | `runScenario`: the package, the registrations, a lesson, a reload, a review, a relaunch and a waiver                        |
+| File            | Holds                                                                                                                                               |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lms.ts`    | `createLms`: the store, the LMS's own client of xAPI in the same process, the LRS of cmi5, the fetch URL and the administrator who reads everything |
+| `src/stores.ts` | `createMemoryCmi5Store`: the `Cmi5Store` in memory, whose puts compare the revision                                                                 |
+| `src/au.ts`     | `openUnit` and `playLesson`: what the page of a unit does with the runtime                                                                          |
+| `src/course.ts` | The `cmi5.xml` of the geology course                                                                                                                |
+| `scenario.ts`   | `runScenario`: the package, the registrations, a lesson, a reload, a review, a relaunch and a waiver                                                |
 
 ```bash
 pnpm --filter @interopkit/example-course-launch start

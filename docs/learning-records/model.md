@@ -43,32 +43,34 @@ statement.actor.account?.name; // => "learner-1"
 
 validateStatement(statement, { role: "provider" }); // => []
 validateStatements([statement, statement]).map((finding) => `${finding.rule} at ${finding.path}`); // => ["duplicate-id at [1].id"]
-validateStatement({ ...statement, result: { score: { scaled: 2 } } }).map((finding) => `${finding.rule} at ${finding.path}`); // => ["out-of-range at result.score.scaled"]
+validateStatement({ ...statement, result: { score: { scaled: 2 } } }).map(
+  (finding) => `${finding.rule} at ${finding.path}`,
+); // => ["out-of-range at result.score.scaled"]
 ```
 
 ## Reading
 
-| Function                              | Does                                                                                                                                                 | Throws                                           |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| `parseStatementJson(text, options?)`   | Parses the text as JSON and refuses an object that has a property twice. Returns the value, which `readStatement` or `validateStatements` then reads | `DataError` for the text, the limits or a repeat |
-| `readStatement(value, options?)`      | Reads a value into a `Statement`: a copy that shares nothing with the input. A single Activity in `contextActivities` is returned as a list of one   | `DataError` when the value has an error          |
-| `validateStatement(value, options?)`  | Lists the findings of a value, errors and warnings, in the order of the properties, at most `maxFindings` of them                                    | `DataError` for the options only                 |
-| `validateStatements(value, options?)` | Judges each Statement of an array, and the batch: two Statements with one id are an error. The path of a finding starts with the index: `[1].actor`. `maxFindings` holds for the whole batch | `DataError` for the options only                 |
-| `findStatementTime(statement)`        | The `timestamp` of a Statement of either version as epoch milliseconds: a date and time of RFC 3339 (2.0), in the forms that the LRS takes (a space or `t` between the date and the time, the seconds left out), or of ISO 8601 with a zone, extended or basic (1.0.3). `undefined` for none, or for a value that is neither | `DataError` for a Statement that is no object                                          |
+| Function                              | Does                                                                                                                                                                                                                                                                                                                         | Throws                                           |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `parseStatementJson(text, options?)`  | Parses the text as JSON and refuses an object that has a property twice. Returns the value, which `readStatement` or `validateStatements` then reads                                                                                                                                                                         | `DataError` for the text, the limits or a repeat |
+| `readStatement(value, options?)`      | Reads a value into a `Statement`: a copy that shares nothing with the input. A single Activity in `contextActivities` is returned as a list of one                                                                                                                                                                           | `DataError` when the value has an error          |
+| `validateStatement(value, options?)`  | Lists the findings of a value, errors and warnings, in the order of the properties, at most `maxFindings` of them                                                                                                                                                                                                            | `DataError` for the options only                 |
+| `validateStatements(value, options?)` | Judges each Statement of an array, and the batch: two Statements with one id are an error. The path of a finding starts with the index: `[1].actor`. `maxFindings` holds for the whole batch                                                                                                                                 | `DataError` for the options only                 |
+| `findStatementTime(statement)`        | The `timestamp` of a Statement of either version as epoch milliseconds: a date and time of RFC 3339 (2.0), in the forms that the LRS takes (a space or `t` between the date and the time, the seconds left out), or of ISO 8601 with a zone, extended or basic (1.0.3). `undefined` for none, or for a value that is neither | `DataError` for a Statement that is no object    |
 
 A value that is not a Statement gives findings and does not throw. While the shape is wrong, the findings are about the shape
 alone; the rules between properties are judged once it is right. A warning never keeps `readStatement` from returning.
 
 ## Options
 
-| Option                                                                  | Default    | Meaning                                                                                                                           |
-| ----------------------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `role` of `readStatement`, `validateStatement` and `validateStatements` | `"lrs"`    | `"lrs"` applies what the standard says an LRS shall reject. `"provider"` adds what a Learning Record Provider shall and should do |
-| `version` of `readStatement`, `validateStatement` and `validateStatements` | `"2.0.0"` | `"2.0.0"` applies the rules of IEEE 9274.1.1; `"1.0.3"` those of xAPI 1.0.3, which [the versions guide](versions.md) compares |
-| `maxFindings` of `readStatement`, `validateStatement` and `validateStatements` | 1,000 | The most findings listed. The check stops at the first one beyond it and ends the list with a finding of the rule `findings-stopped`; `readStatement` counts errors alone |
-| `maxBytes` of `parseStatementJson`                                       | 10,485,760 | The most bytes of the text, counted as UTF-8                                                                                      |
-| `maxDepth` of `parseStatementJson`                                       | 64         | The deepest nesting of arrays and objects; `[]` has depth 1                                                                       |
-| `maxTokens` of `parseStatementJson`                                      | 1,000,000  | The most tokens of the text: each bracket, brace, colon and comma, each string, each number, and each `true`, `false` and `null` |
+| Option                                                                         | Default    | Meaning                                                                                                                                                                   |
+| ------------------------------------------------------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `role` of `readStatement`, `validateStatement` and `validateStatements`        | `"lrs"`    | `"lrs"` applies what the standard says an LRS shall reject. `"provider"` adds what a Learning Record Provider shall and should do                                         |
+| `version` of `readStatement`, `validateStatement` and `validateStatements`     | `"2.0.0"`  | `"2.0.0"` applies the rules of IEEE 9274.1.1; `"1.0.3"` those of xAPI 1.0.3, which [the versions guide](versions.md) compares                                             |
+| `maxFindings` of `readStatement`, `validateStatement` and `validateStatements` | 1,000      | The most findings listed. The check stops at the first one beyond it and ends the list with a finding of the rule `findings-stopped`; `readStatement` counts errors alone |
+| `maxBytes` of `parseStatementJson`                                             | 10,485,760 | The most bytes of the text, counted as UTF-8                                                                                                                              |
+| `maxDepth` of `parseStatementJson`                                             | 64         | The deepest nesting of arrays and objects; `[]` has depth 1                                                                                                               |
+| `maxTokens` of `parseStatementJson`                                            | 1,000,000  | The most tokens of the text: each bracket, brace, colon and comma, each string, each number, and each `true`, `false` and `null`                                          |
 
 ## The two roles
 
@@ -87,30 +89,30 @@ A finding is `{ path, rule, message, severity }`. The `path` is where the fault 
 `context.contextAgents[0].agent`. The `message` reads after the path and does not hold it. An `error` is what the role refuses;
 a `warning` is a departure from a recommendation, or from what an LRS may reject.
 
-| `rule`                       | Role       | Severity                                | When                                                                                                                                             |
-| ---------------------------- | ---------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `missing-property`           | both       | error                                   | A required property is absent, an anonymous Group has no `member`, or an interaction has no `interactionType`                                    |
-| `unknown-property`           | both       | error                                   | A property that the tables do not have, anywhere but in an extensions map; a key of another case                                                 |
-| `wrong-type`                 | both       | error                                   | A value of another JSON type, a `null` outside extensions, a number where a string is, a string where a number or a boolean is                   |
-| `invalid-format`             | both       | error                                   | An IRI without a scheme, a UUID, time, duration, language tag, `mbox`, hash or media type of the wrong form, an extension key that is not an IRI |
+| `rule`                       | Role       | Severity                                | When                                                                                                                                                                                                                                                                    |
+| ---------------------------- | ---------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `missing-property`           | both       | error                                   | A required property is absent, an anonymous Group has no `member`, or an interaction has no `interactionType`                                                                                                                                                           |
+| `unknown-property`           | both       | error                                   | A property that the tables do not have, anywhere but in an extensions map; a key of another case                                                                                                                                                                        |
+| `wrong-type`                 | both       | error                                   | A value of another JSON type, a `null` outside extensions, a number where a string is, a string where a number or a boolean is                                                                                                                                          |
+| `invalid-format`             | both       | error                                   | An IRI without a scheme, a UUID, time, duration, language tag, `mbox`, hash or media type of the wrong form, an extension key that is not an IRI                                                                                                                        |
 | `invalid-value`              | both       | error                                   | A value outside a vocabulary: `objectType`, `interactionType`; a `version` other than `2.0.0` for a provider; a property or a key named `__proto__`, `constructor` or `prototype` where names are names, and not inside the value of an extension, whose names are data |
-| `too-few-entries`            | both       | error                                   | `relevantTypes` is an empty list                                                                                                                 |
-| `identifier-count`           | both       | error                                   | An Agent or a Group has none, or more than one, of `mbox`, `mbox_sha1sum`, `openid` and `account`                                                |
-| `voiding-target`             | both       | error                                   | The voided verb has an Object that is not a Statement Reference                                                                                  |
-| `out-of-range`               | both       | error                                   | `scaled` outside -1 to 1, `raw` outside `min` to `max`, `min` not less than `max`                                                                |
-| `duplicate-id`               | both       | error                                   | Two Statements of a batch have one id, whatever the case of its digits                                                                           |
-| `response-pattern`           | both       | warning                                 | A `correctResponsesPattern` that does not have the form of its interaction type, or a parameter that is wrong                                    |
-| `unsupported-component-list` | both       | warning for `lrs`, error for `provider` | A list of components that the interaction type does not have, such as `choices` on a `likert`                                                    |
-| `component-id-whitespace`    | both       | warning                                 | The id of an interaction component has white space                                                                                               |
-| `duplicate-component-id`     | both       | warning                                 | Two components of a list have one id                                                                                                             |
-| `uuid-variant`               | both       | warning                                 | A UUID that is not of variant 2 of RFC 4122                                                                                                      |
-| `timestamp-not-utc`          | `provider` | error                                   | `timestamp` or `stored` has a time zone other than UTC (2.0)                                                                                     |
-| `timestamp-precision`        | `provider` | warning                                 | A time with less than millisecond precision                                                                                                      |
-| `duration-precision`         | `provider` | warning                                 | A duration with seconds finer than 0.01                                                                                                          |
-| `lrs-managed-property`       | `provider` | warning                                 | `stored`, `authority`, or a `version` of `2.0.0`, which the LRS sets                                                                             |
-| `timestamp-not-rfc3339`      | `provider` | error                                   | `timestamp` or `stored` is ISO 8601 and not RFC 3339 (1.0.3)                                                |
-| `empty-object`               | `provider` | warning                                 | A property whose value is `{}`, other than the values inside extensions; for both roles on 1.0.3                                                 |
-| `single-activity`            | `provider` | warning                                 | A value of `contextActivities` that is one Activity and not a list                                                                               |
+| `too-few-entries`            | both       | error                                   | `relevantTypes` is an empty list                                                                                                                                                                                                                                        |
+| `identifier-count`           | both       | error                                   | An Agent or a Group has none, or more than one, of `mbox`, `mbox_sha1sum`, `openid` and `account`                                                                                                                                                                       |
+| `voiding-target`             | both       | error                                   | The voided verb has an Object that is not a Statement Reference                                                                                                                                                                                                         |
+| `out-of-range`               | both       | error                                   | `scaled` outside -1 to 1, `raw` outside `min` to `max`, `min` not less than `max`                                                                                                                                                                                       |
+| `duplicate-id`               | both       | error                                   | Two Statements of a batch have one id, whatever the case of its digits                                                                                                                                                                                                  |
+| `response-pattern`           | both       | warning                                 | A `correctResponsesPattern` that does not have the form of its interaction type, or a parameter that is wrong                                                                                                                                                           |
+| `unsupported-component-list` | both       | warning for `lrs`, error for `provider` | A list of components that the interaction type does not have, such as `choices` on a `likert`                                                                                                                                                                           |
+| `component-id-whitespace`    | both       | warning                                 | The id of an interaction component has white space                                                                                                                                                                                                                      |
+| `duplicate-component-id`     | both       | warning                                 | Two components of a list have one id                                                                                                                                                                                                                                    |
+| `uuid-variant`               | both       | warning                                 | A UUID that is not of variant 2 of RFC 4122                                                                                                                                                                                                                             |
+| `timestamp-not-utc`          | `provider` | error                                   | `timestamp` or `stored` has a time zone other than UTC (2.0)                                                                                                                                                                                                            |
+| `timestamp-precision`        | `provider` | warning                                 | A time with less than millisecond precision                                                                                                                                                                                                                             |
+| `duration-precision`         | `provider` | warning                                 | A duration with seconds finer than 0.01                                                                                                                                                                                                                                 |
+| `lrs-managed-property`       | `provider` | warning                                 | `stored`, `authority`, or a `version` of `2.0.0`, which the LRS sets                                                                                                                                                                                                    |
+| `timestamp-not-rfc3339`      | `provider` | error                                   | `timestamp` or `stored` is ISO 8601 and not RFC 3339 (1.0.3)                                                                                                                                                                                                            |
+| `empty-object`               | `provider` | warning                                 | A property whose value is `{}`, other than the values inside extensions; for both roles on 1.0.3                                                                                                                                                                        |
+| `single-activity`            | `provider` | warning                                 | A value of `contextActivities` that is one Activity and not a list                                                                                                                                                                                                      |
 
 The warning `missing-property` for a provider names `id`: a provider should send one, so that a resend repeats it.
 
@@ -131,10 +133,10 @@ The warning `missing-property` for a provider names `id`: a provider should send
 
 ## Vocabularies
 
-| Export | Terms | Where it matters |
-| --- | --- | --- |
-| `XAPI_VERSIONS` | `"2.0.0"`, `"1.0.3"`: the versions of xAPI that the package speaks, the latest first, as the `X-Experience-API-Version` header writes them | The `version` option of `buildStatement` and of the client |
-| `STATEMENT_FORMATS` | `ids`, `exact`, `canonical`: the formats of the Statements that an LRS returns (4.1.6.1) | The `format` of a query of the client and the `format` of `formatStatement` |
+| Export              | Terms                                                                                                                                      | Where it matters                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| `XAPI_VERSIONS`     | `"2.0.0"`, `"1.0.3"`: the versions of xAPI that the package speaks, the latest first, as the `X-Experience-API-Version` header writes them | The `version` option of `buildStatement` and of the client                  |
+| `STATEMENT_FORMATS` | `ids`, `exact`, `canonical`: the formats of the Statements that an LRS returns (4.1.6.1)                                                   | The `format` of a query of the client and the `format` of `formatStatement` |
 
 ## Interaction patterns
 
@@ -159,13 +161,13 @@ a response. An LRS does not validate patterns, so a problem is a warning.
 
 ## Limits
 
-| Limit                                       | Value      | Applies to                                                                                        |
-| ------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------- |
-| `maxBytes` of `parseStatementJson`           | 10,485,760 | The text of a request, counted as UTF-8                                                           |
-| `maxDepth` of `parseStatementJson`           | 64         | Arrays and objects nested in each other, checked before the text is parsed                        |
-| `maxTokens` of `parseStatementJson`          | 1,000,000  | The memory of the parse, which grows with the tokens; checked before the text is parsed           |
+| Limit                                       | Value      | Applies to                                                                                                   |
+| ------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
+| `maxBytes` of `parseStatementJson`          | 10,485,760 | The text of a request, counted as UTF-8                                                                      |
+| `maxDepth` of `parseStatementJson`          | 64         | Arrays and objects nested in each other, checked before the text is parsed                                   |
+| `maxTokens` of `parseStatementJson`         | 1,000,000  | The memory of the parse, which grows with the tokens; checked before the text is parsed                      |
 | `maxFindings`                               | 1,000      | The findings of a call, which cost about a kilobyte each; the check stops looking at the first one beyond it |
-| Levels that the value of an extension nests | 64         | `extensions` of an Activity Definition, a Result and a Context; a deeper value is `invalid-value` |
+| Levels that the value of an extension nests | 64         | `extensions` of an Activity Definition, a Result and a Context; a deeper value is `invalid-value`            |
 
 `readStatement` and `validateStatement` take a value that is in memory already, so the host's limit on the request applies
 first. A batch has no limit here: the LRS sets the number of Statements.
@@ -173,13 +175,13 @@ first. A batch has no limit here: the LRS sets the number of Statements.
 `maxTokens` bounds the memory of `parseStatementJson`, because a parse grows with the tokens and not with the bytes: the worst
 text, `[0,0,0,...]`, has one token for each byte. Peak memory of the process, measured on Node.js 26, whose empty process is 60 MB:
 
-| Input | Result | Peak memory |
-| --- | --- | --- |
-| 10 MiB of `[0,0,0,...]`, 5,242,880 tokens | Refused before the parse | 80 MB |
-| 1,000,000 tokens of `{"k0":0,"k1":0,...}`, the most names | Read | 134 MB |
-| 1,000,000 tokens of `[{},{},...]` | Read | 125 MB |
-| A string of 10 MiB | Read | 101 MB |
-| 300,000 empty objects through `validateStatements` | 1,001 findings | 131 MB |
+| Input                                                     | Result                   | Peak memory |
+| --------------------------------------------------------- | ------------------------ | ----------- |
+| 10 MiB of `[0,0,0,...]`, 5,242,880 tokens                 | Refused before the parse | 80 MB       |
+| 1,000,000 tokens of `{"k0":0,"k1":0,...}`, the most names | Read                     | 134 MB      |
+| 1,000,000 tokens of `[{},{},...]`                         | Read                     | 125 MB      |
+| A string of 10 MiB                                        | Read                     | 101 MB      |
+| 300,000 empty objects through `validateStatements`        | 1,001 findings           | 131 MB      |
 
 The findings add no more than `maxFindings` of about a kilobyte, whatever the size of the value, and the check stops at the first
 finding beyond it, in the rules between properties as in the schema. A text that a limit refuses throws `LimitError` of
@@ -188,16 +190,16 @@ an LRS answers 413.
 
 ## Errors
 
-| Error                                                                                                   | When                                                       | What to do                                                                              |
-| ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `The statement is invalid at <path>: <sentence>. 2 more errors: validateStatement lists every finding.` | `readStatement` found an error                             | Call `validateStatement` for the whole list, and answer the sender with the paths       |
-| `The statement is invalid at <path>: <sentence>. At least 2 more errors: the check stopped at its limit, ...` | `readStatement` counted `maxFindings` errors and stopped   | Call `validateStatement` with a higher `maxFindings`, or refuse the Statement as it is   |
-| `The options object is invalid at role: expected "lrs" or "provider", found "x".`                       | The options are not an object with a known `role`          | Pass `{ role: "lrs" }` or `{ role: "provider" }`                                        |
-| `The text is not valid JSON: <the parser's message>.`                                                   | `parseStatementJson` could not parse the text; the `cause` is the `SyntaxError` | Answer the sender that the body is malformed                                            |
-| `The text has the property "id" twice in actor, at line 3 column 5. ...`                                | An object of the text names a property twice               | Refuse the request; an LRS shall reject a Statement that uses a property more than once |
-| `The text has N bytes or more, above the limit of M bytes.`                                             | The text is longer than `maxBytes`                         | Answer with 413 as the standard asks, or raise the limit                                |
-| `The text nests arrays and objects deeper than the limit of N levels.`                                  | The text is deeper than `maxDepth`                         | Answer with 413, or raise the limit                                                     |
-| `The text has more than N tokens, above the limit of the option maxTokens.`                             | The text has more tokens than `maxTokens`                  | Answer with 413, or raise the limit if the host can hold the memory                     |
+| Error                                                                                                         | When                                                                            | What to do                                                                              |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `The statement is invalid at <path>: <sentence>. 2 more errors: validateStatement lists every finding.`       | `readStatement` found an error                                                  | Call `validateStatement` for the whole list, and answer the sender with the paths       |
+| `The statement is invalid at <path>: <sentence>. At least 2 more errors: the check stopped at its limit, ...` | `readStatement` counted `maxFindings` errors and stopped                        | Call `validateStatement` with a higher `maxFindings`, or refuse the Statement as it is  |
+| `The options object is invalid at role: expected "lrs" or "provider", found "x".`                             | The options are not an object with a known `role`                               | Pass `{ role: "lrs" }` or `{ role: "provider" }`                                        |
+| `The text is not valid JSON: <the parser's message>.`                                                         | `parseStatementJson` could not parse the text; the `cause` is the `SyntaxError` | Answer the sender that the body is malformed                                            |
+| `The text has the property "id" twice in actor, at line 3 column 5. ...`                                      | An object of the text names a property twice                                    | Refuse the request; an LRS shall reject a Statement that uses a property more than once |
+| `The text has N bytes or more, above the limit of M bytes.`                                                   | The text is longer than `maxBytes`                                              | Answer with 413 as the standard asks, or raise the limit                                |
+| `The text nests arrays and objects deeper than the limit of N levels.`                                        | The text is deeper than `maxDepth`                                              | Answer with 413, or raise the limit                                                     |
+| `The text has more than N tokens, above the limit of the option maxTokens.`                                   | The text has more tokens than `maxTokens`                                       | Answer with 413, or raise the limit if the host can hold the memory                     |
 
 ## Not included
 
@@ -213,8 +215,8 @@ an LRS answers 413.
 
 ## Differences from the references
 
-| Reference                 | Difference                                                                                                                                                               |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| The standard's text       | "May" and "should" of an LRS are warnings and never errors. "May not reject" is read as "shall not reject" ([gaps](spec-gaps.md))                                        |
-| The standard's examples   | Every Statement and batch the examples print is accepted by the rules of an LRS; a test reads them at a pinned hash. Some break rules of a provider, which the test pins |
+| Reference                 | Difference                                                                                                                                                                                                           |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The standard's text       | "May" and "should" of an LRS are warnings and never errors. "May not reject" is read as "shall not reject" ([gaps](spec-gaps.md))                                                                                    |
+| The standard's examples   | Every Statement and batch the examples print is accepted by the rules of an LRS; a test reads them at a pinned hash. Some break rules of a provider, which the test pins                                             |
 | Other validators of 1.0.x | The validator of Learning Locker reads the fixtures of the rules of 1.0.3 in a test. Where a verdict differs from another implementation, [the gaps page](spec-gaps.md) records it with the sentence of the standard |

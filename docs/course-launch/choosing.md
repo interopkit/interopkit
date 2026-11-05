@@ -12,21 +12,21 @@ flowchart TD
   role -->|"authoring packages"| tools["Authoring frameworks"]
 ```
 
-| You need | Use |
-| --- | --- |
-| Reading, validating and writing course structures and course packages | This package: `readCourseStructure`, `/package` |
+| You need                                                                           | Use                                                                                                     |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Reading, validating and writing course structures and course packages              | This package: `readCourseStructure`, `/package`                                                         |
 | The LMS role: registrations, launches, fetch URLs, the rules of a session, waivers | This package: `/lms`, over the LRS of [`@interopkit/learning-records`](../learning-records/choosing.md) |
-| The runtime of an assignable unit, with resume after a reload | This package: `/au` |
-| A finished player with content hosting, tenants and MySQL | The CATAPULT player v1.0.8, 2026-01-20 |
-| A unit library on axios and `@xapi/xapi` that you already use | `@xapi/cmi5` 1.4.0, 2024-10-06, with no release in the year before the reading |
+| The runtime of an assignable unit, with resume after a reload                      | This package: `/au`                                                                                     |
+| A finished player with content hosting, tenants and MySQL                          | The CATAPULT player v1.0.8, 2026-01-20                                                                  |
+| A unit library on axios and `@xapi/xapi` that you already use                      | `@xapi/cmi5` 1.4.0, 2024-10-06, with no release in the year before the reading                          |
 
 ## What the others have that the package lacks
 
-| Comparator, version | What it has | Here |
-| --- | --- | --- |
-| `@xapi/cmi5` 1.4.0, 2024-10-06 | A helper for each type of interaction | In part: `send` takes any allowed statement of the model of `learning-records`, which holds every type |
-| CATAPULT player v1.0.8, 2026-01-20 | Content hosting, tenants, an API with JWTs, MySQL | Excluded: the host's |
-| CATAPULT player v1.0.8, 2026-01-20 | A proxy to an external LRS | Excluded: the LMS of cmi5 is its LRS; a host with another LRS adapts the store ports |
+| Comparator, version                | What it has                                       | Here                                                                                                   |
+| ---------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `@xapi/cmi5` 1.4.0, 2024-10-06     | A helper for each type of interaction             | In part: `send` takes any allowed statement of the model of `learning-records`, which holds every type |
+| CATAPULT player v1.0.8, 2026-01-20 | Content hosting, tenants, an API with JWTs, MySQL | Excluded: the host's                                                                                   |
+| CATAPULT player v1.0.8, 2026-01-20 | A proxy to an external LRS                        | Excluded: the LMS of cmi5 is its LRS; a host with another LRS adapts the store ports                   |
 
 ## Where the evidence is
 

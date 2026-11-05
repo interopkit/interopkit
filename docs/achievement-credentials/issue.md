@@ -18,10 +18,10 @@ flowchart LR
   credential --> compare["isSameCredential, selectNewerCredential,<br/>summarizeCredential"]
 ```
 
-| Module    | Holds                                                                                                                       |
-| --------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Module    | Holds                                                                                                                                                     |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `issue`   | `buildAchievementCredential`, `buildEndorsementCredential`, `buildClrCredential`, `buildCaseAlignment`, `hashIdentifier`, `matchesIdentifier`, the inputs |
-| `compare` | `isSameCredential`, `selectNewerCredential`, `summarizeCredential`, `CredentialSummary`                                               |
+| `compare` | `isSameCredential`, `selectNewerCredential`, `summarizeCredential`, `CredentialSummary`                                                                   |
 
 All of them come from `@interopkit/achievement-credentials`. Nothing here reads a clock, draws a random number or makes a
 request: the dates are the issuer's, and the hash is a function of its arguments.
@@ -48,7 +48,9 @@ const credential = buildAchievementCredential({
   validFrom: "2024-06-13T18:46:03Z",
   name: "Fractions badge",
   subject: {
-    identifier: [{ type: "IdentityObject", hashed: true, identityHash: hash, identityType: "emailAddress", salt: "Kosher" }],
+    identifier: [
+      { type: "IdentityObject", hashed: true, identityHash: hash, identityType: "emailAddress", salt: "Kosher" },
+    ],
   },
   achievement: {
     id: "https://example.edu/achievements/1",
@@ -56,7 +58,13 @@ const credential = buildAchievementCredential({
     name: "Fractions",
     description: "Understands fractions as numbers.",
     criteria: { narrative: "Pass the final assessment." },
-    alignment: [buildCaseAlignment({ uri: "https://standards.example.org/ims/case/v1p1/CFItems/2b6d1c9e", name: "Understand fractions", code: "3.NF.A.1" })],
+    alignment: [
+      buildCaseAlignment({
+        uri: "https://standards.example.org/ims/case/v1p1/CFItems/2b6d1c9e",
+        name: "Understand fractions",
+        code: "3.NF.A.1",
+      }),
+    ],
   },
 });
 credential.type; // => ["VerifiableCredential", "OpenBadgeCredential"]
@@ -79,23 +87,23 @@ the properties of the input and no others, and holds the classes of the model (`
 builder reads the input, writes the credential, reads that with the schema of its class and the rules of the subject, and returns
 the copy. It adds no proof: a signer does.
 
-| Builder                      | Writes                                                                                                                                   |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Builder                      | Writes                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `buildAchievementCredential` | The contexts of the Verifiable Credentials Data Model 2.0, Open Badges 3.0.3 and the extensions of 1EdTech (which define the type of the `credentialSchema`, so that the credential survives JSON-LD safe mode), the types `VerifiableCredential` and `OpenBadgeCredential`, a subject of type `AchievementSubject` that holds the `subject` and the `achievement`, and the `credentialSchema` of the published AchievementCredential schema |
-| `buildEndorsementCredential` | The same contexts, the types `VerifiableCredential` and `EndorsementCredential`, a subject of type `EndorsementSubject` with the `id` that `endorses` and the `comment`, and the published EndorsementCredential schema                                                              |
-| `buildClrCredential`         | The contexts of the Verifiable Credentials Data Model 2.0, CLR 2.0.1, Open Badges 3.0.3 and the extensions, the types `VerifiableCredential` and `ClrCredential`, a subject of type `ClrSubject` that holds the learner, the credentials, the achievements and the associations, and the published ClrCredential schema |
+| `buildEndorsementCredential` | The same contexts, the types `VerifiableCredential` and `EndorsementCredential`, a subject of type `EndorsementSubject` with the `id` that `endorses` and the `comment`, and the published EndorsementCredential schema                                                                                                                                                                                                                      |
+| `buildClrCredential`         | The contexts of the Verifiable Credentials Data Model 2.0, CLR 2.0.1, Open Badges 3.0.3 and the extensions, the types `VerifiableCredential` and `ClrCredential`, a subject of type `ClrSubject` that holds the learner, the credentials, the achievements and the associations, and the published ClrCredential schema                                                                                                                      |
 
-| Input             | Meaning                                                                                                                                                       | Default                    |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| `id`              | The address of the credential, an absolute URI                                                                                                                | Required                   |
-| `issuer`          | The issuer as a `Profile`, with its `id` and `type`                                                                                                           | Required                   |
-| `validFrom`       | When the credential becomes valid, RFC 3339 with an offset                                                                                                    | Required                   |
-| `name`            | The name for display                                                                                                                                          | Required                   |
-| `subject`         | Who earned the achievement (AchievementCredential) or the learner (CLR): `id` or `identifier`, one of them at least                                           | Required                   |
-| `achievement`     | The `Achievement` that was earned (AchievementCredential)                                                                                                     | Required                   |
-| `endorses`        | The identifier of what the endorsement is about (EndorsementCredential)                                                                                                    | Required                   |
-| `credentials`     | The credentials of the CLR, at least one: objects, or all compact JWS strings for a CLR that is signed as a VC-JWT after its credentials were signed          | Required                   |
-| the rest          | `validUntil`, `description`, `image`, `awardedDate`, `evidence`, `endorsement`, `endorsementJwt`, `credentialStatus`, `refreshService`, `termsOfUse`, `comment`, `achievements`, `associations`, `partial`, and in `subject` `result`, `activityStartDate`, `activityEndDate`, `creditsEarned`, `role`, `term` | None: the property is left out |
+| Input         | Meaning                                                                                                                                                                                                                                                                                                        | Default                        |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| `id`          | The address of the credential, an absolute URI                                                                                                                                                                                                                                                                 | Required                       |
+| `issuer`      | The issuer as a `Profile`, with its `id` and `type`                                                                                                                                                                                                                                                            | Required                       |
+| `validFrom`   | When the credential becomes valid, RFC 3339 with an offset                                                                                                                                                                                                                                                     | Required                       |
+| `name`        | The name for display                                                                                                                                                                                                                                                                                           | Required                       |
+| `subject`     | Who earned the achievement (AchievementCredential) or the learner (CLR): `id` or `identifier`, one of them at least                                                                                                                                                                                            | Required                       |
+| `achievement` | The `Achievement` that was earned (AchievementCredential)                                                                                                                                                                                                                                                      | Required                       |
+| `endorses`    | The identifier of what the endorsement is about (EndorsementCredential)                                                                                                                                                                                                                                        | Required                       |
+| `credentials` | The credentials of the CLR, at least one: objects, or all compact JWS strings for a CLR that is signed as a VC-JWT after its credentials were signed                                                                                                                                                           | Required                       |
+| the rest      | `validUntil`, `description`, `image`, `awardedDate`, `evidence`, `endorsement`, `endorsementJwt`, `credentialStatus`, `refreshService`, `termsOfUse`, `comment`, `achievements`, `associations`, `partial`, and in `subject` `result`, `activityStartDate`, `activityEndDate`, `creditsEarned`, `role`, `term` | None: the property is left out |
 
 With compact JWS strings, `buildClrCredential` returns the payload of that JWT (`ClrCredentialJwtPayload`) and not a
 `ClrCredential`; a list that mixes the two forms is refused.
@@ -135,30 +143,30 @@ Credentials data model; `validFrom` is `issuanceDate` under 1.1.
 
 ## Errors
 
-| Case                                                                                                   | Result                                                                                                                                                    |
-| ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A builder is given an input with a fault, one of the properties it does not have included              | `DataError` that names every fault: `The input is invalid: id: expected a URI with a scheme ...; validFrom: expected a date and time ...`                |
-| The credential that a builder wrote has a fault, such as a subject with neither an `id` nor an `identifier` | `DataError`: `The credential is invalid: credentialSubject: has neither an id nor an identifier ...`                                                      |
-| An input nests more than 64 levels or holds what JSON cannot                                           | `DataError` that says where                                                                                                                               |
-| `hashIdentifier` or `matchesIdentifier` is given an argument of the wrong type                         | `DataError` that names it: `The identifier is invalid: expected a string, found 5.`                                                                       |
-| `isSameCredential` or `selectNewerCredential` is given a value that is not an object with an `issuer`          | `DataError`: `The first credential is invalid: expected an object, found null.`                                                                           |
-| `selectNewerCredential` is given credentials that are not the same, or one with no `validFrom` that is a date and time | `DataError`: `The credentials are not the same credential: they differ in id or in the id of the issuer.`                                              |
+| Case                                                                                                                           | Result                                                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A builder is given an input with a fault, one of the properties it does not have included                                      | `DataError` that names every fault: `The input is invalid: id: expected a URI with a scheme ...; validFrom: expected a date and time ...`             |
+| The credential that a builder wrote has a fault, such as a subject with neither an `id` nor an `identifier`                    | `DataError`: `The credential is invalid: credentialSubject: has neither an id nor an identifier ...`                                                  |
+| An input nests more than 64 levels or holds what JSON cannot                                                                   | `DataError` that says where                                                                                                                           |
+| `hashIdentifier` or `matchesIdentifier` is given an argument of the wrong type                                                 | `DataError` that names it: `The identifier is invalid: expected a string, found 5.`                                                                   |
+| `isSameCredential` or `selectNewerCredential` is given a value that is not an object with an `issuer`                          | `DataError`: `The first credential is invalid: expected an object, found null.`                                                                       |
+| `selectNewerCredential` is given credentials that are not the same, or one with no `validFrom` that is a date and time         | `DataError`: `The credentials are not the same credential: they differ in id or in the id of the issuer.`                                             |
 | `summarizeCredential` is given a value that is not a credential, or a `VerifiableCredential` of no class of Open Badges or CLR | `DataError`, from the reader or: `The credential is a VerifiableCredential of no class that Open Badges or CLR defines, so there is nothing to show.` |
 
 ## Limits
 
-| Limit                          | Value | Refused with |
-| ------------------------------ | ----- | ------------ |
-| Levels that an input nests     | 64    | `DataError`  |
+| Limit                      | Value | Refused with |
+| -------------------------- | ----- | ------------ |
+| Levels that an input nests | 64    | `DataError`  |
 
 ## Not included
 
-| Not included                                              | Why                                                                                                |
-| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| A proof, a key, a signature                               | A signer adds the proof, in a later module; the builders write the credential that it signs         |
-| A clock: no `validFrom` is filled in                      | The dates are the issuer's; a builder that read the clock would write a different credential each time |
-| An Open Badges 2.0 assertion                              | 2.0 is read and verified, never issued                                                             |
-| A random identifier: no `id` is made up                   | The address of a credential is the issuer's                                                        |
+| Not included                            | Why                                                                                                    |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| A proof, a key, a signature             | A signer adds the proof, in a later module; the builders write the credential that it signs            |
+| A clock: no `validFrom` is filled in    | The dates are the issuer's; a builder that read the clock would write a different credential each time |
+| An Open Badges 2.0 assertion            | 2.0 is read and verified, never issued                                                                 |
+| A random identifier: no `id` is made up | The address of a credential is the issuer's                                                            |
 
 ## Differences from the references
 
@@ -166,8 +174,8 @@ The reference is the text of Open Badges 3.0 and its examples, which the tests r
 page prints are rebuilt from their parts, and the examples of section 10.1 give the verdicts of `isSameCredential` and
 `selectNewerCredential`. The hash is checked against the example of the specification and against another implementation.
 
-| Case                                                       | The references                                                                                                          | This package                                                                                               |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| The schema in a CLR example                                | The ClrCredential examples of CLR 2.0 name the schema of an AchievementCredential                                       | A ClrCredential names its own schema, as 7.2 asks                                                          |
-| The address of a credential                                | Any string                                                                                                              | An absolute URI                                                                                            |
-| The comparison of two credentials                          | Equal when the id and the issuer id are equal after unescaping; the more recent `validFrom` replaces                    | The same, with `validFrom` compared as an instant, and the first when the instants are equal              |
+| Case                              | The references                                                                                       | This package                                                                                 |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| The schema in a CLR example       | The ClrCredential examples of CLR 2.0 name the schema of an AchievementCredential                    | A ClrCredential names its own schema, as 7.2 asks                                            |
+| The address of a credential       | Any string                                                                                           | An absolute URI                                                                              |
+| The comparison of two credentials | Equal when the id and the issuer id are equal after unescaping; the more recent `validFrom` replaces | The same, with `validFrom` compared as an instant, and the first when the instants are equal |

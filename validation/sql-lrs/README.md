@@ -14,11 +14,11 @@ flowchart LR
   run -->|"docker stop, docker wait, docker rm<br/>of that container only"| lrs
 ```
 
-| File                                                   | Holds                                                                                                           |
-| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `run.ts`                                               | Starts the container, waits until it is healthy, runs the tests, and always stops and removes its own container |
-| `examples/learning-records/test/sqllrs-verdicts.corpus.test.ts` | The verdict of SQL LRS on the fixture of each of the 153 rules of 2.0 and the 179 of 1.0.3, against the verdict of the reader of an LRS     |
-| `examples/learning-records/test/sqllrs.corpus.test.ts` | The platform and the dashboard of the example, and the client of 1.0.3, against SQL LRS                         |
+| File                                                            | Holds                                                                                                                                   |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `run.ts`                                                        | Starts the container, waits until it is healthy, runs the tests, and always stops and removes its own container                         |
+| `examples/learning-records/test/sqllrs-verdicts.corpus.test.ts` | The verdict of SQL LRS on the fixture of each of the 153 rules of 2.0 and the 179 of 1.0.3, against the verdict of the reader of an LRS |
+| `examples/learning-records/test/sqllrs.corpus.test.ts`          | The platform and the dashboard of the example, and the client of 1.0.3, against SQL LRS                                                 |
 
 ## Running it
 
@@ -34,14 +34,14 @@ pnpm sql-lrs
 
 A run takes about two minutes. Nothing is kept between runs.
 
-| Setting     | Value                                                                                                                                                  |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Image       | `yetanalytics/lrsql@sha256:bf5661ab216d07175f6e429951bf53c79f6070d54812285ea4c208f991cf0a04`, which the tag `v0.9.11` names                            |
+| Setting     | Value                                                                                                                                                                                                                                                                         |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Image       | `yetanalytics/lrsql@sha256:bf5661ab216d07175f6e429951bf53c79f6070d54812285ea4c208f991cf0a04`, which the tag `v0.9.11` names                                                                                                                                                   |
 | Container   | `CONTAINER_NAME` or `COMPOSE_PROJECT_NAME` when it is set, so that the unit that runs it names its own (`CONTAINER_NAME=my-unit pnpm sql-lrs`), and else `interopkit-sqllrs-<8 hex digits>`, chosen for the run, 2 CPUs; no other container is stopped, waited for or removed |
-| Port        | A free port on 127.0.0.1; the LRS is not reachable from other hosts                                                                                    |
-| Credentials | The user and the password of the default key, and the password of the admin, are random for the run and exist only in the environment of the processes |
-| Cleanup     | `docker stop`, `docker wait` and `docker rm` of that container run when the tests pass, when they fail and when the start fails                        |
-| Tests       | The Vitest project `example-learning-records-sqllrs`; `pnpm test` leaves it out                                                                        |
+| Port        | A free port on 127.0.0.1; the LRS is not reachable from other hosts                                                                                                                                                                                                           |
+| Credentials | The user and the password of the default key, and the password of the admin, are random for the run and exist only in the environment of the processes                                                                                                                        |
+| Cleanup     | `docker stop`, `docker wait` and `docker rm` of that container run when the tests pass, when they fail and when the start fails                                                                                                                                               |
+| Tests       | The Vitest project `example-learning-records-sqllrs`; `pnpm test` leaves it out                                                                                                                                                                                               |
 
 ## What each file shows
 
@@ -60,14 +60,14 @@ whose data are not sent; the fixtures leave both out.
 
 The flows pin what the two do differently as a client and a server:
 
-| Flow                                                                 | What SQL LRS does                                                                                                                                                          |
-| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A batch that the LRS holds already is sent again                     | Answers 200 with `[]`, not the ids; the client resolves with the ids of the batch                                                                                          |
-| A signed Statement that has another Attachment besides the signature | Answers 400 "Statement signature does not match statement": it compares the payload with the Statement without its Attachments, though the standard signs the complete one |
-| A Statement with `version` 2.0.0 sent to the 1.0.3 route             | Answers 400; the client of 1.0.3 refuses it before any request, and a builder of 1.0.3 writes `1.0.0`                                                                                                    |
-| A second State write with no precondition on the 1.0.3 route         | Answers 409, as it does on 2.0.0, where 1.0.3 asks that State go without headers; the LRS of the package replaces the document |
-| A Statement of 2.0 read on the 1.0.3 route                           | Answers it as it holds it, with `contextAgents` and `version` 2.0.0; the client of 1.0.3 reads it into the form of 1.0.3        |
-| The form of 1.0.3 of a Statement of 2.0 sent again on the 1.0.3 route | Answers 409, since it compares with the whole Statement; the LRS of the package answers 204                                     |                                            |
+| Flow                                                                  | What SQL LRS does                                                                                                                                                          |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A batch that the LRS holds already is sent again                      | Answers 200 with `[]`, not the ids; the client resolves with the ids of the batch                                                                                          |
+| A signed Statement that has another Attachment besides the signature  | Answers 400 "Statement signature does not match statement": it compares the payload with the Statement without its Attachments, though the standard signs the complete one |
+| A Statement with `version` 2.0.0 sent to the 1.0.3 route              | Answers 400; the client of 1.0.3 refuses it before any request, and a builder of 1.0.3 writes `1.0.0`                                                                      |
+| A second State write with no precondition on the 1.0.3 route          | Answers 409, as it does on 2.0.0, where 1.0.3 asks that State go without headers; the LRS of the package replaces the document                                             |
+| A Statement of 2.0 read on the 1.0.3 route                            | Answers it as it holds it, with `contextAgents` and `version` 2.0.0; the client of 1.0.3 reads it into the form of 1.0.3                                                   |
+| The form of 1.0.3 of a Statement of 2.0 sent again on the 1.0.3 route | Answers 409, since it compares with the whole Statement; the LRS of the package answers 204                                                                                |     |
 
 IEEE is a trademark of the Institute of Electrical and Electronics Engineers, Inc.
 interopkit is not affiliated with, endorsed by or approved by IEEE or ADL.

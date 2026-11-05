@@ -25,10 +25,10 @@ sequenceDiagram
   P-->>H: the items, the host's data and the settings
 ```
 
-| Role     | Function                                           | Does                                                                                                    |
-| -------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Role     | Function                                              | Does                                                                                                    |
+| -------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | Tool     | `buildDeepLinkingResponse(launch, response, options)` | Checks the items, signs the response and returns the page that posts it to the platform's return URL    |
-| Platform | `readDeepLinkingResponse(request, options)`        | Reads the form the tool posted, verifies it and returns the response with its items and the host's data |
+| Platform | `readDeepLinkingResponse(request, options)`           | Reads the form the tool posted, verifies it and returns the response with its items and the host's data |
 
 ## Quick start
 
@@ -87,23 +87,23 @@ A whole flow, a platform that asks and a tool that answers, runs in the [example
 answers with, and the options of the tool role (`registration`, `clock`, `signal`). It answers also when the user chose nothing:
 the platform closes its frame on the response (Deep Linking 2.0 section 2.3).
 
-| Property of the response | Meaning                                                                                                            |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| `items`                  | The content items, as `ContentItem` values: `link`, `ltiResourceLink`, `file`, `html`, `image`, or a type that another specification defines. An empty list places none |
-| `message`, `log`         | A text for the user, and a text for the platform's log                                                             |
-| `errorMessage`, `errorLog` | The same for an error                                                                                            |
+| Property of the response   | Meaning                                                                                                                                                                 |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `items`                    | The content items, as `ContentItem` values: `link`, `ltiResourceLink`, `file`, `html`, `image`, or a type that another specification defines. An empty list places none |
+| `message`, `log`           | A text for the user, and a text for the platform's log                                                                                                                  |
+| `errorMessage`, `errorLog` | The same for an error                                                                                                                                                   |
 
 The items are written as the specification has them and read back with `readContentItem`, so that an item breaks no rule of its
 type: an address is `https`, a line item has a `scoreMaximum` above 0, an extension is named by a URL. Then the settings of the
 request hold them:
 
-| Setting                                | The tool refuses                                                                                                   |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `acceptMultiple`                       | Several items unless it is `true`                                                                                  |
-| `acceptTypes`                          | An item whose `type` is not listed                                                                                 |
-| `acceptMediaTypes`                     | A `file` whose `mediaType` no pattern matches (`image/png`, `image/*`, `*/*`); a file that names none passes       |
-| `acceptLineItem`                       | A resource link with a `lineItem` when it is `false`; absent says nothing, and the line item is sent               |
-| `acceptPresentationDocumentTargets`    | A `link` or `ltiResourceLink` that offers `window`, `iframe` or `embed` and no way that the platform supports. An item that offers none passes: the default is a new window. The tool should offer every way that applies (Deep Linking 2.0 section 3.1) |
+| Setting                             | The tool refuses                                                                                                                                                                                                                                         |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `acceptMultiple`                    | Several items unless it is `true`                                                                                                                                                                                                                        |
+| `acceptTypes`                       | An item whose `type` is not listed                                                                                                                                                                                                                       |
+| `acceptMediaTypes`                  | A `file` whose `mediaType` no pattern matches (`image/png`, `image/*`, `*/*`); a file that names none passes                                                                                                                                             |
+| `acceptLineItem`                    | A resource link with a `lineItem` when it is `false`; absent says nothing, and the line item is sent                                                                                                                                                     |
+| `acceptPresentationDocumentTargets` | A `link` or `ltiResourceLink` that offers `window`, `iframe` or `embed` and no way that the platform supports. An item that offers none passes: the default is a new window. The tool should offer every way that applies (Deep Linking 2.0 section 3.1) |
 
 The response carries `iss` (the client identifier), `aud` (the platform's issuer), `iat`, `exp` (300 seconds later), a `nonce`
 that is new each time, the version, the deployment, the message type, the `data` of the request when it had one, and the
@@ -125,19 +125,19 @@ The host's route at the return URL passes the request to `readDeepLinkingRespons
 
 The checks, in order:
 
-| Check                                    | Refused with, a reason of `LtiError`                                                                         |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| A POST of a form with the parameter `JWT`, within `maxFormBytes` | `request-invalid`; a `LimitError` (`maxFormBytes`) above the limit, which the host answers with 413 |
-| The tool that `iss` names, looked up with `registration` | `token-malformed`, `client-unknown`                                                                  |
-| An algorithm of the tool's registration, a key of its key set, the signature | `algorithm-unsupported`, `key-unknown`, `signature-invalid`                       |
-| `aud` as the platform's issuer alone; `azp`, when present, as the same | `audience-mismatch`, `audience-untrusted`, `authorized-party-mismatch`                       |
-| `exp`, `iat` and `nonce` present; not expired; not issued in the future; expiring within an hour | `claim-missing`, `claim-invalid`, `token-expired`, `issued-in-future`, `assertion-lifetime`  |
-| At most `maxContentItems` items, counted before one is read | a `LimitError` (`maxContentItems`), which the host answers with 413                    |
-| The message type, the version and a deployment of the tool | `message-type-unsupported`, `version-unsupported`, `deployment-unknown`                              |
-| The `nonce`, once: `once` records it until the message stops verifying | `nonce-replayed`                                                                         |
-| The `data` claim: sealed by this platform (or by an earlier hint key), for this tool and deployment, not expired | `deep-linking-data-invalid`                                |
-| Each item, read by its type with `readContentItem` | `content-item-refused`                                                                                     |
-| The items against the sealed settings: the table above | `content-item-refused`                                                                                     |
+| Check                                                                                                            | Refused with, a reason of `LtiError`                                                                |
+| ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| A POST of a form with the parameter `JWT`, within `maxFormBytes`                                                 | `request-invalid`; a `LimitError` (`maxFormBytes`) above the limit, which the host answers with 413 |
+| The tool that `iss` names, looked up with `registration`                                                         | `token-malformed`, `client-unknown`                                                                 |
+| An algorithm of the tool's registration, a key of its key set, the signature                                     | `algorithm-unsupported`, `key-unknown`, `signature-invalid`                                         |
+| `aud` as the platform's issuer alone; `azp`, when present, as the same                                           | `audience-mismatch`, `audience-untrusted`, `authorized-party-mismatch`                              |
+| `exp`, `iat` and `nonce` present; not expired; not issued in the future; expiring within an hour                 | `claim-missing`, `claim-invalid`, `token-expired`, `issued-in-future`, `assertion-lifetime`         |
+| At most `maxContentItems` items, counted before one is read                                                      | a `LimitError` (`maxContentItems`), which the host answers with 413                                 |
+| The message type, the version and a deployment of the tool                                                       | `message-type-unsupported`, `version-unsupported`, `deployment-unknown`                             |
+| The `nonce`, once: `once` records it until the message stops verifying                                           | `nonce-replayed`                                                                                    |
+| The `data` claim: sealed by this platform (or by an earlier hint key), for this tool and deployment, not expired | `deep-linking-data-invalid`                                                                         |
+| Each item, read by its type with `readContentItem`                                                               | `content-item-refused`                                                                              |
+| The items against the sealed settings: the table above                                                           | `content-item-refused`                                                                              |
 
 The result is a `ReceivedDeepLinkingResponse`: the fields of the message (`issuer`, `clientId`, `deploymentId`, `version`,
 `message`, `log`, `errorMessage`, `errorLog`, `claims`), the `items` as `ContentItem` values, the `settings` of the request, the
@@ -149,71 +149,71 @@ means, and how a `file` is fetched, an `html` item sanitized and a `link` shown,
 fetch it through the host's guarded `fetch` before its `expiresAt`. An `html` fragment, a `title` and a `text` are data, never
 markup that the package renders.
 
-| Option            | Default     | Meaning                                                                                        |
-| ----------------- | ----------- | ---------------------------------------------------------------------------------------------- |
-| `config`          | required    | The platform                                                                                   |
-| `clock`           | `SYSTEM_CLOCK` | The time                                                                                    |
-| `registration`    | required    | Looks up a tool by its client identifier; `undefined` is `client-unknown`                      |
-| `jwks`            | required    | The cache of the tools' key sets, from `createJwksCache`                                       |
-| `once`            | required    | Records an identifier until a time; `false` when it was used. Atomic across processes          |
-| `maxFormBytes`    | 1,048,576   | The most bytes of the form, measured before it is decoded                                      |
-| `maxTokens`       | 1,000,000   | The most JSON tokens of the message, counted before it is parsed                               |
-| `maxContentItems` | 100         | The most items of a response                                                                   |
-| `signal`          | none        | Ends this caller's wait                                                                        |
+| Option            | Default        | Meaning                                                                               |
+| ----------------- | -------------- | ------------------------------------------------------------------------------------- |
+| `config`          | required       | The platform                                                                          |
+| `clock`           | `SYSTEM_CLOCK` | The time                                                                              |
+| `registration`    | required       | Looks up a tool by its client identifier; `undefined` is `client-unknown`             |
+| `jwks`            | required       | The cache of the tools' key sets, from `createJwksCache`                              |
+| `once`            | required       | Records an identifier until a time; `false` when it was used. Atomic across processes |
+| `maxFormBytes`    | 1,048,576      | The most bytes of the form, measured before it is decoded                             |
+| `maxTokens`       | 1,000,000      | The most JSON tokens of the message, counted before it is parsed                      |
+| `maxContentItems` | 100            | The most items of a response                                                          |
+| `signal`          | none           | Ends this caller's wait                                                               |
 
 ## Limits
 
-| Limit                                                     | Value               |
-| --------------------------------------------------------- | ------------------- |
-| The form of a response                                    | 1,048,576 bytes     |
-| The JSON tokens of a response                             | 1,000,000           |
-| The items of a response                                   | 100                 |
-| A response of a tool, as signed                           | 300 seconds         |
-| The longest lifetime accepted of a response              | 3,600 seconds       |
-| The data of a request                                     | 86,400 seconds      |
-| Clock skew                                                | 60 seconds          |
+| Limit                                       | Value           |
+| ------------------------------------------- | --------------- |
+| The form of a response                      | 1,048,576 bytes |
+| The JSON tokens of a response               | 1,000,000       |
+| The items of a response                     | 100             |
+| A response of a tool, as signed             | 300 seconds     |
+| The longest lifetime accepted of a response | 3,600 seconds   |
+| The data of a request                       | 86,400 seconds  |
+| Clock skew                                  | 60 seconds      |
 
 ## Failure paths
 
-| Port                  | Fails                                                                    | Hangs                 | Called again                                            |
-| --------------------- | ------------------------------------------------------------------------ | --------------------- | ------------------------------------------------------- |
-| `registration`        | `readDeepLinkingResponse` rejects with its error; `undefined` is `client-unknown` | `signal`      | On every response; a host may cache                     |
-| `once`                | Rejects with its error; the nonce is not spent. Not a boolean: `DataError` | `signal`            | `false` is `nonce-replayed`: the tool sends a new response |
-| The tool's key set    | `ServiceError`; a failed fetch is not kept. A set that is not a JWK Set is `key-unknown` | The cache's deadline  | Shared by concurrent callers                            |
-| The tool's `registration` | `buildDeepLinkingResponse` rejects; `undefined` is `platform-unknown`   | `signal`              | Pure; a host may cache                                  |
-| The `signer`          | The call rejects with its error; nothing half-signed is posted           | `signal`              | Each response has a new nonce                           |
+| Port                      | Fails                                                                                    | Hangs                | Called again                                               |
+| ------------------------- | ---------------------------------------------------------------------------------------- | -------------------- | ---------------------------------------------------------- |
+| `registration`            | `readDeepLinkingResponse` rejects with its error; `undefined` is `client-unknown`        | `signal`             | On every response; a host may cache                        |
+| `once`                    | Rejects with its error; the nonce is not spent. Not a boolean: `DataError`               | `signal`             | `false` is `nonce-replayed`: the tool sends a new response |
+| The tool's key set        | `ServiceError`; a failed fetch is not kept. A set that is not a JWK Set is `key-unknown` | The cache's deadline | Shared by concurrent callers                               |
+| The tool's `registration` | `buildDeepLinkingResponse` rejects; `undefined` is `platform-unknown`                    | `signal`             | Pure; a host may cache                                     |
+| The `signer`              | The call rejects with its error; nothing half-signed is posted                           | `signal`             | Each response has a new nonce                              |
 
 ## Errors
 
-| Error                                                              | When                                                                                       | What to do                                                       |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
-| `DataError` from `buildDeepLinkingResponse`                          | An argument has the wrong type, an item is not a content item, or the platform does not accept the items | Fix the caller; choose items the request accepts                 |
-| `LtiError` `platform-unknown`, `deployment-unknown`                | The tool's registration is gone, or no longer lists the deployment                         | Register the platform or the deployment again                    |
-| `LtiError` of `readDeepLinkingResponse`, 400                       | The sender broke the protocol: the form or the items                                       | Answer 400; the tool fixes its response                          |
-| `LimitError` from `readDeepLinkingResponse`                        | The form is over `maxFormBytes`, or the items over `maxContentItems`                       | Answer 413                                                       |
-| `LtiError` of `readDeepLinkingResponse`, 401                       | The token fails validation                                                                 | Answer 401                                                       |
-| `LtiError` `nonce-replayed`, `deep-linking-data-invalid`, 403      | The response is a replay, or its data is not this platform's, this tool's or current        | Answer 403; the user starts the request again                    |
-| `DataError` from `readDeepLinkingResponse`                         | The request or an option has the wrong type, or a port breaks its contract                 | Fix the host                                                     |
+| Error                                                         | When                                                                                                     | What to do                                       |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `DataError` from `buildDeepLinkingResponse`                   | An argument has the wrong type, an item is not a content item, or the platform does not accept the items | Fix the caller; choose items the request accepts |
+| `LtiError` `platform-unknown`, `deployment-unknown`           | The tool's registration is gone, or no longer lists the deployment                                       | Register the platform or the deployment again    |
+| `LtiError` of `readDeepLinkingResponse`, 400                  | The sender broke the protocol: the form or the items                                                     | Answer 400; the tool fixes its response          |
+| `LimitError` from `readDeepLinkingResponse`                   | The form is over `maxFormBytes`, or the items over `maxContentItems`                                     | Answer 413                                       |
+| `LtiError` of `readDeepLinkingResponse`, 401                  | The token fails validation                                                                               | Answer 401                                       |
+| `LtiError` `nonce-replayed`, `deep-linking-data-invalid`, 403 | The response is a replay, or its data is not this platform's, this tool's or current                     | Answer 403; the user starts the request again    |
+| `DataError` from `readDeepLinkingResponse`                    | The request or an option has the wrong type, or a port breaks its contract                               | Fix the host                                     |
 
 Each `LtiError` carries the HTTP `status` that the host answers with.
 
 ## Data flows
 
-| Data                                  | Comes from                          | Goes to                                                   | Kept by the package |
-| ------------------------------------- | ----------------------------------- | --------------------------------------------------------- | ------------------- |
-| The host's `data`, the settings, the user's `sub` | The host's `MessageInput` | The tool, sealed (signed, not encrypted) in the request; back in the response | No      |
-| The items                             | The tool's host                     | The platform's host, in a form posted by the browser      | No                  |
-| The nonce of a response               | The tool                            | The host's `once`                                         | No                  |
+| Data                                              | Comes from                | Goes to                                                                       | Kept by the package |
+| ------------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------- | ------------------- |
+| The host's `data`, the settings, the user's `sub` | The host's `MessageInput` | The tool, sealed (signed, not encrypted) in the request; back in the response | No                  |
+| The items                                         | The tool's host           | The platform's host, in a form posted by the browser                          | No                  |
+| The nonce of a response                           | The tool                  | The host's `once`                                                             | No                  |
 
 The data is signed and not encrypted: the tool can read it, so it holds no secret and no personal data.
 
 ## Not included
 
-| Not included                                                         | Why                                                                                     |
-| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| A picker, the page that frames the tool, the confirmation of items   | The host's                                                                              |
-| Fetching the `url` of a file, sanitizing an `html` item              | The host's: it fetches through its guarded `fetch` and sanitizes with its own policy    |
-| Creating the line item of a resource link                            | The host's: the response says what the tool expects, the gradebook is the host's        |
+| Not included                                                       | Why                                                                                  |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| A picker, the page that frames the tool, the confirmation of items | The host's                                                                           |
+| Fetching the `url` of a file, sanitizing an `html` item            | The host's: it fetches through its guarded `fetch` and sanitizes with its own policy |
+| Creating the line item of a resource link                          | The host's: the response says what the tool expects, the gradebook is the host's     |
 
 ## Differences from the references
 

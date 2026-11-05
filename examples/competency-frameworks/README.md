@@ -21,28 +21,28 @@ flowchart LR
   handler <-->|"fetch"| client
 ```
 
-| File                       | Holds                                                                                                         |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `src/ministry.ts`          | The two editions of the mathematics framework, with every class and property of CASE 1.1, and a plain reading framework |
-| `src/district.ts`          | The pacing guide of a district, aligned with the standards of the ministry by `exactMatchOf` and `isRelatedTo` |
-| `src/identifiers.ts`       | Identifiers, and the addresses that `buildEntityUri` builds                                                    |
-| `src/catalog.ts`           | `createCatalog`: a `FrameworkStore` over frameworks in memory, and `publish` for a new edition                |
-| `src/provider.ts`          | `createProvider`: the handler for both versions, the check of the bearer token, and a `fetch` that reaches it  |
-| `src/consumer.ts`          | `syncFrameworks`, `outline`, `alignments` and `changesBetween`                                                |
-| `scenario.ts`              | `runScenario`: the platform against the ministry, from the first listing to the second edition                |
-| `test/`                    | The tests, which CI runs, the conformance tests that read the downloaded schemas, and the flows against OpenSALT |
+| File                 | Holds                                                                                                                   |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `src/ministry.ts`    | The two editions of the mathematics framework, with every class and property of CASE 1.1, and a plain reading framework |
+| `src/district.ts`    | The pacing guide of a district, aligned with the standards of the ministry by `exactMatchOf` and `isRelatedTo`          |
+| `src/identifiers.ts` | Identifiers, and the addresses that `buildEntityUri` builds                                                             |
+| `src/catalog.ts`     | `createCatalog`: a `FrameworkStore` over frameworks in memory, and `publish` for a new edition                          |
+| `src/provider.ts`    | `createProvider`: the handler for both versions, the check of the bearer token, and a `fetch` that reaches it           |
+| `src/consumer.ts`    | `syncFrameworks`, `outline`, `alignments` and `changesBetween`                                                          |
+| `scenario.ts`        | `runScenario`: the platform against the ministry, from the first listing to the second edition                          |
+| `test/`              | The tests, which CI runs, the conformance tests that read the downloaded schemas, and the flows against OpenSALT        |
 
 ## Rules of the example
 
-| Rule                | Value                                                                                                                                       |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Freshness           | A copy is fetched when the `lastChangeDateTime` of the document is later than its own (`isNewer`); the list of documents alone says so      |
-| Both versions       | The ministry serves `/ims/case/v1p1` and `/ims/case/v1p0`; a consumer of 1.0 gets 12 of the 14 associations, since 1.0 cannot say two of them |
-| Credentials         | The provider asks for `Authorization: Bearer <token>` on everything but the discovery file; no credential is 401 and a wrong one is 403   |
-| Discovery           | The host supplies the OpenAPI file of 1EdTech; the scenario uses a stand-in with its shape, since a specification file is not committed    |
-| A set               | A concept, a subject and an item type are answered with the entity and its children one level down                                         |
-| Text                | Statements are Markdown and LaTeX; the example carries them and renders nothing, as the model guide tells a consumer to render them safely  |
-| Where a real host differs | Its frameworks are in a database, its token comes from an authorization server, and its discovery file is the one 1EdTech publishes |
+| Rule                      | Value                                                                                                                                         |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Freshness                 | A copy is fetched when the `lastChangeDateTime` of the document is later than its own (`isNewer`); the list of documents alone says so        |
+| Both versions             | The ministry serves `/ims/case/v1p1` and `/ims/case/v1p0`; a consumer of 1.0 gets 12 of the 14 associations, since 1.0 cannot say two of them |
+| Credentials               | The provider asks for `Authorization: Bearer <token>` on everything but the discovery file; no credential is 401 and a wrong one is 403       |
+| Discovery                 | The host supplies the OpenAPI file of 1EdTech; the scenario uses a stand-in with its shape, since a specification file is not committed       |
+| A set                     | A concept, a subject and an item type are answered with the entity and its children one level down                                            |
+| Text                      | Statements are Markdown and LaTeX; the example carries them and renders nothing, as the model guide tells a consumer to render them safely    |
+| Where a real host differs | Its frameworks are in a database, its token comes from an authorization server, and its discovery file is the one 1EdTech publishes           |
 
 To run the scenario, build the packages, then start it. It prints what the platform saw, as JSON:
 

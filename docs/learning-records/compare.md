@@ -68,17 +68,17 @@ are the same Actor.
 
 ## Errors
 
-| Error                                                          | When                                                     | What to do                                                       |
-| -------------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------- |
-| `The statement is invalid at <path>: <sentence>.`              | Either Statement breaks a rule of an LRS                 | Read it first with `readStatement` and answer the sender         |
-| `The first Actor` or `The second Actor` with `<path>: <sentence>` | `isSameActor` met a value that is not an Agent or a Group, or one without exactly one identifier, or an anonymous Group without members | Pass an Actor as `readStatement` reads it                        |
+| Error                                                             | When                                                                                                                                    | What to do                                               |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `The statement is invalid at <path>: <sentence>.`                 | Either Statement breaks a rule of an LRS                                                                                                | Read it first with `readStatement` and answer the sender |
+| `The first Actor` or `The second Actor` with `<path>: <sentence>` | `isSameActor` met a value that is not an Agent or a Group, or one without exactly one identifier, or an anonymous Group without members | Pass an Actor as `readStatement` reads it                |
 
 ## Not included
 
 | Not included                                                   | Why                                                                                                                 |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Normalizing percent-encoding, ports and dot segments of an IRI | The standard allows simple comparison or syntax-based normalization; the package folds the parts the standard names |
-| Comparing with `isSameStatement` across versions                 | `convertStatementVersion` gives the form to compare; the rules of immutability are the same in both versions             |
+| Comparing with `isSameStatement` across versions               | `convertStatementVersion` gives the form to compare; the rules of immutability are the same in both versions        |
 
 ## Differences from the references
 

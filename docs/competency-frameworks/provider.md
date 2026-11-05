@@ -26,13 +26,13 @@ flowchart TD
   version --> ok["200 with the entity<br/>the list also sends X-Total-Count and Link"]
 ```
 
-| Part                                                | Holds                                                                                    |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `handleCaseRequest`, `CaseProviderOptions`          | The router and the twelve endpoints of the binding, over a store                         |
-| `FrameworkStore`, `DocumentPage`                    | What the provider needs from the host: one object by identifier, and a page of documents |
-| `ParsedCaseQuery`                                   | The query of the list of documents that the store receives, read from the parameters     |
-| `queryEntities`                                     | The filter and the sort in memory, for a store that holds its documents in a list        |
-| `localizeOpenApi`, `LocalizeOpenApiOptions`         | The OpenAPI file of 1EdTech made into the localized file that the provider serves        |
+| Part                                        | Holds                                                                                    |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `handleCaseRequest`, `CaseProviderOptions`  | The router and the twelve endpoints of the binding, over a store                         |
+| `FrameworkStore`, `DocumentPage`            | What the provider needs from the host: one object by identifier, and a page of documents |
+| `ParsedCaseQuery`                           | The query of the list of documents that the store receives, read from the parameters     |
+| `queryEntities`                             | The filter and the sort in memory, for a store that holds its documents in a list        |
+| `localizeOpenApi`, `LocalizeOpenApiOptions` | The OpenAPI file of 1EdTech made into the localized file that the provider serves        |
 
 The query types `CaseQuery`, `CaseFilter`, `CaseCondition` and `OpenApiDocument` are in the root of the package, because the
 client shares them. The package imports `@interopkit/core` for the request, the response and the checks, and keeps nothing between
@@ -138,17 +138,17 @@ is 404.
 
 ## Options
 
-| Option        | Meaning                                                                                                                      | Default               |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------- |
-| `store`       | The `FrameworkStore`. Required                                                                                               | none                  |
-| `discovery`   | The localized OpenAPI 3 document, from `localizeOpenApi`. Required                                                           | none                  |
+| Option        | Meaning                                                                                                                                                                                                                                   | Default               |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| `store`       | The `FrameworkStore`. Required                                                                                                                                                                                                            | none                  |
+| `discovery`   | The localized OpenAPI 3 document, from `localizeOpenApi`. Required                                                                                                                                                                        | none                  |
 | `basePath`    | The path the provider is mounted at, before `/ims/case/v1p1`: `""`, or a path that starts with `/` and does not end with one. It is compared percent-encoded, as the URL of a request writes it, so `/café` and `/caf%C3%A9` are one path | `""`                  |
-| `versions`    | The versions to serve, each at its own path                                                                                  | `["1.1"]`             |
-| `authorize`   | Decides from the request whether it may be served, and refuses one over the host's limit of rate; not asked for the discovery file | every request allowed |
-| `pageSize`    | Documents in a page when the request has no `limit`; lowered to `maxPageSize` when above it                                  | 100                   |
-| `maxPageSize` | The most documents in a page; a larger `limit` is lowered to it                                                              | 1,000                 |
-| `collation`   | The locale of the Unicode collation for `sort` and `filter`, a BCP 47 tag; the store receives it in the query                | `"und"`               |
-| `signal`      | An `AbortSignal` that ends the wait for the store and `authorize`                                                            | none                  |
+| `versions`    | The versions to serve, each at its own path                                                                                                                                                                                               | `["1.1"]`             |
+| `authorize`   | Decides from the request whether it may be served, and refuses one over the host's limit of rate; not asked for the discovery file                                                                                                        | every request allowed |
+| `pageSize`    | Documents in a page when the request has no `limit`; lowered to `maxPageSize` when above it                                                                                                                                               | 100                   |
+| `maxPageSize` | The most documents in a page; a larger `limit` is lowered to it                                                                                                                                                                           | 1,000                 |
+| `collation`   | The locale of the Unicode collation for `sort` and `filter`, a BCP 47 tag; the store receives it in the query                                                                                                                             | `"und"`               |
+| `signal`      | An `AbortSignal` that ends the wait for the store and `authorize`                                                                                                                                                                         | none                  |
 
 The URL of the request is the one the consumer used, and the `Link` header is built from it: behind a proxy, build the request
 from the public address. The store receives an identifier as the consumer wrote it, in either case: compare UUIDs without
@@ -194,10 +194,10 @@ The handler reads these parameters for the names of a CFDocument of CASE 1.1 and
 with the code of the binding and a message. On the path of 1.0 the handler holds the names to those of 1.0, which lack
 `frameworkType`, `caseVersion` and `extensions`.
 
-| The parameters of the request                                                  | The store receives, or the answer                                                                                            |
-| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| `filter=title~'math' AND creator='Ministry'`, `sort=title`, `orderBy=desc`     | `{ filter: { and: [{ field: "title", predicate: "~", value: "math" }, { field: "creator", predicate: "=", value: "Ministry" }] }, sort: "title", orderBy: "desc", collation }` |
-| `filter=nonsense='x'`                                                          | 400 `invalid_filter_field`: `The filter names the field "nonsense", which a CFDocument of CASE 1.1 does not have.`           |
+| The parameters of the request                                              | The store receives, or the answer                                                                                                                                              |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `filter=title~'math' AND creator='Ministry'`, `sort=title`, `orderBy=desc` | `{ filter: { and: [{ field: "title", predicate: "~", value: "math" }, { field: "creator", predicate: "=", value: "Ministry" }] }, sort: "title", orderBy: "desc", collation }` |
+| `filter=nonsense='x'`                                                      | 400 `invalid_filter_field`: `The filter names the field "nonsense", which a CFDocument of CASE 1.1 does not have.`                                                             |
 
 ## The store
 
@@ -220,16 +220,16 @@ sequenceDiagram
 for documents in memory. `query.fields` is for a store that can read less; the provider selects the fields itself. A lookup
 returns the object or `undefined`. The twelve methods are read-only and may be called again.
 
-| What the port does                                                                                                                                               | The provider answers                                                                |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| A lookup answers `undefined`                                                                                                                                     | 404 `Unknown Object`                                                                |
-| A method rejects or throws                                                                                                                                       | 500, with nothing of the failure in the answer                                      |
-| The `signal` aborts                                                                                                                                              | The request rejects with the reason of the signal, at once, whatever the store does |
-| A lookup answers something that is not an object or `undefined`, `documents` answers a shape other than `{ documents, total }`, or more documents than the limit | `DataError`: a broken port contract is a bug of the host                            |
-| `authorize` answers `{ allowed: false, reason: "unauthenticated" }` or `"forbidden"`                                                                            | 401 with the `challenge` of the refusal as `WWW-Authenticate`, or `Bearer`, or 403, each with its `message` as `imsx_description` when it has one; the store is not asked |
-| `authorize` answers `{ allowed: false, reason: "too-many-requests" }`, with `retryAfterSeconds` or without | 429 `server_busy`, with `Retry-After` when the seconds are given, and the store is not asked |
-| `authorize` rejects or throws                                                                                                                                    | 500                                                                                 |
-| `authorize` answers another shape                                                                                                                                | `DataError`                                                                         |
+| What the port does                                                                                                                                               | The provider answers                                                                                                                                                      |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A lookup answers `undefined`                                                                                                                                     | 404 `Unknown Object`                                                                                                                                                      |
+| A method rejects or throws                                                                                                                                       | 500, with nothing of the failure in the answer                                                                                                                            |
+| The `signal` aborts                                                                                                                                              | The request rejects with the reason of the signal, at once, whatever the store does                                                                                       |
+| A lookup answers something that is not an object or `undefined`, `documents` answers a shape other than `{ documents, total }`, or more documents than the limit | `DataError`: a broken port contract is a bug of the host                                                                                                                  |
+| `authorize` answers `{ allowed: false, reason: "unauthenticated" }` or `"forbidden"`                                                                             | 401 with the `challenge` of the refusal as `WWW-Authenticate`, or `Bearer`, or 403, each with its `message` as `imsx_description` when it has one; the store is not asked |
+| `authorize` answers `{ allowed: false, reason: "too-many-requests" }`, with `retryAfterSeconds` or without                                                       | 429 `server_busy`, with `Retry-After` when the seconds are given, and the store is not asked                                                                              |
+| `authorize` rejects or throws                                                                                                                                    | 500                                                                                                                                                                       |
+| `authorize` answers another shape                                                                                                                                | `DataError`                                                                                                                                                               |
 
 The binding does not say how a consumer is authenticated beyond TLS and the 1EdTech Security Framework (4). `authorize` gets the
 whole request, so the host can check a bearer token, a client certificate or a network. It is not asked for the discovery file,
@@ -237,16 +237,16 @@ which a consumer reads to learn how to authenticate.
 
 ## Answers
 
-| Status | When                                                                                                                                                                                       | `imsx_codeMinor`                                              |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
-| 200    | The object, or the set of a page, in the form of the version of the path                                                                                                                   |                                                               |
-| 400    | A `filter` that cannot be read or names an unknown property; a `fields` with a blank name or of more than 2,048 characters; a `limit` or `offset` that is not a whole number in range; a parameter that occurs twice        | `invalid_filter_field`, `invalid_selection_field`, none, none |
-| 401    | `authorize` refuses: the request is not authenticated                                                                                                                                      | `unauthorised_request`                                        |
-| 403    | `authorize` refuses: the request is not allowed                                                                                                                                            | `forbidden`                                                   |
-| 429    | `authorize` refuses: the consumer asks too often, with `Retry-After` when `retryAfterSeconds` gives it | `server_busy` |
-| 404    | An identifier the store does not hold (`Unknown Object`), one that is not a UUID (`Invalid UUID`), a path that is no endpoint of a served version, or on 1.0 an object that 1.0 cannot say | `unknownobject`, `invalid_uuid`                               |
-| 405    | A method other than GET, with `Allow: GET`                                                                                                                                                 | none                                                          |
-| 500    | The store or `authorize` rejects                                                                                                                                                           | `internal_server_error`                                       |
+| Status | When                                                                                                                                                                                                                 | `imsx_codeMinor`                                              |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| 200    | The object, or the set of a page, in the form of the version of the path                                                                                                                                             |                                                               |
+| 400    | A `filter` that cannot be read or names an unknown property; a `fields` with a blank name or of more than 2,048 characters; a `limit` or `offset` that is not a whole number in range; a parameter that occurs twice | `invalid_filter_field`, `invalid_selection_field`, none, none |
+| 401    | `authorize` refuses: the request is not authenticated                                                                                                                                                                | `unauthorised_request`                                        |
+| 403    | `authorize` refuses: the request is not allowed                                                                                                                                                                      | `forbidden`                                                   |
+| 429    | `authorize` refuses: the consumer asks too often, with `Retry-After` when `retryAfterSeconds` gives it                                                                                                               | `server_busy`                                                 |
+| 404    | An identifier the store does not hold (`Unknown Object`), one that is not a UUID (`Invalid UUID`), a path that is no endpoint of a served version, or on 1.0 an object that 1.0 cannot say                           | `unknownobject`, `invalid_uuid`                               |
+| 405    | A method other than GET, with `Allow: GET`                                                                                                                                                                           | none                                                          |
+| 500    | The store or `authorize` rejects                                                                                                                                                                                     | `internal_server_error`                                       |
 
 Every failure is an `imsx_StatusInfo` with `failure` and `error`; a detail is `TargetEndSystem` and the code. The host keeps
 the count of a limit of rate, and `authorize` refuses the request over it with 429.

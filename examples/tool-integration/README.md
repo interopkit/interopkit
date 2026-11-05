@@ -50,30 +50,30 @@ sequenceDiagram
   T->>P: getToolRegistration, with a token of registration.readonly
 ```
 
-| File              | Holds                                                                                                                                     |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/platform.ts` | `createPlatform`: one handler for the platform's origin, with the routes at the return URL of Deep Linking and at the start assessment URL, and the frame of a message |
-| `src/tool.ts`     | `createTool`: one handler for the tool's routes, which answers a Deep Linking request and a Start Proctoring message, accepts a Submission Review request and an End Assessment message, and the grading of a launch, the review of a result and the pause of an attempt through `createServiceClient` |
-| `src/network.ts`  | `connect`: a `fetch` that reaches the handler of an origin, and `plainRequest`                                                            |
-| `src/platform-setup.ts` | The platform's keys, its registration of the tool, its store of launches, its ledger of single-use identifiers and its gradebook   |
-| `src/gradebook.ts` | A `GradebookStore` in memory, which keeps a score unless a later one is kept                                                            |
-| `src/roster.ts`   | A `RosterStore`, a `GroupStore` and a `PreferencesStore` in memory, over one course                                                       |
-| `src/proctoring.ts` | An `AssessmentControl` in memory over the attempts of proctored assessments                                                             |
-| `src/registration.ts` | A `RegistrationStore` in memory, and the activation of a registered tool with `buildToolRegistration`                                    |
-| `src/registering-tool.ts` | A second tool that registers itself: its initiation route, its key set, its record of the platform and the read of its registration |
-| `src/tool-setup.ts` | The tool's registration of the platform, its store of logins and its key set cache                                                      |
-| `src/keys.ts`     | The keys that each side generates for itself: ES256 for the tools, RS256 and HMAC for the platform, since Dynamic Registration needs RS256 |
-| `scenario.ts`     | `runScenario`: the steps of the browser, and what each side saw                                                                           |
-| `test/`           | The tests, which CI runs                                                                                                                  |
+| File                      | Holds                                                                                                                                                                                                                                                                                                  |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/platform.ts`         | `createPlatform`: one handler for the platform's origin, with the routes at the return URL of Deep Linking and at the start assessment URL, and the frame of a message                                                                                                                                 |
+| `src/tool.ts`             | `createTool`: one handler for the tool's routes, which answers a Deep Linking request and a Start Proctoring message, accepts a Submission Review request and an End Assessment message, and the grading of a launch, the review of a result and the pause of an attempt through `createServiceClient` |
+| `src/network.ts`          | `connect`: a `fetch` that reaches the handler of an origin, and `plainRequest`                                                                                                                                                                                                                         |
+| `src/platform-setup.ts`   | The platform's keys, its registration of the tool, its store of launches, its ledger of single-use identifiers and its gradebook                                                                                                                                                                       |
+| `src/gradebook.ts`        | A `GradebookStore` in memory, which keeps a score unless a later one is kept                                                                                                                                                                                                                           |
+| `src/roster.ts`           | A `RosterStore`, a `GroupStore` and a `PreferencesStore` in memory, over one course                                                                                                                                                                                                                    |
+| `src/proctoring.ts`       | An `AssessmentControl` in memory over the attempts of proctored assessments                                                                                                                                                                                                                            |
+| `src/registration.ts`     | A `RegistrationStore` in memory, and the activation of a registered tool with `buildToolRegistration`                                                                                                                                                                                                  |
+| `src/registering-tool.ts` | A second tool that registers itself: its initiation route, its key set, its record of the platform and the read of its registration                                                                                                                                                                    |
+| `src/tool-setup.ts`       | The tool's registration of the platform, its store of logins and its key set cache                                                                                                                                                                                                                     |
+| `src/keys.ts`             | The keys that each side generates for itself: ES256 for the tools, RS256 and HMAC for the platform, since Dynamic Registration needs RS256                                                                                                                                                             |
+| `scenario.ts`             | `runScenario`: the steps of the browser, and what each side saw                                                                                                                                                                                                                                        |
+| `test/`                   | The tests, which CI runs                                                                                                                                                                                                                                                                               |
 
 ## Rules of the example
 
-| Rule                      | Value                                                                                                                                   |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Rule                      | Value                                                                                                                                           |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | Keys                      | Generated at each run with Web Crypto; the platform has the first tool's public key, and fetches the key set of the tool that registered itself |
-| Time                      | A fixed `Clock`, so that the tokens of both sides agree                                                                                 |
-| Single use                | The platform's store of launches gives a message once: the same authentication request a second time gets `login_required`             |
-| Where a real host differs | Its stores are shared across processes, its routes sit behind its own sessions, and the page of the client-side login runs in a browser |
+| Time                      | A fixed `Clock`, so that the tokens of both sides agree                                                                                         |
+| Single use                | The platform's store of launches gives a message once: the same authentication request a second time gets `login_required`                      |
+| Where a real host differs | Its stores are shared across processes, its routes sit behind its own sessions, and the page of the client-side login runs in a browser         |
 
 To run the scenario, build the packages, then start it. It prints what each side saw:
 

@@ -61,22 +61,22 @@ page.value?.statements.length; // => 1
 
 ## The calls
 
-| Call                                      | Request                                               | Resolves with                                                                             | Other outcomes                          |
-| ----------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------- |
-| `sendStatement(statement, options?)`      | `PUT statements?statementId=`                         | `"stored"` for 204; `"conflict"` for 409                                                  | Any other status is a `ServiceError`    |
-| `sendStatements(statements, options?)`    | `POST statements`                                     | The ids of the batch, in order, when every Statement has one; else the list of a 200      | Any other status is a `ServiceError`    |
-| `getStatement(id, options?)`              | `GET statements?statementId=` or `voidedStatementId=` | The Statement; with `attachments: true`, `{ statement, attachments }`                     | `undefined` for 404                     |
-| `queryStatements(query, options?)`        | `GET statements?` and then each `more`                | An iteration of `StatementPage`: Statements, Attachment data, `consistentThrough`, `more` | A page that fails rejects the iteration |
-| `moreStatements(more, options?)` | `GET` of a `more` that a host kept, and then each `more` | An iteration of `StatementPage`, as `queryStatements` | An address on another origin throws `DataError` before any request |
-| `getDocument(target, options?)`           | `GET` of the resource of the target                   | `LrsDocument`: type, bytes, `etag`, `updated`                                             | `undefined` for 404                     |
-| `putDocument(target, document, options?)` | `PUT`                                                 | `"written"` for 204; `"precondition-failed"` for 412; `"conflict"` for 409                | Any other status is a `ServiceError`    |
-| `postDocument(target, json, options?)`    | `POST`, the JSON merged into the document             | As `putDocument`                                                                          | As `putDocument`                        |
-| `deleteDocument(target, options?)`        | `DELETE`                                              | `"written"` for 204; `"precondition-failed"` for 412; `"conflict"` for 409                                      | Any other status is a `ServiceError`    |
-| `listDocumentIds(scope, options?)`        | `GET` of the resource, with no id                     | The ids, perhaps those after `since`                                                      |                                         |
-| `deleteStates(scope, options?)`           | `DELETE activities/state` with no `stateId`           | Nothing                                                                                   |                                         |
-| `getActivity(activityId, options?)`       | `GET activities?activityId=`                          | The `Activity`                                                                            |                                         |
-| `getPerson(agent, options?)`              | `GET agents?agent=`                                   | The `Person`                                                                              |                                         |
-| `about(options?)`                         | `GET about`                                           | `About`: the versions and the extensions                                                  |                                         |
+| Call                                      | Request                                                  | Resolves with                                                                             | Other outcomes                                                     |
+| ----------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `sendStatement(statement, options?)`      | `PUT statements?statementId=`                            | `"stored"` for 204; `"conflict"` for 409                                                  | Any other status is a `ServiceError`                               |
+| `sendStatements(statements, options?)`    | `POST statements`                                        | The ids of the batch, in order, when every Statement has one; else the list of a 200      | Any other status is a `ServiceError`                               |
+| `getStatement(id, options?)`              | `GET statements?statementId=` or `voidedStatementId=`    | The Statement; with `attachments: true`, `{ statement, attachments }`                     | `undefined` for 404                                                |
+| `queryStatements(query, options?)`        | `GET statements?` and then each `more`                   | An iteration of `StatementPage`: Statements, Attachment data, `consistentThrough`, `more` | A page that fails rejects the iteration                            |
+| `moreStatements(more, options?)`          | `GET` of a `more` that a host kept, and then each `more` | An iteration of `StatementPage`, as `queryStatements`                                     | An address on another origin throws `DataError` before any request |
+| `getDocument(target, options?)`           | `GET` of the resource of the target                      | `LrsDocument`: type, bytes, `etag`, `updated`                                             | `undefined` for 404                                                |
+| `putDocument(target, document, options?)` | `PUT`                                                    | `"written"` for 204; `"precondition-failed"` for 412; `"conflict"` for 409                | Any other status is a `ServiceError`                               |
+| `postDocument(target, json, options?)`    | `POST`, the JSON merged into the document                | As `putDocument`                                                                          | As `putDocument`                                                   |
+| `deleteDocument(target, options?)`        | `DELETE`                                                 | `"written"` for 204; `"precondition-failed"` for 412; `"conflict"` for 409                | Any other status is a `ServiceError`                               |
+| `listDocumentIds(scope, options?)`        | `GET` of the resource, with no id                        | The ids, perhaps those after `since`                                                      |                                                                    |
+| `deleteStates(scope, options?)`           | `DELETE activities/state` with no `stateId`              | Nothing                                                                                   |                                                                    |
+| `getActivity(activityId, options?)`       | `GET activities?activityId=`                             | The `Activity`                                                                            |                                                                    |
+| `getPerson(agent, options?)`              | `GET agents?agent=`                                      | The `Person`                                                                              |                                                                    |
+| `about(options?)`                         | `GET about`                                              | `About`: the versions and the extensions                                                  |                                                                    |
 
 A target names a document by its resource: `{ resource: "state", activityId, agent, stateId, registration? }`,
 `{ resource: "agent-profile", agent, profileId }` or `{ resource: "activity-profile", activityId, profileId }`. A scope is a
@@ -110,24 +110,24 @@ resolves `"conflict"` (409). Read the document again with `getDocument` and writ
 
 ## Options
 
-| Option          | Of                              | Default    | Meaning                                                                                                |
-| --------------- | ------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------ |
-| `endpoint`      | `LrsClientOptions`               | required   | The LRS before the resources, HTTPS, ending in a slash, with no credentials, query or fragment         |
-| `fetch`         | `LrsClientOptions`               | required   | The `fetch` that makes the requests                                                                    |
-| `version`       | `LrsClientOptions`               | `"2.0.0"`  | `"2.0.0"` or `"1.0.3"`: the `X-Experience-API-Version` header, the rules of Statements and the preconditions above ([versions](versions.md))              |
-| `authorization` | `LrsClientOptions`               | none       | `(options) => Promise<string \| undefined>`: the `Authorization` header, asked for before each request |
-| `timeoutMs`     | `LrsClientOptions`               | 10,000     | The most milliseconds of one request, from the request to the last byte                                |
-| `maxBytes`      | `LrsClientOptions`               | 10,485,760 | The most bytes of one answer                                                                           |
-| `maxTokens`     | `LrsClientOptions`               | 1,000,000  | The most tokens of JSON in one answer, counted before it is parsed                                     |
-| `signal`        | `LrsClientOptions`               | none       | Ends every wait of the client                                                                          |
-| `attachments`   | `SendOptions`                   | none       | The data of the Attachments, which makes the request a multipart message                               |
-| `role` | `SendOptions` | `"provider"` | `"provider"`, or `"lrs"` to forward what another LRS holds as it is |
-| `languages` | `ReadStatementsOptions`, `GetStatementOptions` | none | The languages to prefer, the first the most, as language tags or `*`: the `Accept-Language` of a read |
-| `format`        | `GetStatementOptions`           | `"exact"`  | `ids`, `exact` or `canonical`                                                                          |
-| `voided`        | `GetStatementOptions`           | false      | Fetch by `voidedStatementId`                                                                           |
-| `attachments`   | `GetStatementOptions`           | false      | Fetch the data of the Attachments too: the answer is `{ statement, attachments }`                      |
-| `precondition`  | `WriteOptions`, `DeleteOptions` | none       | `{ ifMatch }` or `{ ifNoneMatch: "*" }`; for a removal only `{ ifMatch }`                              |
-| `since`         | `ListOptions`                   | none       | Only the ids stored or changed after this time, exclusive                                              |
+| Option          | Of                                             | Default      | Meaning                                                                                                                                      |
+| --------------- | ---------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `endpoint`      | `LrsClientOptions`                             | required     | The LRS before the resources, HTTPS, ending in a slash, with no credentials, query or fragment                                               |
+| `fetch`         | `LrsClientOptions`                             | required     | The `fetch` that makes the requests                                                                                                          |
+| `version`       | `LrsClientOptions`                             | `"2.0.0"`    | `"2.0.0"` or `"1.0.3"`: the `X-Experience-API-Version` header, the rules of Statements and the preconditions above ([versions](versions.md)) |
+| `authorization` | `LrsClientOptions`                             | none         | `(options) => Promise<string \| undefined>`: the `Authorization` header, asked for before each request                                       |
+| `timeoutMs`     | `LrsClientOptions`                             | 10,000       | The most milliseconds of one request, from the request to the last byte                                                                      |
+| `maxBytes`      | `LrsClientOptions`                             | 10,485,760   | The most bytes of one answer                                                                                                                 |
+| `maxTokens`     | `LrsClientOptions`                             | 1,000,000    | The most tokens of JSON in one answer, counted before it is parsed                                                                           |
+| `signal`        | `LrsClientOptions`                             | none         | Ends every wait of the client                                                                                                                |
+| `attachments`   | `SendOptions`                                  | none         | The data of the Attachments, which makes the request a multipart message                                                                     |
+| `role`          | `SendOptions`                                  | `"provider"` | `"provider"`, or `"lrs"` to forward what another LRS holds as it is                                                                          |
+| `languages`     | `ReadStatementsOptions`, `GetStatementOptions` | none         | The languages to prefer, the first the most, as language tags or `*`: the `Accept-Language` of a read                                        |
+| `format`        | `GetStatementOptions`                          | `"exact"`    | `ids`, `exact` or `canonical`                                                                                                                |
+| `voided`        | `GetStatementOptions`                          | false        | Fetch by `voidedStatementId`                                                                                                                 |
+| `attachments`   | `GetStatementOptions`                          | false        | Fetch the data of the Attachments too: the answer is `{ statement, attachments }`                                                            |
+| `precondition`  | `WriteOptions`, `DeleteOptions`                | none         | `{ ifMatch }` or `{ ifNoneMatch: "*" }`; for a removal only `{ ifMatch }`                                                                    |
+| `since`         | `ListOptions`                                  | none         | Only the ids stored or changed after this time, exclusive                                                                                    |
 
 The filters of `queryStatements` are the properties of `StatementQuery`: `agent`, `verb`, `activity`, `registration`,
 `relatedActivities`, `relatedAgents`, `since`, `until`, `limit` (0 asks for the largest page), `format`, `attachments` and
@@ -146,28 +146,28 @@ The filters of `queryStatements` are the properties of `StatementQuery`: `agent`
 
 ## Errors
 
-| Error                                                                                              | When                                                                                  | What to do                                                                     |
-| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `ServiceError` with a status, headers and body                                                     | The LRS answered a status the call does not expect, or did not answer (status 0)      | Read `status`, `body` and `headers["retry-after"]`; the client retries nothing |
-| `The LRS at <url> answered with data that is not valid xAPI: <reason>`                             | An answer breaks the standard, or is another Statement or Activity than the id asked for | Report it to the LRS; the reason names the path                                |
-| `The configuration of the client is invalid at <option>: <sentence>.`                              | A configuration option has the wrong type                                             | Pass the option as the table says                                              |
-| `The option endpoint must be an absolute https URL, ...`, `... must have no credentials, query or fragment, ...`, `... must end in a slash, ...` | The endpoint is not HTTPS, has credentials, a query or a fragment, or lacks the slash | Write `https://lrs.example.org/xapi/`                                          |
-| `The option authorization must return a non-empty header value without line breaks, or undefined.` | The function returned text that could end the header                                  | Return the value of the header only                                            |
-| `A <method> to the <resource> resource needs a precondition on xAPI <version>: pass ...`           | A write lacks the precondition its version requires                                   | Pass `precondition`                                                            |
-| `The Statement needs an id to be stored with PUT: ...`                                             | `sendStatement` was given a Statement with no id                                      | Give it an id, or use `sendStatements`                                         |
-| `The address of the next page, "<more>", is not on the origin of the LRS, ...`                     | `more` points to another origin                                                       | The client does not send its credential elsewhere; report the LRS              |
-| `The LRS sent the address of a page that was fetched already: ...`                                 | `more` repeats an address                                                             | The LRS pages in a loop; report it                                             |
-| `The answer has no X-Experience-API-Consistent-Through header, which the standard requires.`       | A page lacks the header                                                               | Report it to the LRS                                                           |
+| Error                                                                                                                                            | When                                                                                     | What to do                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `ServiceError` with a status, headers and body                                                                                                   | The LRS answered a status the call does not expect, or did not answer (status 0)         | Read `status`, `body` and `headers["retry-after"]`; the client retries nothing |
+| `The LRS at <url> answered with data that is not valid xAPI: <reason>`                                                                           | An answer breaks the standard, or is another Statement or Activity than the id asked for | Report it to the LRS; the reason names the path                                |
+| `The configuration of the client is invalid at <option>: <sentence>.`                                                                            | A configuration option has the wrong type                                                | Pass the option as the table says                                              |
+| `The option endpoint must be an absolute https URL, ...`, `... must have no credentials, query or fragment, ...`, `... must end in a slash, ...` | The endpoint is not HTTPS, has credentials, a query or a fragment, or lacks the slash    | Write `https://lrs.example.org/xapi/`                                          |
+| `The option authorization must return a non-empty header value without line breaks, or undefined.`                                               | The function returned text that could end the header                                     | Return the value of the header only                                            |
+| `A <method> to the <resource> resource needs a precondition on xAPI <version>: pass ...`                                                         | A write lacks the precondition its version requires                                      | Pass `precondition`                                                            |
+| `The Statement needs an id to be stored with PUT: ...`                                                                                           | `sendStatement` was given a Statement with no id                                         | Give it an id, or use `sendStatements`                                         |
+| `The address of the next page, "<more>", is not on the origin of the LRS, ...`                                                                   | `more` points to another origin                                                          | The client does not send its credential elsewhere; report the LRS              |
+| `The LRS sent the address of a page that was fetched already: ...`                                                                               | `more` repeats an address                                                                | The LRS pages in a loop; report it                                             |
+| `The answer has no X-Experience-API-Consistent-Through header, which the standard requires.`                                                     | A page lacks the header                                                                  | Report it to the LRS                                                           |
 
 ## Not included
 
-| Not included                          | Why                                                                                                       |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Retries and backoff                   | A retry of a write needs the host's idea of what is safe to resend; `Retry-After` is in the error         |
-| `HEAD` requests                       | They return what GET does without a body, which a client has no use for                                   |
-| The alternate request syntax          | Removed in 2.0, and meant for browsers that cannot set headers; the client never sends it                 |
-| Getting a credential                  | `authorization` is the host's: Basic, bearer or OAuth 2.0 through `@interopkit/core/oauth`                |
-| Fetching the data at a `fileUrl`      | A fetch is the host's: it knows which addresses may be called                                             |
+| Not included                     | Why                                                                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Retries and backoff              | A retry of a write needs the host's idea of what is safe to resend; `Retry-After` is in the error |
+| `HEAD` requests                  | They return what GET does without a body, which a client has no use for                           |
+| The alternate request syntax     | Removed in 2.0, and meant for browsers that cannot set headers; the client never sends it         |
+| Getting a credential             | `authorization` is the host's: Basic, bearer or OAuth 2.0 through `@interopkit/core/oauth`        |
+| Fetching the data at a `fileUrl` | A fetch is the host's: it knows which addresses may be called                                     |
 
 ## Differences from the references
 

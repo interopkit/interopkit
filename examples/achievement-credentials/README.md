@@ -33,34 +33,34 @@ flowchart LR
   suite[("W3C suites")] -->|"HTTPS"| shim
 ```
 
-| File                    | Holds                                                                                                                                                          |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/university.ts`     | `createUniversity`: awards a credential as a JWS or with an `eddsa-rdfc-2022` proof, with a place in its revocation list and a refresh service; revokes; reissues |
-| `src/status-lists.ts`   | `createStatusLists`: a list for each purpose as plain data, a free index at random, and the list credential issued over a `Signer`                              |
-| `src/wallet.ts`         | `createWallet`: the Open Badges API over a store in memory, which verifies a credential before it keeps it and replaces one with a newer one                   |
-| `src/employer.ts`       | `createEmployer`: lists the credentials of a wallet with the client, verifies each for the learner, and shows what a wallet shows                                |
-| `src/hosted-badge.ts`   | The three documents of an Open Badges 2.0 badge that a guild hosts, which the package reads and verifies and never writes                                       |
-| `src/vc-api.ts`         | `createVcApi`: the VC-API over `addProof`, `verifyProof`, `verifyCredentialStatus` and `deriveDisclosure`, and the status lists that it fills                    |
-| `src/keys.ts`           | `createSigningKey`: an Ed25519 or a P-256 key in memory, its JWK, its Multikey and its `did:key`, and the `Signer` over it                                       |
-| `src/contexts.ts`       | `createStandInContexts`: a small context for each address, at its pin, so that the scenario needs no download                                                   |
-| `src/network.ts`        | `createNetwork`: a `fetch` that reaches the handler of an origin and nothing else                                                                               |
-| `src/server.ts`         | `serve`: the handler of a host over `node:http` or `node:https` on the loopback address                                                                         |
-| `scenario.ts`           | `runScenario`: the learner's uploads, the review, the revocation, the refresh, the images, the Open Badges 2.0 badge and the VC-API flows                       |
-| `serve.ts`              | Starts the VC-API service with TLS for a suite; the environment names the key, the certificate, the contexts and the port                                      |
-| `test/`                 | The tests, which CI runs, and the flows against the public validator of 1EdTech, which `pnpm validator` runs                                                    |
+| File                  | Holds                                                                                                                                                             |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/university.ts`   | `createUniversity`: awards a credential as a JWS or with an `eddsa-rdfc-2022` proof, with a place in its revocation list and a refresh service; revokes; reissues |
+| `src/status-lists.ts` | `createStatusLists`: a list for each purpose as plain data, a free index at random, and the list credential issued over a `Signer`                                |
+| `src/wallet.ts`       | `createWallet`: the Open Badges API over a store in memory, which verifies a credential before it keeps it and replaces one with a newer one                      |
+| `src/employer.ts`     | `createEmployer`: lists the credentials of a wallet with the client, verifies each for the learner, and shows what a wallet shows                                 |
+| `src/hosted-badge.ts` | The three documents of an Open Badges 2.0 badge that a guild hosts, which the package reads and verifies and never writes                                         |
+| `src/vc-api.ts`       | `createVcApi`: the VC-API over `addProof`, `verifyProof`, `verifyCredentialStatus` and `deriveDisclosure`, and the status lists that it fills                     |
+| `src/keys.ts`         | `createSigningKey`: an Ed25519 or a P-256 key in memory, its JWK, its Multikey and its `did:key`, and the `Signer` over it                                        |
+| `src/contexts.ts`     | `createStandInContexts`: a small context for each address, at its pin, so that the scenario needs no download                                                     |
+| `src/network.ts`      | `createNetwork`: a `fetch` that reaches the handler of an origin and nothing else                                                                                 |
+| `src/server.ts`       | `serve`: the handler of a host over `node:http` or `node:https` on the loopback address                                                                           |
+| `scenario.ts`         | `runScenario`: the learner's uploads, the review, the revocation, the refresh, the images, the Open Badges 2.0 badge and the VC-API flows                         |
+| `serve.ts`            | Starts the VC-API service with TLS for a suite; the environment names the key, the certificate, the contexts and the port                                         |
+| `test/`               | The tests, which CI runs, and the flows against the public validator of 1EdTech, which `pnpm validator` runs                                                      |
 
 ## Rules of the example
 
-| Rule                | Value                                                                                                                                                                     |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Issuer binding      | The university publishes its keys in the document at its `id`; a credential signed by a key that it does not publish is refused by the wallet with 422                      |
-| Revocation          | The university sets the entry of a credential in its list; the employer's verification fails the `status` check and no other                                              |
-| Refresh             | The university reissues a credential under a new name; the employer's copy refreshes to it, verified as any credential                                                    |
-| Both proofs         | A credential is a compact JWS (ES256, with the issuer's key by `kid`) or has an `eddsa-rdfc-2022` proof; the wallet keeps both, and the employer verifies both          |
-| Images              | A credential baked into a PNG and an SVG verifies as the JWS it came from                                                                                                |
-| Open Badges 2.0     | A guild hosts an assertion, a BadgeClass and an issuer; `verifyCredential` verifies the address within the verification policy of the issuer                              |
-| Contexts            | The scenario serves a small stand-in for each context, at its pin; a host serves the real ones, which `KNOWN_CONTEXTS` pins, and never loads a context from a credential |
-| Where a real host differs | Its keys are in a KMS, its tokens come from an authorization server, its stores are databases, and its `fetch` refuses private addresses after resolution        |
+| Rule                      | Value                                                                                                                                                                    |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Issuer binding            | The university publishes its keys in the document at its `id`; a credential signed by a key that it does not publish is refused by the wallet with 422                   |
+| Revocation                | The university sets the entry of a credential in its list; the employer's verification fails the `status` check and no other                                             |
+| Refresh                   | The university reissues a credential under a new name; the employer's copy refreshes to it, verified as any credential                                                   |
+| Both proofs               | A credential is a compact JWS (ES256, with the issuer's key by `kid`) or has an `eddsa-rdfc-2022` proof; the wallet keeps both, and the employer verifies both           |
+| Images                    | A credential baked into a PNG and an SVG verifies as the JWS it came from                                                                                                |
+| Open Badges 2.0           | A guild hosts an assertion, a BadgeClass and an issuer; `verifyCredential` verifies the address within the verification policy of the issuer                             |
+| Contexts                  | The scenario serves a small stand-in for each context, at its pin; a host serves the real ones, which `KNOWN_CONTEXTS` pins, and never loads a context from a credential |
+| Where a real host differs | Its keys are in a KMS, its tokens come from an authorization server, its stores are databases, and its `fetch` refuses private addresses after resolution                |
 
 To run the scenario, build the packages, then start it. It prints what the employer saw, as JSON:
 

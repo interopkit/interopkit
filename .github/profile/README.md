@@ -11,16 +11,16 @@ flowchart LR
   pkgs <-->|"frameworks, credentials"| providers["CASE providers, issuers, wallets"]
 ```
 
-| Package | What it is |
-| --- | --- |
-| [`@interopkit/tool-integration`](https://interopkit.wakan.dev/_interopkit/tool-integration/) | LTI 1.3, in the tool and the platform role |
-| [`@interopkit/learning-analytics`](https://interopkit.wakan.dev/_interopkit/learning-analytics/) | Caliper Analytics 1.2 events, a sensor and an endpoint |
-| [`@interopkit/competency-frameworks`](https://interopkit.wakan.dev/_interopkit/competency-frameworks/) | CASE 1.1 and 1.0 frameworks, a client and a provider |
-| [`@interopkit/learning-records`](https://interopkit.wakan.dev/_interopkit/learning-records/) | xAPI 2.0 and 1.0.3 Statements, an LRS client and handler, xAPI Profiles 1.0 |
+| Package                                                                                                    | What it is                                                                     |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| [`@interopkit/tool-integration`](https://interopkit.wakan.dev/_interopkit/tool-integration/)               | LTI 1.3, in the tool and the platform role                                     |
+| [`@interopkit/learning-analytics`](https://interopkit.wakan.dev/_interopkit/learning-analytics/)           | Caliper Analytics 1.2 events, a sensor and an endpoint                         |
+| [`@interopkit/competency-frameworks`](https://interopkit.wakan.dev/_interopkit/competency-frameworks/)     | CASE 1.1 and 1.0 frameworks, a client and a provider                           |
+| [`@interopkit/learning-records`](https://interopkit.wakan.dev/_interopkit/learning-records/)               | xAPI 2.0 and 1.0.3 Statements, an LRS client and handler, xAPI Profiles 1.0    |
 | [`@interopkit/achievement-credentials`](https://interopkit.wakan.dev/_interopkit/achievement-credentials/) | Open Badges 3.0 and CLR 2.0 credentials, their proofs, status and verification |
-| [`@interopkit/selective-disclosure`](https://interopkit.wakan.dev/_interopkit/selective-disclosure/) | The ecdsa-sd-2023 cryptosuite |
-| [`@interopkit/course-launch`](https://interopkit.wakan.dev/_interopkit/course-launch/) | cmi5 course structures, packages, the LMS role and the assignable unit runtime |
-| [`@interopkit/core`](https://interopkit.wakan.dev/_interopkit/core/) | The shared foundation of the packages |
+| [`@interopkit/selective-disclosure`](https://interopkit.wakan.dev/_interopkit/selective-disclosure/)       | The ecdsa-sd-2023 cryptosuite                                                  |
+| [`@interopkit/course-launch`](https://interopkit.wakan.dev/_interopkit/course-launch/)                     | cmi5 course structures, packages, the LMS role and the assignable unit runtime |
+| [`@interopkit/core`](https://interopkit.wakan.dev/_interopkit/core/)                                       | The shared foundation of the packages                                          |
 
 The guides, the evidence of each package and the API are at [interopkit.wakan.dev](https://interopkit.wakan.dev/). Two sibling families
 build on the same rules: [assesskit](https://assesskit.wakan.dev/) for QTI 3.0 assessment, and [measurekit](https://measurekit.wakan.dev/)

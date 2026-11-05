@@ -16,39 +16,39 @@ turns through `alternate` of `scripts/bench-rounds.ts`: three rounds that altern
 up or slows down weighs on both. A ratio of the fastest samples holds on any machine; its budget is five times the highest ratio measured on the runner of CI (the eight latest green runs) and on a laptop, rounded up to one significant digit. The table gives the range of the ratios over those runs. The package
 states no budget in time.
 
-| Benchmark | Reference in the same run | Ratio | Budget |
-| --- | --- | ---: | ---: |
-| `handleLaunch`, a message with every claim, 0.067 ms | `verifyLaunch` of `@lti-tool/core`, same message | 1.05–1.42 | 8   |
-| The same | `validate` of `lti-core`, same message | 1.84–2.13 | 20  |
-| `handleLaunch` with an RS256 `id_token` | `jwtVerify` of jose, same token | 2.37–3.20 | 20  |
-| `handleLaunch` with an ES256 `id_token` | the same | 1.71–2.22 | 20  |
-| The authorization request that signs an RS256 `id_token` with every claim | `SignJWT` of jose, same claims | 1.18–1.94 | 10 |
-| The same, ES256 | the same | 2.06–3.43 | 20  |
-| The same, substituting the 44 variables of the platform | the same request with the names written plainly | 0.98–1.05 | 6   |
-| A key from a cached key set, 0.40 µs | `createRemoteJWKSet` of jose holding the set | 1.82–2.47 | 20  |
-| The same | `createLocalJWKSet` of jose | 2.64–5.79 | 30  |
-| `members`, a page of 1,000 (295 KB) | `JSON.parse` of its text | 4.12–6.21 | 40  |
-| `results`, a page of 1,000 (243 KB) | the same | 6.22–9.59 | 50 |
-| `lineItems`, a page of 1,000 (272 KB) | the same | 8.5–12.8  | 70 |
-| `publishScore`, `control`, `registerTool` | `callService` of core, same request and answer | 1.83–6.00 | 30, 20, 40 |
-| The token endpoint, 0.044 ms | `jwtVerify` of jose on its client assertion | 2.52–3.92 | 20  |
-| The members of a context, a page of 1,000, 1.1 ms | `JSON.stringify` of the page | 5.54–8.59 | 50 |
-| The results of a line item, a page of 1,000, 1.0 ms | the same | 7.4–11.7  | 60 |
-| A score, a control request, a registration | `compactVerify` of jose on the token and `JSON.parse` of the body | 3.00–4.41 | 30, 20, 30 |
-| `buildDeepLinkingResponse` with five items, `buildStartAssessmentPage` | `SignJWT` of jose, same claims | 1.03–1.28 | 7, 7 |
-| `readDeepLinkingResponse`, `readStartAssessment` | `jwtVerify` of jose on the JWT | 2.45–4.44 | 30, 20 |
+| Benchmark                                                                 | Reference in the same run                                         |     Ratio |     Budget |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------- | --------: | ---------: |
+| `handleLaunch`, a message with every claim, 0.067 ms                      | `verifyLaunch` of `@lti-tool/core`, same message                  | 1.05–1.42 |          8 |
+| The same                                                                  | `validate` of `lti-core`, same message                            | 1.84–2.13 |         20 |
+| `handleLaunch` with an RS256 `id_token`                                   | `jwtVerify` of jose, same token                                   | 2.37–3.20 |         20 |
+| `handleLaunch` with an ES256 `id_token`                                   | the same                                                          | 1.71–2.22 |         20 |
+| The authorization request that signs an RS256 `id_token` with every claim | `SignJWT` of jose, same claims                                    | 1.18–1.94 |         10 |
+| The same, ES256                                                           | the same                                                          | 2.06–3.43 |         20 |
+| The same, substituting the 44 variables of the platform                   | the same request with the names written plainly                   | 0.98–1.05 |          6 |
+| A key from a cached key set, 0.40 µs                                      | `createRemoteJWKSet` of jose holding the set                      | 1.82–2.47 |         20 |
+| The same                                                                  | `createLocalJWKSet` of jose                                       | 2.64–5.79 |         30 |
+| `members`, a page of 1,000 (295 KB)                                       | `JSON.parse` of its text                                          | 4.12–6.21 |         40 |
+| `results`, a page of 1,000 (243 KB)                                       | the same                                                          | 6.22–9.59 |         50 |
+| `lineItems`, a page of 1,000 (272 KB)                                     | the same                                                          |  8.5–12.8 |         70 |
+| `publishScore`, `control`, `registerTool`                                 | `callService` of core, same request and answer                    | 1.83–6.00 | 30, 20, 40 |
+| The token endpoint, 0.044 ms                                              | `jwtVerify` of jose on its client assertion                       | 2.52–3.92 |         20 |
+| The members of a context, a page of 1,000, 1.1 ms                         | `JSON.stringify` of the page                                      | 5.54–8.59 |         50 |
+| The results of a line item, a page of 1,000, 1.0 ms                       | the same                                                          |  7.4–11.7 |         60 |
+| A score, a control request, a registration                                | `compactVerify` of jose on the token and `JSON.parse` of the body | 3.00–4.41 | 30, 20, 30 |
+| `buildDeepLinkingResponse` with five items, `buildStartAssessmentPage`    | `SignJWT` of jose, same claims                                    | 1.03–1.28 |       7, 7 |
+| `readDeepLinkingResponse`, `readStartAssessment`                          | `jwtVerify` of jose on the JWT                                    | 2.45–4.44 |     30, 20 |
 
 Substituting 44 variables costs what a request without them costs, since the signature takes the time. Four fixes changed no
 output: on the tests, on 1,698 inputs given to the build before and the build after (pages with odd users and extensions, every
 token of the fixtures with each last character, the handler of results on odd line items and broken stores), and on a property
 test of the check of a token against jose's own round trip. Timed in turns against the build before:
 
-| Fix | Paths, the fastest sample before and after |
-| --- | --- |
-| A writer drops its `undefined` members in a loop; `Object.fromEntries` took half of the page of members | The members of a context 2.2 to 1.1 ms; the results 2.2 to 1.0 ms with the next fix; a score posted 12 percent less |
-| The address of each result is the address of the results, parsed once, with its user as the query; the platform reads what its store gives without the addresses it then checked again | The results of a line item |
-| A part of a token is canonical base64url by its alphabet, its length and its spare bits, without decoding and encoding it | `handleLaunch` 0.078 to 0.064 ms; `readDeepLinkingResponse` and `readStartAssessment` 17 and 18 percent less; the token endpoint 15 |
-| Extensions are found by the names of the members | `lineItems` 9 percent less |
+| Fix                                                                                                                                                                                    | Paths, the fastest sample before and after                                                                                          |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| A writer drops its `undefined` members in a loop; `Object.fromEntries` took half of the page of members                                                                                | The members of a context 2.2 to 1.1 ms; the results 2.2 to 1.0 ms with the next fix; a score posted 12 percent less                 |
+| The address of each result is the address of the results, parsed once, with its user as the query; the platform reads what its store gives without the addresses it then checked again | The results of a line item                                                                                                          |
+| A part of a token is canonical base64url by its alphabet, its length and its spare bits, without decoding and encoding it                                                              | `handleLaunch` 0.078 to 0.064 ms; `readDeepLinkingResponse` and `readStartAssessment` 17 and 18 percent less; the token endpoint 15 |
+| Extensions are found by the names of the members                                                                                                                                       | `lineItems` 9 percent less                                                                                                          |
 
 The gaps that remain have named causes. `handleLaunch` reads the form and the cookie, checks the registration that the lookup returns,
 counts the JSON tokens of the payload before it parses it, and reads every claim of the message with its schema; `lti-core` reads
@@ -64,11 +64,11 @@ entry point holds in part, holds jose for the key set cache.
 
 Gzip is measured on Node.js 22; other versions of Node.js differ by up to 1 percent.
 
-| Entry point | Bytes | Gzip | Budget | Holds, besides `protocol`, `errors`, `@interopkit/core`, jose and valibot |
-| --- | ---: | ---: | ---: | --- |
-| `@interopkit/tool-integration` | 28,654 | 10,098 | 13,000 | Nothing more: the models, the vocabularies, `LtiError` and the key set cache |
-| `@interopkit/tool-integration/platform` | 149,675 | 45,261 | 55,500 | Nothing more |
-| `@interopkit/tool-integration/tool` | 144,257 | 44,494 | 54,000 | oauth4webapi, through the OAuth 2.0 client of core that obtains the access tokens |
+| Entry point                             |   Bytes |   Gzip | Budget | Holds, besides `protocol`, `errors`, `@interopkit/core`, jose and valibot         |
+| --------------------------------------- | ------: | -----: | -----: | --------------------------------------------------------------------------------- |
+| `@interopkit/tool-integration`          |  28,654 | 10,098 | 13,000 | Nothing more: the models, the vocabularies, `LtiError` and the key set cache      |
+| `@interopkit/tool-integration/platform` | 149,675 | 45,261 | 55,500 | Nothing more                                                                      |
+| `@interopkit/tool-integration/tool`     | 144,257 | 44,494 | 54,000 | oauth4webapi, through the OAuth 2.0 client of core that obtains the access tokens |
 
 The platform holds nothing of the tool, nor the tool of the platform. A host that imports one function of an entry point gets less:
 the package has no side effects, so a bundler drops the rest.
@@ -81,21 +81,21 @@ must fit, whenever V8 collects, so a regression fails and the load of a machine 
 which the reading ends on Node.js 22 and 24, rounded up to 16 MiB; `node scripts/peak-memory.ts tool-integration` (and `core`, for the key set) prints the least, in steps
 of 8 MiB.
 
-| Reader | Worst input | Least heap | Heap of the test |
-| --- | --- | ---: | ---: |
-| `handleLogin` | Forms and queries of 64 KiB of repeated and of distinct parameters, and a form of 64 MiB | 8 MiB | 16 MiB |
-| `handleLaunch` | A form of 64 KiB whose token is one array of small objects, and a form of 64 MiB | 8 MiB | 16 MiB |
-| The claims of a token before its signature | A payload of 3.6 million tokens, refused by their number | 16 MiB | 32 MiB |
-| A key set, `createJwksCache` | 64 KiB of empty keys, refused above 100; 100 keys of 64 KiB; one nested 32,000 deep; 64 MiB | 16 MiB | 32 MiB |
-| `lineItems` and the other pages | A page of a million tokens in an extension that the reader copies; 1 MiB of empty objects | 48 MiB | 96 MiB |
-| `members` | The same | 32 MiB | 64 MiB |
-| `control` | A status of a million tokens; 24 MiB | 32 MiB | 64 MiB |
-| `preferences` | A record of a million tokens; 24 MiB | 48 MiB | 96 MiB |
-| `discoverPlatform`, `registerTool` | An answer of an array just under 64 KiB, and one of 1 MiB | 16 MiB | 32 MiB |
-| The authorization and token requests of the platform | Forms of 64 KiB of repeated and distinct parameters, and of 64 MiB | 8 MiB | 16 MiB |
-| The grade services, the Assessment Control Service and the registration endpoint | Bodies of 64 KiB of nesting and of arrays | 8–16 MiB | 16–32 MiB |
-| `readDeepLinkingResponse` | A form of under 1 MiB that lists 10,000 items, refused by their number | 16 MiB | 32 MiB |
-| `readStartAssessment` | A form of 64 KiB whose token is one array of small objects | 16 MiB | 32 MiB |
+| Reader                                                                           | Worst input                                                                                 | Least heap | Heap of the test |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------: | ---------------: |
+| `handleLogin`                                                                    | Forms and queries of 64 KiB of repeated and of distinct parameters, and a form of 64 MiB    |      8 MiB |           16 MiB |
+| `handleLaunch`                                                                   | A form of 64 KiB whose token is one array of small objects, and a form of 64 MiB            |      8 MiB |           16 MiB |
+| The claims of a token before its signature                                       | A payload of 3.6 million tokens, refused by their number                                    |     16 MiB |           32 MiB |
+| A key set, `createJwksCache`                                                     | 64 KiB of empty keys, refused above 100; 100 keys of 64 KiB; one nested 32,000 deep; 64 MiB |     16 MiB |           32 MiB |
+| `lineItems` and the other pages                                                  | A page of a million tokens in an extension that the reader copies; 1 MiB of empty objects   |     48 MiB |           96 MiB |
+| `members`                                                                        | The same                                                                                    |     32 MiB |           64 MiB |
+| `control`                                                                        | A status of a million tokens; 24 MiB                                                        |     32 MiB |           64 MiB |
+| `preferences`                                                                    | A record of a million tokens; 24 MiB                                                        |     48 MiB |           96 MiB |
+| `discoverPlatform`, `registerTool`                                               | An answer of an array just under 64 KiB, and one of 1 MiB                                   |     16 MiB |           32 MiB |
+| The authorization and token requests of the platform                             | Forms of 64 KiB of repeated and distinct parameters, and of 64 MiB                          |      8 MiB |           16 MiB |
+| The grade services, the Assessment Control Service and the registration endpoint | Bodies of 64 KiB of nesting and of arrays                                                   |   8–16 MiB |        16–32 MiB |
+| `readDeepLinkingResponse`                                                        | A form of under 1 MiB that lists 10,000 items, refused by their number                      |     16 MiB |           32 MiB |
+| `readStartAssessment`                                                            | A form of 64 KiB whose token is one array of small objects                                  |     16 MiB |           32 MiB |
 
 A key set of 64 KiB of empty keys took some 20 MiB to read, since jose copies each key and keeps a note of it: the cache refuses a set
 of more than 100 keys before jose sees it. A client of a service takes an answer of up to `maxBytes`, 1 MiB, and `maxTokens`, a

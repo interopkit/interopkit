@@ -56,16 +56,16 @@ voiding.object; // => { objectType: "StatementRef", id }
 
 ## Functions
 
-| Function                             | Does                                                                                                                                                             | Throws                                                |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `buildStatement(input, options?)`    | Copies the input, writes `timestamp` in UTC with milliseconds and the `version`, and reads the result with the rules of a provider of that version. Returns the Statement | `DataError` that names every error with its path      |
-| `buildVoidingStatement(target, input, options?)` | Builds the Statement with the voided verb, whose Object is a Statement Reference to `target`. The target need not exist                                          | `DataError` for the target, or as `buildStatement`    |
-| `deriveStatementId(namespace, name)` | Returns the UUID of version 5 of a name in a namespace, so that a resend of an event repeats the id and an LRS keeps the first copy                              | `DataError` for a namespace or a name that is wrong   |
-| `formatDuration(milliseconds)`       | Writes a length of time as an ISO 8601 duration of hours, minutes and seconds, cut at 0.01 second: `PT1H30M32.15S`                                               | `DataError` for anything but a whole number from 0    |
-| `parseDuration(text)`                | Reads a duration of ISO 8601 4.4.3.2 into years, months, days, hours, minutes and seconds                                                                       | `DataError` for text that is not a duration           |
-| `isDuration(text)`                   | Tells whether `parseDuration` reads the text                                                                                                                     | none                                                  |
-| `formatDateTime(at)` of `@interopkit/core/checks` | Writes whole epoch milliseconds as a Timestamp in UTC with milliseconds; `buildStatement` writes a `timestamp` with any offset so | `DataError` for a time outside the years 0000 to 9999 |
-| `mboxSha1sum(mailto)`                | Returns the SHA-1 of a `mailto` IRI as 40 hexadecimal digits, for `mbox_sha1sum`                                                                                 | `DataError` for text that is not a `mailto` IRI       |
+| Function                                          | Does                                                                                                                                                                      | Throws                                                |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `buildStatement(input, options?)`                 | Copies the input, writes `timestamp` in UTC with milliseconds and the `version`, and reads the result with the rules of a provider of that version. Returns the Statement | `DataError` that names every error with its path      |
+| `buildVoidingStatement(target, input, options?)`  | Builds the Statement with the voided verb, whose Object is a Statement Reference to `target`. The target need not exist                                                   | `DataError` for the target, or as `buildStatement`    |
+| `deriveStatementId(namespace, name)`              | Returns the UUID of version 5 of a name in a namespace, so that a resend of an event repeats the id and an LRS keeps the first copy                                       | `DataError` for a namespace or a name that is wrong   |
+| `formatDuration(milliseconds)`                    | Writes a length of time as an ISO 8601 duration of hours, minutes and seconds, cut at 0.01 second: `PT1H30M32.15S`                                                        | `DataError` for anything but a whole number from 0    |
+| `parseDuration(text)`                             | Reads a duration of ISO 8601 4.4.3.2 into years, months, days, hours, minutes and seconds                                                                                 | `DataError` for text that is not a duration           |
+| `isDuration(text)`                                | Tells whether `parseDuration` reads the text                                                                                                                              | none                                                  |
+| `formatDateTime(at)` of `@interopkit/core/checks` | Writes whole epoch milliseconds as a Timestamp in UTC with milliseconds; `buildStatement` writes a `timestamp` with any offset so                                         | `DataError` for a time outside the years 0000 to 9999 |
+| `mboxSha1sum(mailto)`                             | Returns the SHA-1 of a `mailto` IRI as 40 hexadecimal digits, for `mbox_sha1sum`                                                                                          | `DataError` for text that is not a `mailto` IRI       |
 
 ## What `buildStatement` takes
 
@@ -82,8 +82,8 @@ Any other property is refused: `stored`, `authority` and `version` are set by th
 written although a provider should not send one, so that a system of xAPI 1.0.x does not read the Statement as 1.0.0; the provider
 rules call it a warning, and a warning does not keep a Statement from being built.
 
-| Option    | Of                                   | Default   | Meaning                                                                                                     |
-| --------- | ------------------------------------ | --------- | ----------------------------------------------------------------------------------------------------------- |
+| Option    | Of                                        | Default   | Meaning                                                                                                                               |
+| --------- | ----------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `version` | `buildStatement`, `buildVoidingStatement` | `"2.0.0"` | The provider rules that apply: `"2.0.0"`, or `"1.0.3"`, whose Statements carry `1.0.0` and have no `contextAgents` or `contextGroups` |
 
 ## Limits
@@ -92,17 +92,17 @@ None are set here. The functions take values that are in memory, and the host li
 
 ## Errors
 
-| Error                                                                                                   | When                                                         | What to do                                          |
-| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------- |
-| `The statement is invalid. At actor: <sentence> At verb.id: <sentence>`                                 | The Statement breaks a rule of a provider                    | Fix each path that the message names                |
-| `A statement input has the properties "id", "actor", ... and "attachments", found "stored".`            | The input has a property that a Statement is not built from  | Leave it out: the LRS sets `stored` and `authority` |
-| `A statement input must be an object, found null.`                                                      | The input is not an object                                   | Pass an object                                      |
-| `The target must be the id of the Statement to void, as a UUID, found "x".`                             | The target is not a UUID                                     | Pass the `id` of the Statement                      |
-| `The duration must be an ISO 8601 duration such as PT1H30M, found "1H".`                                | The text given to `parseDuration` is not a duration          | Pass `PT1H30M`, or ask `isDuration` first           |
-| `The namespace must be a UUID, found "x".`                                                              | `deriveStatementId` got a namespace that is not a UUID       | Make a UUID once and keep it                        |
-| `The mailto IRI must be "mailto:" and one email address, found "x".`                                    | `mboxSha1sum` got something else                             | Pass `mailto:` and the address                      |
-| `The time must be whole epoch milliseconds in the years 0000 to 9999, found x.`                         | `formatDateTime` got another value                           | Pass whole milliseconds                             |
-| `The duration in milliseconds must be a non-negative integer, found x.`                                 | `formatDuration` got a fraction, a negative or another value | Round the milliseconds first                        |
+| Error                                                                                        | When                                                         | What to do                                          |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------- |
+| `The statement is invalid. At actor: <sentence> At verb.id: <sentence>`                      | The Statement breaks a rule of a provider                    | Fix each path that the message names                |
+| `A statement input has the properties "id", "actor", ... and "attachments", found "stored".` | The input has a property that a Statement is not built from  | Leave it out: the LRS sets `stored` and `authority` |
+| `A statement input must be an object, found null.`                                           | The input is not an object                                   | Pass an object                                      |
+| `The target must be the id of the Statement to void, as a UUID, found "x".`                  | The target is not a UUID                                     | Pass the `id` of the Statement                      |
+| `The duration must be an ISO 8601 duration such as PT1H30M, found "1H".`                     | The text given to `parseDuration` is not a duration          | Pass `PT1H30M`, or ask `isDuration` first           |
+| `The namespace must be a UUID, found "x".`                                                   | `deriveStatementId` got a namespace that is not a UUID       | Make a UUID once and keep it                        |
+| `The mailto IRI must be "mailto:" and one email address, found "x".`                         | `mboxSha1sum` got something else                             | Pass `mailto:` and the address                      |
+| `The time must be whole epoch milliseconds in the years 0000 to 9999, found x.`              | `formatDateTime` got another value                           | Pass whole milliseconds                             |
+| `The duration in milliseconds must be a non-negative integer, found x.`                      | `formatDuration` got a fraction, a negative or another value | Round the milliseconds first                        |
 
 ## Not included
 

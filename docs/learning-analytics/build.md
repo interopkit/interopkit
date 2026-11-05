@@ -41,20 +41,20 @@ event.eventTime; // => "2023-11-14T22:13:20.000Z"
 shares no object with it, and its properties are always in the same order, so the same event always serializes to the same
 bytes.
 
-| Property           | Meaning                                                                                              | Default  |
-| ------------------ | ---------------------------------------------------------------------------------------------------- | -------- |
-| `id`               | A UUID URN, `urn:uuid:` and a UUID. Make it with `mintUrn`                                           | required |
-| `type`             | The event type: one of `EVENT_TYPES`, which chooses the rest                                         | required |
-| `actor`            | The entity that acted, as an object or an IRI                                                        | required |
-| `action`           | What the actor did: one that the event type allows                                                   | required |
-| `object`           | The entity that the actor acted on                                                                   | required |
-| `eventTime`        | When it happened, as `formatDateTime` writes it                                                         | required |
-| `profile`          | The profile that governs the event: one of `PROFILES`                                                | none     |
-| `edApp`            | The application that the event happened in                                                           | none     |
-| `generated`        | The entity that the action made, such as an attempt or a score                                       | none     |
-| `target`, `referrer` | A segment of the object, and where the actor came from                                             | none     |
-| `group`, `membership`, `session`, `federatedSession` | The organization, the roles of the actor in it, the session, and the session of the platform | none |
-| `extensions`       | A JSON object of the sender's own attributes                                                         | none     |
+| Property                                             | Meaning                                                                                      | Default  |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------- |
+| `id`                                                 | A UUID URN, `urn:uuid:` and a UUID. Make it with `mintUrn`                                   | required |
+| `type`                                               | The event type: one of `EVENT_TYPES`, which chooses the rest                                 | required |
+| `actor`                                              | The entity that acted, as an object or an IRI                                                | required |
+| `action`                                             | What the actor did: one that the event type allows                                           | required |
+| `object`                                             | The entity that the actor acted on                                                           | required |
+| `eventTime`                                          | When it happened, as `formatDateTime` writes it                                              | required |
+| `profile`                                            | The profile that governs the event: one of `PROFILES`                                        | none     |
+| `edApp`                                              | The application that the event happened in                                                   | none     |
+| `generated`                                          | The entity that the action made, such as an attempt or a score                               | none     |
+| `target`, `referrer`                                 | A segment of the object, and where the actor came from                                       | none     |
+| `group`, `membership`, `session`, `federatedSession` | The organization, the roles of the actor in it, the session, and the session of the platform | none     |
+| `extensions`                                         | A JSON object of the sender's own attributes                                                 | none     |
 
 The events that the Library Use Profile defines have their own properties: see the [model](./model.md).
 
@@ -76,12 +76,12 @@ person["@context"]; // => ["https://schema.org/docs/jsonldcontext.json","http://
 An event with a property that its class does not have is refused, so that nothing is dropped without notice. The entities of an
 event are checked by the classes of the [model](./model.md): an object of a class that the property does not take is refused.
 
-| Term kind    | Terms that this version builds                                                                         |
-| ------------ | ------------------------------------------------------------------------------------------------------ |
+| Term kind    | Terms that this version builds                                                                               |
+| ------------ | ------------------------------------------------------------------------------------------------------------ |
 | Event types  | Any of `EVENT_TYPES`: the 21 events of Appendix A, the 3 of the Library Use Profile, and the generic `Event` |
-| Profiles     | Any of `PROFILES`: the 15 profiles of Caliper 1.2 and the Library Use Profile                          |
-| Actions      | The actions that the event type allows, of `ACTIONS`                                                   |
-| Entity types | Any of `ENTITY_TYPES`, as the [model](./model.md) describes them, each as an object or as its IRI     |
+| Profiles     | Any of `PROFILES`: the 15 profiles of Caliper 1.2 and the Library Use Profile                                |
+| Actions      | The actions that the event type allows, of `ACTIONS`                                                         |
+| Entity types | Any of `ENTITY_TYPES`, as the [model](./model.md) describes them, each as an object or as its IRI            |
 
 The profile is checked against the rows of its tables as well: `buildEvent` refuses a `GradeEvent` with the `AssessmentProfile`,
 because that profile has no such event, and a `SessionEvent` that logs in an application as the actor. It refuses what
@@ -117,34 +117,34 @@ dereference (Caliper 1.2 section 4.2 says an IRI should be one).
 `formatDateTime(at)` of `@interopkit/core/checks` writes epoch milliseconds as Caliper requires: `YYYY-MM-DDTHH:mm:ss.SSSZ`, in
 UTC, with milliseconds. The same function writes the Timestamps of xAPI, so one host writes the times of both standards alike.
 
-| Input                                                       | Result                                                                      |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Whole milliseconds from `-62167219200000` to `253402300799999` | The time, from `0000-01-01T00:00:00.000Z` to `9999-12-31T23:59:59.999Z` |
-| Anything else, a fraction of a millisecond, `NaN` and a string included | `DataError`                                                      |
+| Input                                                                   | Result                                                                  |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Whole milliseconds from `-62167219200000` to `253402300799999`          | The time, from `0000-01-01T00:00:00.000Z` to `9999-12-31T23:59:59.999Z` |
+| Anything else, a fraction of a millisecond, `NaN` and a string included | `DataError`                                                             |
 
 ## Errors
 
-| Error       | When                                                                                                                                                                           | What to do                                                             |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| `DataError` | The input is not an event: `The event is invalid at action: expected an action of Caliper, found "Graded".`, an entity of a class the property does not take, a relative IRI, a time not in the form, an input with an `@context` | Fix the input. Nothing was built                                       |
-| `DataError` | The event breaks a rule of its profile: `The event is invalid at profile: expected a profile that has GradeEvent, found AssessmentProfile; GradeEvent is in GradingProfile.` The message counts the other errors | Fix the event, or call `validateEvent` to see every finding |
-| `DataError` | The options are not an object with a list of contexts: `The options is invalid at contexts: ...`                                                                                | Give `contexts` as a list of addresses and objects                     |
-| `DataError` | A part of an identifier is not a string or a finite number: `The parts of an identifier ...`; a time is not whole epoch milliseconds in range: `The time must be whole epoch milliseconds in the years 0000 to 9999, found 1.5.` | Fix the argument                                                       |
+| Error       | When                                                                                                                                                                                                                              | What to do                                                  |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `DataError` | The input is not an event: `The event is invalid at action: expected an action of Caliper, found "Graded".`, an entity of a class the property does not take, a relative IRI, a time not in the form, an input with an `@context` | Fix the input. Nothing was built                            |
+| `DataError` | The event breaks a rule of its profile: `The event is invalid at profile: expected a profile that has GradeEvent, found AssessmentProfile; GradeEvent is in GradingProfile.` The message counts the other errors                  | Fix the event, or call `validateEvent` to see every finding |
+| `DataError` | The options are not an object with a list of contexts: `The options is invalid at contexts: ...`                                                                                                                                  | Give `contexts` as a list of addresses and objects          |
+| `DataError` | A part of an identifier is not a string or a finite number: `The parts of an identifier ...`; a time is not whole epoch milliseconds in range: `The time must be whole epoch milliseconds in the years 0000 to 9999, found 1.5.`  | Fix the argument                                            |
 
 ## Not included
 
-| Not included                                          | Why                                                                                                    |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Writing Caliper 1.1 and 1.0                           | 1.2 supersedes 1.1, and 1EdTech retired 1.0; 1.1 is read and never written                              |
-| Which step of a product becomes which event           | The host's mapping: the function takes the actor, the action and the object that the host decides on    |
-| The time of an event from a clock                     | The library reads no clock; the host passes `eventTime`, which `formatDateTime` writes                  |
+| Not included                                | Why                                                                                                  |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Writing Caliper 1.1 and 1.0                 | 1.2 supersedes 1.1, and 1EdTech retired 1.0; 1.1 is read and never written                           |
+| Which step of a product becomes which event | The host's mapping: the function takes the actor, the action and the object that the host decides on |
+| The time of an event from a clock           | The library reads no clock; the host passes `eventTime`, which `formatDateTime` writes               |
 
 [Supported](./supported.md) lists the rest of what is and is not built.
 
 ## Differences from the references
 
-| Reference           | Difference                                                                                                                                                                                         |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Reference           | Difference                                                                                                                                                                                                                           |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Caliper 1.2         | `buildEvent` refuses what [`validateEvent`](./validate.md) finds an error in, and builds an event that has warnings only; where the specification is silent or contradicts itself, [spec-gaps](spec-gaps.md) gives the reading taken |
-| `ims-caliper`       | Builds the classes of 1.1 and gives an event that has no id a random UUID; this package builds 1.2, reads 1.1, and `mintUrn` makes the id from the parts that identify the event, so that a resend keeps it |
-| `@timeback/caliper` | Has shortcuts for the events of an item seen, answered and graded; `buildEvent` of an `AssessmentItemEvent` and a `GradeEvent` does the same, and which step of a product becomes which event is the adapter's |
+| `ims-caliper`       | Builds the classes of 1.1 and gives an event that has no id a random UUID; this package builds 1.2, reads 1.1, and `mintUrn` makes the id from the parts that identify the event, so that a resend keeps it                          |
+| `@timeback/caliper` | Has shortcuts for the events of an item seen, answered and graded; `buildEvent` of an `AssessmentItemEvent` and a `GradeEvent` does the same, and which step of a product becomes which event is the adapter's                       |

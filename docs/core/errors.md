@@ -45,7 +45,13 @@ new ServiceError("The key set answered 429.", 429, "", { headers: { "retry-after
 
 const body = new TextEncoder().encode("[1,2,3]");
 const request = { method: "POST", url: "https://lrs.example/x", headers: {}, body };
-const thrownBy = (run) => { try { run(); } catch (error) { return error; } };
+const thrownBy = (run) => {
+  try {
+    run();
+  } catch (error) {
+    return error;
+  }
+};
 const over = thrownBy(() => readJson(request, { maxTokens: 6 }));
 over instanceof LimitError; // => true
 over instanceof DataError; // => true
@@ -55,12 +61,12 @@ new DataError("The body is not JSON.", { cause: new SyntaxError("Unexpected end"
 
 ## Errors
 
-| Class             | Thrown when                                                                                            | Properties                                                                                                                                                                                        | What to do                                                                                                                  |
-| ----------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `InteropkitError` | Never by itself: it is the base class                                                                  | `message`, `name`                                                                                                                                                                                 | Catch it to catch every error of the packages, then branch on the class                                                     |
-| `DataError`       | An argument has the wrong type or is out of range, or data breaks the shape it must have               |                                                                                                                                                                                                   | Fix the input; a handler of a host answers 400. The message names the value and the path                                    |
-| `LimitError`      | Untrusted input is over a limit of a reader or a handler: more bytes, tokens, levels, parts, entries or characters than it allows. It is a `DataError` | `limit`, the name of the limit: the option that sets it, such as `maxBytes`, or a fixed limit that the guide of the reader names; `maximum`, its value | Answer 413 before 400; where `limit` names an option, raise it for a source you trust; see [answering a limit](#answering-a-limit) |
-| `ServiceError`    | A call to an HTTP service fails: no answer, an error status, a redirect or an answer that is too large | `status`, the HTTP status, and 0 when the call got no answer; `body`, the text of the answer up to 65,536 bytes; `headers`, those of the answer by name in lower case, and none without an answer | Act on `status`: 0 means no answer, 429 and 5xx a retry later (`headers["retry-after"]`); log `body` as untrusted          |
+| Class             | Thrown when                                                                                                                                            | Properties                                                                                                                                                                                        | What to do                                                                                                                         |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `InteropkitError` | Never by itself: it is the base class                                                                                                                  | `message`, `name`                                                                                                                                                                                 | Catch it to catch every error of the packages, then branch on the class                                                            |
+| `DataError`       | An argument has the wrong type or is out of range, or data breaks the shape it must have                                                               |                                                                                                                                                                                                   | Fix the input; a handler of a host answers 400. The message names the value and the path                                           |
+| `LimitError`      | Untrusted input is over a limit of a reader or a handler: more bytes, tokens, levels, parts, entries or characters than it allows. It is a `DataError` | `limit`, the name of the limit: the option that sets it, such as `maxBytes`, or a fixed limit that the guide of the reader names; `maximum`, its value                                            | Answer 413 before 400; where `limit` names an option, raise it for a source you trust; see [answering a limit](#answering-a-limit) |
+| `ServiceError`    | A call to an HTTP service fails: no answer, an error status, a redirect or an answer that is too large                                                 | `status`, the HTTP status, and 0 when the call got no answer; `body`, the text of the answer up to 65,536 bytes; `headers`, those of the answer by name in lower case, and none without an answer | Act on `status`: 0 means no answer, 429 and 5xx a retry later (`headers["retry-after"]`); log `body` as untrusted                  |
 
 ## Answering a limit
 
@@ -95,7 +101,7 @@ its own abort from a failure.
 
 ## Differences from the references
 
-| Reference                                  | Difference                                                                                                                                                                                                 |
-| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Error` with `cause` of ECMAScript         | Every class takes `ErrorOptions` after its own arguments, and an error that reports another carries it as its `cause`                                                                                      |
-| `@assesskit/runtime`, `@measurekit/core`   | Each family has a base of its own (`AssesskitError`, `MeasurekitError`) and a `DataError`, since packages of different families never import each other. `@assesskit/runtime` throws `SecurityError` for input over a limit, with `limit` and `maximum`; here `LimitError` has the same two properties and is a `DataError` |
+| Reference                                | Difference                                                                                                                                                                                                                                                                                                                  |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Error` with `cause` of ECMAScript       | Every class takes `ErrorOptions` after its own arguments, and an error that reports another carries it as its `cause`                                                                                                                                                                                                       |
+| `@assesskit/runtime`, `@measurekit/core` | Each family has a base of its own (`AssesskitError`, `MeasurekitError`) and a `DataError`, since packages of different families never import each other. `@assesskit/runtime` throws `SecurityError` for input over a limit, with `limit` and `maximum`; here `LimitError` has the same two properties and is a `DataError` |

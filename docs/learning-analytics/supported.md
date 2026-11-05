@@ -16,23 +16,23 @@ flowchart LR
   have --> v11["Caliper 1.1 read: the readers and the endpoint"]
 ```
 
-| Construct                                                  | Built | Where                                           |
-| ---------------------------------------------------------- | ----- | ----------------------------------------------- |
-| Entities of Appendix B                                     | 69 of 69 | `readEntity`, `buildEntity`, `buildEvent`; [model](./model.md) |
-| Entities with no `id` of Appendix C                        | 2 of 2   | Same                                            |
-| Entities of the Library Use Profile                        | 4 of 4   | Same                                            |
-| Entity as an object or as its IRI, anonymous entities      | Yes      | Same                                            |
-| Blank node identifiers, `extensions`, `otherIdentifiers`   | Yes      | Same                                            |
-| `@context` as one context, a list ending with Caliper's, inline | Yes | Same                                            |
-| Vocabularies of Appendices D to J                          | Yes      | `ACTIONS`, `PROFILES`, `ROLES`, `STATUSES`, `LTI_MESSAGE_TYPES`, `SYSTEM_IDENTIFIER_TYPES`, `METRICS` |
-| Events of Appendix A, and the generic `Event`              | 21 of 21 | `readEvent`, `buildEvent`; [model](./model.md), [building events](./build.md) |
-| Events of the Library Use Profile                          | 3 of 3   | Same                                            |
-| The actions, the actors and the objects that each event allows | Yes  | Same                                            |
-| Event properties `target`, `referrer`, `group`, `membership`, `session`, `federatedSession`, `extensions` | Yes | Same        |
-| `@context` as a list in `buildEvent`, and as terms defined inline | Yes | `buildEvent`, `buildEntity`              |
-| The 91 rows of the profile tables, the General Profile, the Library Use Profile | Yes | `validateEvent`, `buildEvent`; [judging events](./validate.md) |
-| The event conformance tables of the certification guide    | Yes      | Same                                            |
-| The recommendations of the profiles (generated entity, properties of an attempt, a score, a result and a timeout session) | Yes | Same |
+| Construct                                                                                                                 | Built    | Where                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------- |
+| Entities of Appendix B                                                                                                    | 69 of 69 | `readEntity`, `buildEntity`, `buildEvent`; [model](./model.md)                                        |
+| Entities with no `id` of Appendix C                                                                                       | 2 of 2   | Same                                                                                                  |
+| Entities of the Library Use Profile                                                                                       | 4 of 4   | Same                                                                                                  |
+| Entity as an object or as its IRI, anonymous entities                                                                     | Yes      | Same                                                                                                  |
+| Blank node identifiers, `extensions`, `otherIdentifiers`                                                                  | Yes      | Same                                                                                                  |
+| `@context` as one context, a list ending with Caliper's, inline                                                           | Yes      | Same                                                                                                  |
+| Vocabularies of Appendices D to J                                                                                         | Yes      | `ACTIONS`, `PROFILES`, `ROLES`, `STATUSES`, `LTI_MESSAGE_TYPES`, `SYSTEM_IDENTIFIER_TYPES`, `METRICS` |
+| Events of Appendix A, and the generic `Event`                                                                             | 21 of 21 | `readEvent`, `buildEvent`; [model](./model.md), [building events](./build.md)                         |
+| Events of the Library Use Profile                                                                                         | 3 of 3   | Same                                                                                                  |
+| The actions, the actors and the objects that each event allows                                                            | Yes      | Same                                                                                                  |
+| Event properties `target`, `referrer`, `group`, `membership`, `session`, `federatedSession`, `extensions`                 | Yes      | Same                                                                                                  |
+| `@context` as a list in `buildEvent`, and as terms defined inline                                                         | Yes      | `buildEvent`, `buildEntity`                                                                           |
+| The 91 rows of the profile tables, the General Profile, the Library Use Profile                                           | Yes      | `validateEvent`, `buildEvent`; [judging events](./validate.md)                                        |
+| The event conformance tables of the certification guide                                                                   | Yes      | Same                                                                                                  |
+| The recommendations of the profiles (generated entity, properties of an attempt, a score, a result and a timeout session) | Yes      | Same                                                                                                  |
 
 The counts of entities and events are those of `ENTITY_TYPES` and `EVENT_TYPES` of `packages/learning-analytics/src/model/`,
 which `entities.spec.test.ts` and `profiles.spec.test.ts` hold equal to the tables that `scripts/caliper-tables.lock.json` pins;
@@ -53,10 +53,10 @@ PROFILES.length; // => 16
 
 ## Not included
 
-| Not included                                           | Why                                                                                             |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| Writing Caliper 1.1, and Caliper 1.0                   | 1.2 supersedes 1.1, and 1EdTech retired 1.0                                                     |
-| Splitting an envelope that is too large                | The host decides how to batch: `maxPayloadBytes` refuses an envelope that is too large          |
+| Not included                            | Why                                                                                    |
+| --------------------------------------- | -------------------------------------------------------------------------------------- |
+| Writing Caliper 1.1, and Caliper 1.0    | 1.2 supersedes 1.1, and 1EdTech retired 1.0                                            |
+| Splitting an envelope that is too large | The host decides how to batch: `maxPayloadBytes` refuses an envelope that is too large |
 
 [The comparators](comparators.md) map what `ims-caliper`, `@timeback/caliper`, the proof of concept of 1EdTech and the certification guide
 of Caliper 1.2 do against the package: has, partly, excluded with the reason, or missing.

@@ -14,21 +14,21 @@ flowchart TD
   stack -->|"no: your routes, your stores,<br/>any runtime"| tool["@interopkit/tool-integration/tool"]
 ```
 
-| You need | Use |
-| --- | --- |
-| The platform role: launches, the key set, tokens, the grade, roster and proctoring services, Dynamic Registration | This package: `/platform`, which none of the candidates has |
-| The tool role over your own routes and stores, on Node.js, Deno, Bun, browsers or Workers | This package: `/tool` |
-| A tool that runs as a ready Express server with MongoDB and Redis | `ltijs`, which needs `express`, `mongoose` and `ioredis` and is CommonJS |
-| A tool in Python | PyLTI1p3 2.0.0, which [the evidence](evidence.md) runs against the platform role |
+| You need                                                                                                          | Use                                                                              |
+| ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| The platform role: launches, the key set, tokens, the grade, roster and proctoring services, Dynamic Registration | This package: `/platform`, which none of the candidates has                      |
+| The tool role over your own routes and stores, on Node.js, Deno, Bun, browsers or Workers                         | This package: `/tool`                                                            |
+| A tool that runs as a ready Express server with MongoDB and Redis                                                 | `ltijs`, which needs `express`, `mongoose` and `ioredis` and is CommonJS         |
+| A tool in Python                                                                                                  | PyLTI1p3 2.0.0, which [the evidence](evidence.md) runs against the platform role |
 
 ## What the others have that the package lacks
 
-| Candidate | What it has | Here |
-| --- | --- | --- |
-| `ltijs` | A server with routes, sessions and a database, ready to run | Excluded: the routes, the sessions and the stores are the host's, behind the package's ports |
-| `@lti-tool/core` 1.2.2, `lti-core` 0.4.0 | Nothing the tool role lacks that [the evidence](evidence.md) found; they are stricter than the specifications in places that it lists, such as a launch without a name or an email | The package follows the specifications, and a test pins what each library does |
-| `@atomicjolt/lti-server`, `@ltikit/core`, `@longsightgroup/lti-tool` | The tool role only | The package has both roles over one model of the messages |
-| Every candidate | None binds `state` to the browser in its core, and none limits the time, size or redirects of its service calls | The package does both ([the architecture guide](architecture.md#candidates-compared)) |
+| Candidate                                                            | What it has                                                                                                                                                                        | Here                                                                                         |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `ltijs`                                                              | A server with routes, sessions and a database, ready to run                                                                                                                        | Excluded: the routes, the sessions and the stores are the host's, behind the package's ports |
+| `@lti-tool/core` 1.2.2, `lti-core` 0.4.0                             | Nothing the tool role lacks that [the evidence](evidence.md) found; they are stricter than the specifications in places that it lists, such as a launch without a name or an email | The package follows the specifications, and a test pins what each library does               |
+| `@atomicjolt/lti-server`, `@ltikit/core`, `@longsightgroup/lti-tool` | The tool role only                                                                                                                                                                 | The package has both roles over one model of the messages                                    |
+| Every candidate                                                      | None binds `state` to the browser in its core, and none limits the time, size or redirects of its service calls                                                                    | The package does both ([the architecture guide](architecture.md#candidates-compared))        |
 
 ## Where the evidence is
 

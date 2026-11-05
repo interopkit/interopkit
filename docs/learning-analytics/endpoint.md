@@ -46,7 +46,13 @@ const body = JSON.stringify({
   sensor: "https://exam.example/sensors/1",
   sendTime: "2023-11-14T22:13:20.000Z",
   dataVersion: "http://purl.imsglobal.org/ctx/caliper/v1p2",
-  data: [{ "@context": "http://purl.imsglobal.org/ctx/caliper/v1p2", id: "https://exam.example/users/554433", type: "Person" }],
+  data: [
+    {
+      "@context": "http://purl.imsglobal.org/ctx/caliper/v1p2",
+      id: "https://exam.example/users/554433",
+      type: "Person",
+    },
+  ],
 });
 const request = {
   method: "POST",
@@ -68,17 +74,17 @@ of its own, before it calls the handler.
 A request runs these checks in this order, and the first that fails answers. A request that fails an early check costs nothing
 of the later ones: one that is not authorized is never parsed.
 
-| Step | Check                                                                               | Answer                                     |
-| ---- | ----------------------------------------------------------------------------------- | ------------------------------------------ |
-| 1    | The request is an `HttpRequest`, and the options are what they must be              | `DataError`: a mistake of the host         |
-| 2    | The method is `GET` or `POST`                                                       | 405 with `Allow: GET, POST`                |
-| 3    | `authorize` names a principal for the token                                         | 401 with `WWW-Authenticate: Bearer`        |
-| 4    | (POST) The media type is `application/json`; parameters and case are ignored        | 415                                        |
-| 5    | (POST) The body has at most `maxPayloadBytes`                                       | 413                                        |
-| 6    | (POST) The body is UTF-8 JSON within the depth and `maxTokens`, and an envelope of four properties and one item or more | 413 over a limit, 400 otherwise |
-| 7    | (POST) `dataVersion` is the context of a version in `versions`: 1.2 and 1.1 by default | 422                                     |
-| 8    | (POST) With `strict`, no item has an error                                          | 400                                        |
-| 9    | (POST) `accept` resolves                                                            | 200 with an empty body; 500 if it rejects  |
+| Step | Check                                                                                                                   | Answer                                    |
+| ---- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| 1    | The request is an `HttpRequest`, and the options are what they must be                                                  | `DataError`: a mistake of the host        |
+| 2    | The method is `GET` or `POST`                                                                                           | 405 with `Allow: GET, POST`               |
+| 3    | `authorize` names a principal for the token                                                                             | 401 with `WWW-Authenticate: Bearer`       |
+| 4    | (POST) The media type is `application/json`; parameters and case are ignored                                            | 415                                       |
+| 5    | (POST) The body has at most `maxPayloadBytes`                                                                           | 413                                       |
+| 6    | (POST) The body is UTF-8 JSON within the depth and `maxTokens`, and an envelope of four properties and one item or more | 413 over a limit, 400 otherwise           |
+| 7    | (POST) `dataVersion` is the context of a version in `versions`: 1.2 and 1.1 by default                                  | 422                                       |
+| 8    | (POST) With `strict`, no item has an error                                                                              | 400                                       |
+| 9    | (POST) `accept` resolves                                                                                                | 200 with an empty body; 500 if it rejects |
 
 A GET stops after step 3 and answers 200 with the configuration of section 6.2.
 
@@ -100,25 +106,29 @@ kept apart and never takes the place of the principal.
 ```ts
 import { readEnvelope } from "@interopkit/learning-analytics/endpoint";
 
-const envelope = readEnvelope(
-  {
-    sensor: "https://exam.example/sensors/1",
-    sendTime: "2023-11-14T22:13:20.000Z",
-    dataVersion: "http://purl.imsglobal.org/ctx/caliper/v1p2",
-    data: [{ "@context": "http://purl.imsglobal.org/ctx/caliper/v1p2", id: "https://exam.example/users/554433", type: "Person" }],
-  },
-);
+const envelope = readEnvelope({
+  sensor: "https://exam.example/sensors/1",
+  sendTime: "2023-11-14T22:13:20.000Z",
+  dataVersion: "http://purl.imsglobal.org/ctx/caliper/v1p2",
+  data: [
+    {
+      "@context": "http://purl.imsglobal.org/ctx/caliper/v1p2",
+      id: "https://exam.example/users/554433",
+      type: "Person",
+    },
+  ],
+});
 envelope.data.length; // => 1
 envelope.findings; // => []
 ```
 
-| Property      | Holds                                                                                                                                                      |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `principal`   | Who sent it, as `authorize` named them                                                                                                                     |
-| `sensor`      | The identifier that the sender gave its sensor                                                                                                             |
-| `sendTime`    | When the sensor issued the message, as Caliper writes a time                                                                                               |
-| `dataVersion` | The context of the Caliper version of the data: `CALIPER_CONTEXT` or `CALIPER_1_1_CONTEXT`                                                                 |
-| `data`        | The events and entity describes that read, as the [model](./model.md) has them, copies that share nothing with the request. One that did not read is left out |
+| Property      | Holds                                                                                                                                                                                                                                                                                                      |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `principal`   | Who sent it, as `authorize` named them                                                                                                                                                                                                                                                                     |
+| `sensor`      | The identifier that the sender gave its sensor                                                                                                                                                                                                                                                             |
+| `sendTime`    | When the sensor issued the message, as Caliper writes a time                                                                                                                                                                                                                                               |
+| `dataVersion` | The context of the Caliper version of the data: `CALIPER_CONTEXT` or `CALIPER_1_1_CONTEXT`                                                                                                                                                                                                                 |
+| `data`        | The events and entity describes that read, as the [model](./model.md) has them, copies that share nothing with the request. One that did not read is left out                                                                                                                                              |
 | `findings`    | What `validateEvent` and `validateEntity` found in each item, with `data[index]` before each path: the errors of the items left out, and the warnings and errors of the profile rules of those that read. At most `maxFindings`, and a last finding with the rule `findings-stopped` when the list stopped |
 
 `readEnvelope(value, options)` does steps 6 to 8 for a value that is already parsed, and throws a `DataError` where the
@@ -140,73 +150,73 @@ down), `caliperSupportedVersions` (the contexts of `versions`, in that order) an
 
 ## Options
 
-| Option            | Meaning                                                                                                       | Default     |
-| ----------------- | ------------------------------------------------------------------------------------------------------------- | ----------- |
-| `authorize`       | Names the principal behind a token, or refuses it                                                             | required    |
-| `accept`          | Receives an envelope that read                                                                                | required    |
-| `versions`        | The versions of Caliper that the endpoint reads, `"1.2"` and `"1.1"`, in the order it announces them          | `["1.2", "1.1"]` |
-| `maxPayloadBytes` | The most bytes of the body, and what the configuration announces: at least 1,024, a kilobyte, since a smaller limit would be announced as 0 | 1,048,576   |
-| `maxTokens`       | The most tokens of JSON in the body, counted before it is parsed                                              | 1,000,000   |
-| `maxFindings`     | The most findings of an envelope                                                                              | 1,000       |
-| `strict`          | Refuse with 400 an envelope that has an item with an error                                                    | `false`     |
-| `extensions`      | A JSON object for `caliperSupportedExtensions`                                                                | none        |
-| `signal`          | An `AbortSignal` that ends the wait for `authorize` and `accept`                                              | none        |
+| Option            | Meaning                                                                                                                                     | Default          |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| `authorize`       | Names the principal behind a token, or refuses it                                                                                           | required         |
+| `accept`          | Receives an envelope that read                                                                                                              | required         |
+| `versions`        | The versions of Caliper that the endpoint reads, `"1.2"` and `"1.1"`, in the order it announces them                                        | `["1.2", "1.1"]` |
+| `maxPayloadBytes` | The most bytes of the body, and what the configuration announces: at least 1,024, a kilobyte, since a smaller limit would be announced as 0 | 1,048,576        |
+| `maxTokens`       | The most tokens of JSON in the body, counted before it is parsed                                                                            | 1,000,000        |
+| `maxFindings`     | The most findings of an envelope                                                                                                            | 1,000            |
+| `strict`          | Refuse with 400 an envelope that has an item with an error                                                                                  | `false`          |
+| `extensions`      | A JSON object for `caliperSupportedExtensions`                                                                                              | none             |
+| `signal`          | An `AbortSignal` that ends the wait for `authorize` and `accept`                                                                            | none             |
 
 ## Limits
 
-| Limit                         | Value                | Refused with                     |
-| ----------------------------- | -------------------- | -------------------------------- |
-| Bytes of the body             | 1,048,576            | 413                              |
-| Levels of JSON                | 64                   | 413                              |
-| Tokens of JSON                | 1,000,000            | 413                              |
-| Findings                      | 1,000                | The list stops, and says so      |
-| Characters of a `detail`      | 500                  | Cut                              |
+| Limit                    | Value     | Refused with                |
+| ------------------------ | --------- | --------------------------- |
+| Bytes of the body        | 1,048,576 | 413                         |
+| Levels of JSON           | 64        | 413                         |
+| Tokens of JSON           | 1,000,000 | 413                         |
+| Findings                 | 1,000     | The list stops, and says so |
+| Characters of a `detail` | 500       | Cut                         |
 
 The limits bound parsing, and not reading: the host caps the read of the request before it builds the `HttpRequest`.
 
 ## Failure paths
 
-| Port        | Fails                                   | Hangs                                         | Called again                                   | May call back |
-| ----------- | --------------------------------------- | --------------------------------------------- | ---------------------------------------------- | ------------- |
-| `authorize` | 500, nothing of the cause               | `signal` ends the wait: the handler rejects with its reason | For every request, before any parsing | Read-only calls of the host |
-| `accept`    | 500; what the host kept is the host's   | `signal` ends the wait                        | A sensor that sends again carries the same event ids, and Caliper defines no deduplication | Nothing |
+| Port        | Fails                                 | Hangs                                                       | Called again                                                                               | May call back               |
+| ----------- | ------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------ | --------------------------- |
+| `authorize` | 500, nothing of the cause             | `signal` ends the wait: the handler rejects with its reason | For every request, before any parsing                                                      | Read-only calls of the host |
+| `accept`    | 500; what the host kept is the host's | `signal` ends the wait                                      | A sensor that sends again carries the same event ids, and Caliper defines no deduplication | Nothing                     |
 
 A port that breaks its contract is a mistake of the host, not of the sender: `authorize` that answers something other than
 `undefined` or an object with a non-empty `principal` makes the handler throw a `DataError`.
 
 ## Errors
 
-| Error                | When                                                                                                    | What to do                                  |
-| -------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| `DataError`          | The request or the options have the wrong type, or `authorize` breaks its contract                      | Fix the host. The sender is not at fault    |
-| `DataError`          | `readEnvelope` finds the value is no envelope, of a version that `versions` leaves out, or with an error under `strict` | Answer the sender, or fix what it sent |
-| The `signal` reason  | The signal aborted while a port waited                                                                  | Nothing: nobody is left to answer           |
+| Error               | When                                                                                                                    | What to do                               |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `DataError`         | The request or the options have the wrong type, or `authorize` breaks its contract                                      | Fix the host. The sender is not at fault |
+| `DataError`         | `readEnvelope` finds the value is no envelope, of a version that `versions` leaves out, or with an error under `strict` | Answer the sender, or fix what it sent   |
+| The `signal` reason | The signal aborted while a port waited                                                                                  | Nothing: nobody is left to answer        |
 
 ## Data that flows
 
-| Data                  | From                       | To                                                                  |
-| --------------------- | -------------------------- | ------------------------------------------------------------------- |
-| The envelope          | The sender, through the host | `accept`, as a copy; the library keeps nothing                    |
-| The bearer token      | The `Authorization` header | `authorize`, and nowhere else: not in an answer, not in a message   |
-| The `detail` of a 400 | The first fault            | The sender; it can quote what the sender wrote, up to 500 characters |
+| Data                  | From                         | To                                                                   |
+| --------------------- | ---------------------------- | -------------------------------------------------------------------- |
+| The envelope          | The sender, through the host | `accept`, as a copy; the library keeps nothing                       |
+| The bearer token      | The `Authorization` header   | `authorize`, and nowhere else: not in an answer, not in a message    |
+| The `detail` of a 400 | The first fault              | The sender; it can quote what the sender wrote, up to 500 characters |
 
 Events may carry personal data. The endpoint never dereferences an IRI or a context, so what an event names costs the host no
 request.
 
 ## Not included
 
-| Not included                                                        | Why                                                                                                            |
-| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Writing Caliper 1.1                                                 | The endpoint reads 1.1 and a sensor sends 1.2 only; see [Caliper 1.1](./versions.md)                           |
-| A server, a route, TLS, a store of events, deduplication            | The host's: the handler takes a request and two ports, and Caliper defines no deduplication                    |
-| Certification of an endpoint                                        | The certification guide does not offer it                                                                      |
-| A property that the JSON of the envelope gives twice                | `JSON.parse` keeps the last, and section 5.2 says each property is referenced once                             |
+| Not included                                             | Why                                                                                         |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Writing Caliper 1.1                                      | The endpoint reads 1.1 and a sensor sends 1.2 only; see [Caliper 1.1](./versions.md)        |
+| A server, a route, TLS, a store of events, deduplication | The host's: the handler takes a request and two ports, and Caliper defines no deduplication |
+| Certification of an endpoint                             | The certification guide does not offer it                                                   |
+| A property that the JSON of the envelope gives twice     | `JSON.parse` keeps the last, and section 5.2 says each property is referenced once          |
 
 ## Differences from the references
 
-| Reference                                                      | Difference                                                                                                                                                     |
-| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Section 6.1: 200, 201 and 202 are all allowed for a success    | 200 with an empty body, as the section advises                                                                                                                 |
-| Section 6.1: a body that is not `application/json`             | 415 for every other media type, `application/ld+json` too                                                                                                      |
-| The fixture `caliperEndpointConfigPayload.json`                | It writes `caliper_maximum_payload_size` and the other names in snake case; section 6.2 and Figure 12 write them in camel case, which this package serves and reads |
-| A kilobyte of `caliperMaximumPayloadSize`                      | Section 6.2 does not say how many bytes: 1,024 here, rounded down, so that a sensor never sends more than the endpoint takes                                  |
+| Reference                                                   | Difference                                                                                                                                                          |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Section 6.1: 200, 201 and 202 are all allowed for a success | 200 with an empty body, as the section advises                                                                                                                      |
+| Section 6.1: a body that is not `application/json`          | 415 for every other media type, `application/ld+json` too                                                                                                           |
+| The fixture `caliperEndpointConfigPayload.json`             | It writes `caliper_maximum_payload_size` and the other names in snake case; section 6.2 and Figure 12 write them in camel case, which this package serves and reads |
+| A kilobyte of `caliperMaximumPayloadSize`                   | Section 6.2 does not say how many bytes: 1,024 here, rounded down, so that a sensor never sends more than the endpoint takes                                        |

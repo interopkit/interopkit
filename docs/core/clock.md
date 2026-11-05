@@ -24,11 +24,11 @@ Number.isInteger(readClock(SYSTEM_CLOCK)); // => true
 
 ## API
 
-| Export              | Does                                                                                                              |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `Clock`             | The interface: `now()` answers whole milliseconds since 1970-01-01T00:00:00Z, as `Date.now()` does                |
-| `SYSTEM_CLOCK`      | A `Clock` over `Date.now()`. The only place in the packages that reads the system time                            |
-| `checkClock(value)` | Throws `DataError` unless the value is `undefined` or an object with a function `now`; for options a host passes from JavaScript |
+| Export              | Does                                                                                                                               |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `Clock`             | The interface: `now()` answers whole milliseconds since 1970-01-01T00:00:00Z, as `Date.now()` does                                 |
+| `SYSTEM_CLOCK`      | A `Clock` over `Date.now()`. The only place in the packages that reads the system time                                             |
+| `checkClock(value)` | Throws `DataError` unless the value is `undefined` or an object with a function `now`; for options a host passes from JavaScript   |
 | `readClock(clock?)` | Returns the time, of `SYSTEM_CLOCK` when none is given, or throws `DataError` unless the clock answers a non-negative safe integer |
 
 ## Errors
@@ -47,7 +47,7 @@ Number.isInteger(readClock(SYSTEM_CLOCK)); // => true
 
 ## Differences from the references
 
-| Reference        | Difference                                                                                                                                                              |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Date.now()`     | `SYSTEM_CLOCK` answers the same whole milliseconds. `readClock` throws unless the answer is a non-negative safe integer, so `NaN`, a fraction or a negative time never reaches a token or an event |
-| `performance.now()` | Refused as a clock: it counts from the start of the process and answers a fraction                                                                                   |
+| Reference           | Difference                                                                                                                                                                                         |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Date.now()`        | `SYSTEM_CLOCK` answers the same whole milliseconds. `readClock` throws unless the answer is a non-negative safe integer, so `NaN`, a fraction or a negative time never reaches a token or an event |
+| `performance.now()` | Refused as a clock: it counts from the start of the process and answers a fraction                                                                                                                 |

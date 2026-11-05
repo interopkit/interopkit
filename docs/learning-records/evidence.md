@@ -14,15 +14,15 @@ flowchart LR
   example --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat:runtimes"]
 ```
 
-| Layer        | Question                                                                          | Where                                                                   | Runs           |
-| ------------ | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | -------------- |
-| Rules        | Does each sentence of the standard make the reader find what it says?             | `scripts/xapi-rules.ts`, `packages/learning-records/test/rules.test.ts`; `scripts/xapi-v1-rules.ts`, `packages/learning-records/test/v1-rules.test.ts` | `pnpm test`    |
-| Example      | Does a host serve, send and read all seven resources with the package?            | `examples/learning-records/test/*.test.ts`                              | `pnpm test`    |
-| Conformance  | Does an LRS built on the handler pass the suites that ADL publishes?              | `validation/adl-lrs/`                                                   | `pnpm adl-lrs` |
-| Oracle       | Does another LRS take and refuse the same Statements as the reader?               | `examples/learning-records/test/sqllrs-verdicts.corpus.test.ts`         | `pnpm sql-lrs` |
-| Oracle       | Does the validator of Learning Locker judge the Statements of 1.0.3 alike?        | `packages/learning-records/test/v1-rules.test.ts`                       | `pnpm test`    |
-| Counterparty | Does the client work against another LRS, in both versions, with what it answers? | `examples/learning-records/test/sqllrs.corpus.test.ts`                  | `pnpm sql-lrs` |
-| Runtimes     | Does the example give the same results everywhere?                                | `compat/`                                                               | `pnpm compat:runtimes`  |
+| Layer        | Question                                                                          | Where                                                                                                                                                  | Runs                   |
+| ------------ | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
+| Rules        | Does each sentence of the standard make the reader find what it says?             | `scripts/xapi-rules.ts`, `packages/learning-records/test/rules.test.ts`; `scripts/xapi-v1-rules.ts`, `packages/learning-records/test/v1-rules.test.ts` | `pnpm test`            |
+| Example      | Does a host serve, send and read all seven resources with the package?            | `examples/learning-records/test/*.test.ts`                                                                                                             | `pnpm test`            |
+| Conformance  | Does an LRS built on the handler pass the suites that ADL publishes?              | `validation/adl-lrs/`                                                                                                                                  | `pnpm adl-lrs`         |
+| Oracle       | Does another LRS take and refuse the same Statements as the reader?               | `examples/learning-records/test/sqllrs-verdicts.corpus.test.ts`                                                                                        | `pnpm sql-lrs`         |
+| Oracle       | Does the validator of Learning Locker judge the Statements of 1.0.3 alike?        | `packages/learning-records/test/v1-rules.test.ts`                                                                                                      | `pnpm test`            |
+| Counterparty | Does the client work against another LRS, in both versions, with what it answers? | `examples/learning-records/test/sqllrs.corpus.test.ts`                                                                                                 | `pnpm sql-lrs`         |
+| Runtimes     | Does the example give the same results everywhere?                                | `compat/`                                                                                                                                              | `pnpm compat:runtimes` |
 
 ## The example
 
@@ -62,10 +62,10 @@ pin what SQL LRS does as a server that the package must live with:
 | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Answers a resend with 200 and `[]`                                                                                         | The client resolves with the ids of the batch, which it fixed after this flow found it                                                                             |
 | Refuses a signed Statement that has another Attachment: it compares the payload with the Statement without its Attachments | The standard signs the complete Statement, and so does `signStatement`; a host that must reach SQL LRS signs a Statement with the signature as its only Attachment |
-| Refuses a Statement with `version` 2.0.0 on the 1.0.3 route | The client of 1.0.3 refuses it before any request, and a builder of 1.0.3 writes `1.0.0` |
-| Answers 409 to a second State write with no precondition on the 1.0.3 route | The client allows the write on 1.0.3, and SQL LRS applies the 2.0 rule; the handler replaces the document |
-| Answers a Statement of 2.0 on the 1.0.3 route as it holds it, with `contextAgents` and `version` 2.0.0 | The client of 1.0.3 reads it into the form of 1.0.3; the handler answers that form |
-| Compares a resend on the 1.0.3 route with the whole Statement of 2.0 | The form of 1.0.3 is a conflict there; the handler compares with the form |
+| Refuses a Statement with `version` 2.0.0 on the 1.0.3 route                                                                | The client of 1.0.3 refuses it before any request, and a builder of 1.0.3 writes `1.0.0`                                                                           |
+| Answers 409 to a second State write with no precondition on the 1.0.3 route                                                | The client allows the write on 1.0.3, and SQL LRS applies the 2.0 rule; the handler replaces the document                                                          |
+| Answers a Statement of 2.0 on the 1.0.3 route as it holds it, with `contextAgents` and `version` 2.0.0                     | The client of 1.0.3 reads it into the form of 1.0.3; the handler answers that form                                                                                 |
+| Compares a resend on the 1.0.3 route with the whole Statement of 2.0                                                       | The form of 1.0.3 is a conflict there; the handler compares with the form                                                                                          |
 | Answers 500 to the `contextGroups` of the full Statement of the tests                                                      | The fixtures leave them out                                                                                                                                        |
 
 ## The validator of Learning Locker
@@ -83,12 +83,12 @@ and workerd on the machine of this record, and Bun on CI.
 
 ## xAPI Profiles
 
-| Layer | Question | Where | Runs |
-| --- | --- | --- | --- |
-| Rules | Does each sentence of Part Two make `validateProfile` find what it says? | `scripts/xapi-profile-rules.ts`, `packages/learning-records/test/profiles-rules.test.ts` | `pnpm test` |
-| Reference | Does the matching of Patterns give what ADL's reference implementation gives? | `validation/xapi_profile_patterns.py`, `packages/learning-records/test/profiles-patterns.test.ts` | `pnpm test` |
-| Corpus | Does the reader judge the profiles that ADL publishes, and the samples of Pan and Persephone, as they are? | `packages/learning-records/test/profiles.corpus.test.ts` | `pnpm test:corpus` |
-| Fuzz | Does any value give findings or a `DataError`, and any text a path or a `DataError`? | `packages/learning-records/test/profiles.fuzz.test.ts` | `pnpm test` |
+| Layer     | Question                                                                                                   | Where                                                                                             | Runs               |
+| --------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------ |
+| Rules     | Does each sentence of Part Two make `validateProfile` find what it says?                                   | `scripts/xapi-profile-rules.ts`, `packages/learning-records/test/profiles-rules.test.ts`          | `pnpm test`        |
+| Reference | Does the matching of Patterns give what ADL's reference implementation gives?                              | `validation/xapi_profile_patterns.py`, `packages/learning-records/test/profiles-patterns.test.ts` | `pnpm test`        |
+| Corpus    | Does the reader judge the profiles that ADL publishes, and the samples of Pan and Persephone, as they are? | `packages/learning-records/test/profiles.corpus.test.ts`                                          | `pnpm test:corpus` |
+| Fuzz      | Does any value give findings or a `DataError`, and any text a path or a `DataError`?                       | `packages/learning-records/test/profiles.fuzz.test.ts`                                            | `pnpm test`        |
 
 `validation/xapi_profile_patterns.py` holds `matches` of ADL's `libraries/test_matching.py` (adlnet/xapi-profiles `287386e`),
 ported to Python 3 with no change to its logic, and writes what it gives for ADL's two example Patterns (the per-course Pattern
@@ -104,4 +104,3 @@ Video profile and the fixed cmi5 profile, whose relations Pan finds unsound only
 profiles do not define, which the specification does not ask. Persephone 0.9.1 (`92a3f78`) passes its first calibration Statement
 against its calibration profile in its default mode, which asks one template to hold; the Statement matches the Determining
 Properties of two templates and breaks the rules of one, so the algorithm of Part Three gives `invalid`, and the test pins it.
-

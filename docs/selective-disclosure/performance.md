@@ -18,9 +18,9 @@ Both samples come from one run, so the ratio holds on any machine.
 
 | Role           | Measured ratio | Budget | Where the time goes                                                                         |
 | -------------- | -------------: | -----: | ------------------------------------------------------------------------------------------- |
-| `addBaseProof` | 0.97–1.08      | 6      | Canonicalization in the primitives; Web Crypto signs the statements, as in Digital Bazaar's |
-| `deriveProof`  | 1.06–1.21      | 7      | Canonicalization in the primitives, and the copy and the limits of the input                |
-| `verify`       | 0.84–1.16      | 6      | Canonicalization in the primitives; Web Crypto checks the signatures at once                |
+| `addBaseProof` |      0.97–1.08 |      6 | Canonicalization in the primitives; Web Crypto signs the statements, as in Digital Bazaar's |
+| `deriveProof`  |      1.06–1.21 |      7 | Canonicalization in the primitives, and the copy and the limits of the input                |
+| `verify`       |      0.84–1.16 |      6 | Canonicalization in the primitives; Web Crypto checks the signatures at once                |
 
 The measured ratios are the range over the eight latest green runs of the runner of CI and one run on a laptop.
 
@@ -33,6 +33,6 @@ primitives.
 
 Gzip is measured on Node.js 22; other versions of Node.js differ by up to 1 percent.
 
-| Entry point | Bytes | Gzip | Budget | Holds, besides `@interopkit/core` and valibot |
-| --- | ---: | ---: | ---: | --- |
+| Entry point                        |   Bytes |   Gzip | Budget | Holds, besides `@interopkit/core` and valibot                                                                                                                                                                          |
+| ---------------------------------- | ------: | -----: | -----: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@interopkit/selective-disclosure` | 225,154 | 70,282 | 88,000 | `base`, `derive`, `document`, `keys`, `proof-value`, `suite`, `verify`; `@digitalbazaar/di-sd-primitives`, `jsonld`, `rdf-canonize` and their small dependencies; the curves and hashes of noble, `@scure/base`, cborg |

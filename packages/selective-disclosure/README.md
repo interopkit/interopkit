@@ -20,7 +20,10 @@ import { addBaseProof, deriveProof, isBaseProof, selectiveDisclosureSuite } from
 
 // The contexts of the credential: a host serves the ones it has checked, here from memory.
 const contexts = new Map([
-  ["https://example.org/contexts/v1", { "@context": { "@vocab": "https://example.org/vocab#", id: "@id", type: "@type" } }],
+  [
+    "https://example.org/contexts/v1",
+    { "@context": { "@vocab": "https://example.org/vocab#", id: "@id", type: "@type" } },
+  ],
 ]);
 const credential = {
   "@context": ["https://example.org/contexts/v1"],
@@ -31,7 +34,10 @@ const credential = {
 
 // The issuer signs with ES256. A KMS or an HSM gives a Signer as well.
 const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
-const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId: "https://example.org/issuers/1#key-1" });
+const signer = createCryptoKeySigner(pair.privateKey, {
+  algorithm: "ES256",
+  keyId: "https://example.org/issuers/1#key-1",
+});
 const publicKeyJwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
 
 const base = await addBaseProof(credential, {

@@ -21,11 +21,11 @@ sequenceDiagram
   P-->>C: the model, 204
 ```
 
-| Role     | Function                                              | Does                                                                                     |
-| -------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Tool     | `createServiceClient(deployment, options)`            | Returns the client of the services of a platform for one deployment                     |
-| Tool     | `advanceScoreTimestamp(lastSent, nowMs)`    | Returns a timestamp strictly later than the last one sent, with millisecond precision   |
-| Platform | `handlePlatformRequest(request, options)`             | With `services.gradebook`, also serves the routes of the grade services                  |
+| Role     | Function                                   | Does                                                                                  |
+| -------- | ------------------------------------------ | ------------------------------------------------------------------------------------- |
+| Tool     | `createServiceClient(deployment, options)` | Returns the client of the services of a platform for one deployment                   |
+| Tool     | `advanceScoreTimestamp(lastSent, nowMs)`   | Returns a timestamp strictly later than the last one sent, with millisecond precision |
+| Platform | `handlePlatformRequest(request, options)`  | With `services.gradebook`, also serves the routes of the grade services               |
 
 ## Quick start
 
@@ -48,15 +48,15 @@ scopes that the platform offered in the claim, `launch.services.grades.scopes`. 
 that its tokens are reused; a host of several processes, or one that makes a client for each job, gives the clients a
 `TokenStore` that they share.
 
-| Method                                     | AGS   | Scope asked for, the narrowest that was offered | Answers                                       |
-| ------------------------------------------ | ----- | ----------------------------------------------- | --------------------------------------------- |
-| `lineItems(url, query?)`                   | 3.2.4 | `lineitem.readonly`, else `lineitem`            | A `Page<LineItem>`                            |
-| `lineItem(url)`                            | 3.2.3 | `lineitem.readonly`, else `lineitem`            | The line item, or `undefined` for a 404       |
-| `createLineItem(containerUrl, input)`      | 3.2.5 | `lineitem`                                      | The line item as the platform keeps it        |
-| `updateLineItem(url, input)`               | 3.2.6 | `lineitem`                                      | The line item as the platform keeps it        |
-| `deleteLineItem(url)`                      | 3.2.7 | `lineitem`                                      | `true`, or `false` for a 404                  |
-| `results(lineItemUrl, query?)`             | 3.3   | `result.readonly`                               | A `Page<Result>`                              |
-| `publishScore(lineItemUrl, score)`         | 3.4   | `score`                                         | Nothing; the platform answers 2xx             |
+| Method                                | AGS   | Scope asked for, the narrowest that was offered | Answers                                 |
+| ------------------------------------- | ----- | ----------------------------------------------- | --------------------------------------- |
+| `lineItems(url, query?)`              | 3.2.4 | `lineitem.readonly`, else `lineitem`            | A `Page<LineItem>`                      |
+| `lineItem(url)`                       | 3.2.3 | `lineitem.readonly`, else `lineitem`            | The line item, or `undefined` for a 404 |
+| `createLineItem(containerUrl, input)` | 3.2.5 | `lineitem`                                      | The line item as the platform keeps it  |
+| `updateLineItem(url, input)`          | 3.2.6 | `lineitem`                                      | The line item as the platform keeps it  |
+| `deleteLineItem(url)`                 | 3.2.7 | `lineitem`                                      | `true`, or `false` for a 404            |
+| `results(lineItemUrl, query?)`        | 3.3   | `result.readonly`                               | A `Page<Result>`                        |
+| `publishScore(lineItemUrl, score)`    | 3.4   | `score`                                         | Nothing; the platform answers 2xx       |
 
 Each method also takes `{ signal }`. A score or a line item that breaks AGS 3.4 or 3.2, such as a `scoreGiven` below 0 or a date
 without a time zone, is a `DataError` before anything is sent. A query (`LineItemQuery`, `ResultQuery`) adds its filters. A request for a container adds a `limit` of `pageLimit` when
@@ -116,19 +116,19 @@ it is parsed (a `DataError` that names the option), then strictly into its model
 names the path of its first invalid member. A failed call is a `ServiceError` with its `status`, its `headers` (`Retry-After`
 among them) and its body.
 
-| Option               | Default   | Meaning                                                                                   |
-| -------------------- | --------- | ----------------------------------------------------------------------------------------- |
-| `registration` | required | As every function of the tool role                                                     |
-| `clock` | `SYSTEM_CLOCK` | As every function of the tool role                                                     |
-| `fetch`              | required  | The `fetch` that calls the token endpoint and the services                               |
-| `scopes`             | required  | The scopes that the platform offered                                                     |
-| `timeoutMs`          | 10,000    | The most time of one call, in milliseconds                                               |
-| `maxBytes`           | 1,048,576 | The most bytes of an answer                                                              |
-| `maxTokens`          | 1,000,000 | The most JSON tokens of an answer                                                        |
-| `pageLimit`          | 100       | The `limit` of a request for a container when neither its query nor its URL names one; a request for results has none unless the caller names it |
-| `refreshSkewSeconds` | 60        | The seconds before its expiry at which a token is replaced                               |
-| `tokens`             | none      | A `TokenStore` that the clients of several processes share; without it each client keeps its tokens in its own memory |
-| `signal`             | none      | Ends this caller's wait in the registration lookup                                       |
+| Option               | Default        | Meaning                                                                                                                                          |
+| -------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `registration`       | required       | As every function of the tool role                                                                                                               |
+| `clock`              | `SYSTEM_CLOCK` | As every function of the tool role                                                                                                               |
+| `fetch`              | required       | The `fetch` that calls the token endpoint and the services                                                                                       |
+| `scopes`             | required       | The scopes that the platform offered                                                                                                             |
+| `timeoutMs`          | 10,000         | The most time of one call, in milliseconds                                                                                                       |
+| `maxBytes`           | 1,048,576      | The most bytes of an answer                                                                                                                      |
+| `maxTokens`          | 1,000,000      | The most JSON tokens of an answer                                                                                                                |
+| `pageLimit`          | 100            | The `limit` of a request for a container when neither its query nor its URL names one; a request for results has none unless the caller names it |
+| `refreshSkewSeconds` | 60             | The seconds before its expiry at which a token is replaced                                                                                       |
+| `tokens`             | none           | A `TokenStore` that the clients of several processes share; without it each client keeps its tokens in its own memory                            |
+| `signal`             | none           | Ends this caller's wait in the registration lookup                                                                                               |
 
 ## The platform role
 
@@ -141,21 +141,21 @@ each launch gives `keepScore` alone, as in the example of AGS 3.1.1.3, where the
 is not offered: the route of a missing method answers 404, or 405 with the methods of the path that remain; a scope is listed in
 the OpenID configuration and granted only with a method that needs it; and the claim names the container only with `lineItems`.
 
-| Scope               | Offered with any of                                     |
-| ------------------- | ------------------------------------------------------- |
-| `lineitem.readonly` | `lineItems`, `lineItem`                                 |
-| `lineitem`          | `createLineItem`, `updateLineItem`, `deleteLineItem`    |
-| `result.readonly`   | `results`                                               |
-| `score`             | `keepScore`                                             |
+| Scope               | Offered with any of                                  |
+| ------------------- | ---------------------------------------------------- |
+| `lineitem.readonly` | `lineItems`, `lineItem`                              |
+| `lineitem`          | `createLineItem`, `updateLineItem`, `deleteLineItem` |
+| `result.readonly`   | `results`                                            |
+| `score`             | `keepScore`                                          |
 
-| Path under `origin`                                 | Methods          | Scopes, one of                     | Store                                     |
-| --------------------------------------------------- | ---------------- | ---------------------------------- | ----------------------------------------- |
-| `/contexts/{context}/line-items`                    | GET              | `lineitem.readonly`, `lineitem`    | `lineItems(caller, context, query)`       |
-| `/contexts/{context}/line-items`                    | POST             | `lineitem`                         | `createLineItem(caller, context, input)`  |
-| `/contexts/{context}/line-items/{lineItem}`         | GET              | `lineitem.readonly`, `lineitem`    | `lineItem(caller, context, id)`           |
-| `/contexts/{context}/line-items/{lineItem}`         | PUT, DELETE      | `lineitem`                         | `updateLineItem`, `deleteLineItem`        |
-| `/contexts/{context}/line-items/{lineItem}/results` | GET              | `result.readonly`                  | `results(caller, context, id, query)`     |
-| `/contexts/{context}/line-items/{lineItem}/scores`  | POST             | `score`                            | `keepScore(caller, context, id, score)`   |
+| Path under `origin`                                 | Methods     | Scopes, one of                  | Store                                    |
+| --------------------------------------------------- | ----------- | ------------------------------- | ---------------------------------------- |
+| `/contexts/{context}/line-items`                    | GET         | `lineitem.readonly`, `lineitem` | `lineItems(caller, context, query)`      |
+| `/contexts/{context}/line-items`                    | POST        | `lineitem`                      | `createLineItem(caller, context, input)` |
+| `/contexts/{context}/line-items/{lineItem}`         | GET         | `lineitem.readonly`, `lineitem` | `lineItem(caller, context, id)`          |
+| `/contexts/{context}/line-items/{lineItem}`         | PUT, DELETE | `lineitem`                      | `updateLineItem`, `deleteLineItem`       |
+| `/contexts/{context}/line-items/{lineItem}/results` | GET         | `result.readonly`               | `results(caller, context, id, query)`    |
+| `/contexts/{context}/line-items/{lineItem}/scores`  | POST        | `score`                         | `keepScore(caller, context, id, score)`  |
 
 ### The claim
 
@@ -176,14 +176,14 @@ among those of the token that the registration still grants, so that a narrowed 
 
 ### Bodies and answers
 
-| Route                     | Reads                                                                    | Answers                                                                                                   |
-| ------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| GET the line items        | `resource_id`, `resource_link_id`, `tag`, `activity_id`, `limit`, `cursor` | 200 `lineitemcontainer+json`, each `id` the URL of the line item, and a `Link` to the next page          |
-| POST a line item          | `lineitem+json`, a `LineItemInput`                                       | 201 with the line item and `Location`; 404 for a context or an `activityId` that the store does not have |
-| GET, PUT a line item      | PUT: `lineitem+json`                                                     | 200 `lineitem+json`                                                                                       |
-| DELETE a line item        |                                                                          | 204                                                                                                       |
-| GET the results           | `user_id`, never empty, `limit`, `cursor`                                | 200 `resultcontainer+json`, each `id` `{line item}/results?user_id=…` and `scoreOf` the line item       |
-| POST a score              | `score+json`, a `Score`                                                  | 204, whether the store kept it or a later one                                                            |
+| Route                | Reads                                                                      | Answers                                                                                                  |
+| -------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| GET the line items   | `resource_id`, `resource_link_id`, `tag`, `activity_id`, `limit`, `cursor` | 200 `lineitemcontainer+json`, each `id` the URL of the line item, and a `Link` to the next page          |
+| POST a line item     | `lineitem+json`, a `LineItemInput`                                         | 201 with the line item and `Location`; 404 for a context or an `activityId` that the store does not have |
+| GET, PUT a line item | PUT: `lineitem+json`                                                       | 200 `lineitem+json`                                                                                      |
+| DELETE a line item   |                                                                            | 204                                                                                                      |
+| GET the results      | `user_id`, never empty, `limit`, `cursor`                                  | 200 `resultcontainer+json`, each `id` `{line item}/results?user_id=…` and `scoreOf` the line item        |
+| POST a score         | `score+json`, a `Score`                                                    | 204, whether the store kept it or a later one                                                            |
 
 A body is refused with 415 for another media type, 413 above `maxBodyBytes`, and 400 when it is not JSON or not its model. A page
 holds `limit` items, `pageSize` (100) when the request names none and at most `maxPageSize` (1,000). The store gives an opaque
@@ -193,60 +193,60 @@ millisecond; the store keeps it unless a strictly later one is kept, and an equa
 
 ## Limits
 
-| Limit                                                        | Value       |
-| ------------------------------------------------------------ | ----------- |
-| An answer read by the client                                 | 1,048,576 bytes, 1,000,000 JSON tokens |
-| The `limit` of a request of the client                       | 100         |
-| A body of a line item or a score at the platform             | 65,536 bytes |
-| A page of the platform                                       | 100 items, at most 1,000 |
-| An access token of the platform                              | 3,600 seconds |
+| Limit                                            | Value                                  |
+| ------------------------------------------------ | -------------------------------------- |
+| An answer read by the client                     | 1,048,576 bytes, 1,000,000 JSON tokens |
+| The `limit` of a request of the client           | 100                                    |
+| A body of a line item or a score at the platform | 65,536 bytes                           |
+| A page of the platform                           | 100 items, at most 1,000               |
+| An access token of the platform                  | 3,600 seconds                          |
 
 ## Failure paths
 
-| Port or call                    | Fails                                                                    | Hangs                          | Called again                                                                                    |
-| ------------------------------- | ------------------------------------------------------------------------ | ------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `GradebookStore`                | 500 with nothing of the cause; `undefined` or `false`: 404               | `signal`                       | GET is safe. A repeated POST of a line item makes a second one, so a tool queries by `resourceId` and `tag` first. `keepScore` is atomic, and `older` still answers 204 |
-| `registration`, on a service call | 500; `undefined`: 401                                                     | `signal`                       | On every call; a host may cache                                                                 |
-| The client's `fetch`            | `ServiceError`; a 404 of a line item is `undefined` or `false`; a 401 drops the token | `timeoutMs`        | GETs are safe; a score needs a later timestamp                                                  |
-| The token cache                 | A failed token request is not kept                                       | Its own deadline               | Shared by concurrent callers of a scope                                                         |
-| `TokenStore`                    | The call rejects with its error; a token that it fails to put is not kept, and the next call asks again; a value that is not a token with an expiry is a `DataError` | A signal that aborts after `timeoutMs` | `get` and `put` once for each token a client obtains; `delete` after a 401, which may drop a newer token of another process at the cost of one token request |
+| Port or call                      | Fails                                                                                                                                                                | Hangs                                  | Called again                                                                                                                                                            |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GradebookStore`                  | 500 with nothing of the cause; `undefined` or `false`: 404                                                                                                           | `signal`                               | GET is safe. A repeated POST of a line item makes a second one, so a tool queries by `resourceId` and `tag` first. `keepScore` is atomic, and `older` still answers 204 |
+| `registration`, on a service call | 500; `undefined`: 401                                                                                                                                                | `signal`                               | On every call; a host may cache                                                                                                                                         |
+| The client's `fetch`              | `ServiceError`; a 404 of a line item is `undefined` or `false`; a 401 drops the token                                                                                | `timeoutMs`                            | GETs are safe; a score needs a later timestamp                                                                                                                          |
+| The token cache                   | A failed token request is not kept                                                                                                                                   | Its own deadline                       | Shared by concurrent callers of a scope                                                                                                                                 |
+| `TokenStore`                      | The call rejects with its error; a token that it fails to put is not kept, and the next call asks again; a value that is not a token with an expiry is a `DataError` | A signal that aborts after `timeoutMs` | `get` and `put` once for each token a client obtains; `delete` after a 401, which may drop a newer token of another process at the cost of one token request            |
 
 A store that answers with something other than its contract (a line item that is not one, a page larger than its limit, a
 `keepScore` that is not `"kept"`, `"older"` or `undefined`) is a `DataError` that the handler throws.
 
 ## Errors
 
-| Error                                                  | When                                                                                  | What to do                                                       |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `LtiError` `scope-unavailable`                         | The platform offered none of the scopes that the call needs                          | Ask the platform's administrator for the scope                   |
-| `LtiError` `scope-denied`                              | The platform did not grant the scope asked for                                       | The same                                                         |
-| `LtiError` `service-origin-refused`                    | The URL may not receive the token                                                    | Name the platform's origins in `serviceOrigins`                  |
-| `LtiError` `platform-unknown`, `deployment-unknown`    | The registration is gone, or no longer lists the deployment                          | Register the platform or the deployment again                    |
-| `ServiceError`                                         | The token endpoint or a service answered with an error, or not at all                | Read its `status` and `Retry-After`; resend a score with a later timestamp |
-| `DataError`                                            | An argument has the wrong type, or a body breaks its model                                  | Fix the caller                                              |
-| `LimitError`, a `DataError`                            | An answer is above `maxTokens`                                                              | Raise the limit                                             |
+| Error                                               | When                                                                  | What to do                                                                 |
+| --------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `LtiError` `scope-unavailable`                      | The platform offered none of the scopes that the call needs           | Ask the platform's administrator for the scope                             |
+| `LtiError` `scope-denied`                           | The platform did not grant the scope asked for                        | The same                                                                   |
+| `LtiError` `service-origin-refused`                 | The URL may not receive the token                                     | Name the platform's origins in `serviceOrigins`                            |
+| `LtiError` `platform-unknown`, `deployment-unknown` | The registration is gone, or no longer lists the deployment           | Register the platform or the deployment again                              |
+| `ServiceError`                                      | The token endpoint or a service answered with an error, or not at all | Read its `status` and `Retry-After`; resend a score with a later timestamp |
+| `DataError`                                         | An argument has the wrong type, or a body breaks its model            | Fix the caller                                                             |
+| `LimitError`, a `DataError`                         | An answer is above `maxTokens`                                        | Raise the limit                                                            |
 
 ## Data flows
 
-| Data                          | Comes from                      | Goes to                                                     | Kept by the package |
-| ----------------------------- | ------------------------------- | ----------------------------------------------------------- | ------------------- |
-| An access token               | The platform's token endpoint   | The services of the platform, in `Authorization`; the client's cache until near its expiry; the host's `TokenStore` when given, until its expiry | Only in memory, in the client |
-| A score, a result             | The tool's host                 | The platform's `GradebookStore`, through the score service  | No                  |
-| Line items                    | Either side                     | The other side                                              | No                  |
+| Data              | Comes from                    | Goes to                                                                                                                                          | Kept by the package           |
+| ----------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------- |
+| An access token   | The platform's token endpoint | The services of the platform, in `Authorization`; the client's cache until near its expiry; the host's `TokenStore` when given, until its expiry | Only in memory, in the client |
+| A score, a result | The tool's host               | The platform's `GradebookStore`, through the score service                                                                                       | No                            |
+| Line items        | Either side                   | The other side                                                                                                                                   | No                            |
 
 ## Not included
 
-| Not included                                               | Why                                                                                      |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Automatic retries of a service call                        | The host decides; `Retry-After` is in the `ServiceError`                                 |
-| The ordering of scores at the platform                     | The store's: `keepScore` compares the timestamps in its own transaction                 |
-| A gradebook, a database                                    | The host's, behind `GradebookStore`                                                     |
+| Not included                           | Why                                                                     |
+| -------------------------------------- | ----------------------------------------------------------------------- |
+| Automatic retries of a service call    | The host decides; `Retry-After` is in the `ServiceError`                |
+| The ordering of scores at the platform | The store's: `keepScore` compares the timestamps in its own transaction |
+| A gradebook, a database                | The host's, behind `GradebookStore`                                     |
 
 ## Differences from the references
 
 The platform role is checked against `@lti-tool/core`, `lti-core` and PyLTI1p3, tools of other authors that use its grade
 services, and both roles against Moodle ([evidence](evidence.md)). Where platforms differ, the package follows the text of AGS.
 
-| What                                                     | AGS                                                                                  | Moodle 5.3.0 and Canvas                                                                                                    | The package                                                                                       |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| A score whose timestamp is not later than the kept one   | 3.4.9: the platform must not update the result, and "may just ignore" the score      | Moodle answers 409 for a timestamp earlier or equal (`mod/lti/service/gradebookservices/classes/local/resources/scores.php`, line 196); Canvas 400 for an earlier one (`lti/ims/scores_controller.rb`, `verify_valid_timestamp`) | The platform role answers 204 and keeps the later score; `publishScore` of the tool role throws the `ServiceError` of a 409 or 400, and the host sends again with a later timestamp |
+| What                                                   | AGS                                                                             | Moodle 5.3.0 and Canvas                                                                                                                                                                                                          | The package                                                                                                                                                                         |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A score whose timestamp is not later than the kept one | 3.4.9: the platform must not update the result, and "may just ignore" the score | Moodle answers 409 for a timestamp earlier or equal (`mod/lti/service/gradebookservices/classes/local/resources/scores.php`, line 196); Canvas 400 for an earlier one (`lti/ims/scores_controller.rb`, `verify_valid_timestamp`) | The platform role answers 204 and keeps the later score; `publishScore` of the tool role throws the `ServiceError` of a 409 or 400, and the host sends again with a later timestamp |

@@ -21,28 +21,28 @@ flowchart BT
   platformRole <-->|"HTTP"| tools["A tool"]
 ```
 
-| Layer       | Holds                                                                                                                                                  | Imports                                      |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
-| `errors.ts` | `LtiError`, with a `reason` of the union `LtiErrorReason` and an HTTP `status`                                                                                            | `@interopkit/core`                           |
+| Layer       | Holds                                                                                                                                                                                                                                                                                      | Imports                                      |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
+| `errors.ts` | `LtiError`, with a `reason` of the union `LtiErrorReason` and an HTTP `status`                                                                                                                                                                                                             | `@interopkit/core`                           |
 | `protocol/` | What the roles share: the names and vocabularies of the claims, the model of the messages and of the bodies of the services with their readers and writers, the JWT check, the keys of a party, the key set cache of `@interopkit/core` exported again, the pages of the client-side login | `errors.ts`, `@interopkit/core`              |
-| `tool/`     | The tool role                                                                                                                                          | `errors.ts`, `protocol/`, `@interopkit/core` |
-| `platform/` | The platform role                                                                                                                                      | `errors.ts`, `protocol/`, `@interopkit/core` |
+| `tool/`     | The tool role                                                                                                                                                                                                                                                                              | `errors.ts`, `protocol/`, `@interopkit/core` |
+| `platform/` | The platform role                                                                                                                                                                                                                                                                          | `errors.ts`, `protocol/`, `@interopkit/core` |
 
 `tool/` and `platform/` never import each other, and `protocol/` imports neither. Biome enforces the rows. The tool role is the
 subpath `@interopkit/tool-integration/tool`, and the platform role is `@interopkit/tool-integration/platform`.
 
 ## Principles
 
-| Principle                    | Rule                                                                                                                                           |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plain data in and out        | A request is an `HttpRequest` and an answer an `HttpResponse` of `@interopkit/core/http`: a host builds them from any web framework                                       |
-| Ports for what the host owns | `LtiStore`, the registration lookup, `fetch`, `Clock`; each receives the `signal` of the call                                                  |
-| Fail closed                  | A launch that fails any check is refused; a key set that cannot be fetched past its time to live fails the launch and never serves a stale key |
+| Principle                    | Rule                                                                                                                                                       |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plain data in and out        | A request is an `HttpRequest` and an answer an `HttpResponse` of `@interopkit/core/http`: a host builds them from any web framework                        |
+| Ports for what the host owns | `LtiStore`, the registration lookup, `fetch`, `Clock`; each receives the `signal` of the call                                                              |
+| Fail closed                  | A launch that fails any check is refused; a key set that cannot be fetched past its time to live fails the launch and never serves a stale key             |
 | Six algorithms               | Tokens are verified with RS256, RS384, RS512, ES256, ES384 and ES512 only; `none`, the HMAC algorithms and every other are refused before a key is fetched |
-| One model of messages        | A message is read and written from one set of schemas ([messages](model.md)): what one role writes, the other reads                            |
-| Web standards only           | Web Crypto, `fetch`, `URL`, `AbortSignal`; no `node:*` and no `process`. The `lib` is `ES2023` and `WebWorker`                                 |
-| One schema library           | Claims and bodies are read with valibot; `parseWith` names the path of the first issue                                                         |
-| No side channels             | No logging, no environment, no network except through the `fetch` the caller passes                                                            |
+| One model of messages        | A message is read and written from one set of schemas ([messages](model.md)): what one role writes, the other reads                                        |
+| Web standards only           | Web Crypto, `fetch`, `URL`, `AbortSignal`; no `node:*` and no `process`. The `lib` is `ES2023` and `WebWorker`                                             |
+| One schema library           | Claims and bodies are read with valibot; `parseWith` names the path of the first issue                                                                     |
+| No side channels             | No logging, no environment, no network except through the `fetch` the caller passes                                                                        |
 
 ## Candidates compared
 

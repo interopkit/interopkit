@@ -25,13 +25,13 @@ flowchart LR
 | 2.1.1 Multikey, for the public key of a proof                  | `keys/multikey.ts`                | The `p256-pub` form of the key of a proof                       |
 | A.7 and A.8 test vectors                                       | `test/vectors.spec.test.ts`       | Reproduced: the base proof and the derived proof, byte for byte |
 
-| Option of the primitives | Value                            | Why                                                                 |
-| ------------------------ | -------------------------------- | ------------------------------------------------------------------- |
-| `documentLoader`         | The caller's `contexts`, wrapped | The only way a context is read                                      |
-| `safe`                   | `true` (the primitives' own)     | A term that no context defines is an error and is not dropped       |
-| `algorithm`              | `RDFC-1.0` (the primitives' own) | The canonicalization of the Recommendation                          |
+| Option of the primitives | Value                            | Why                                                                                                                                 |
+| ------------------------ | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `documentLoader`         | The caller's `contexts`, wrapped | The only way a context is read                                                                                                      |
+| `safe`                   | `true` (the primitives' own)     | A term that no context defines is an error and is not dropped                                                                       |
+| `algorithm`              | `RDFC-1.0` (the primitives' own) | The canonicalization of the Recommendation                                                                                          |
 | `maxDeepIterations`      | `1000`                           | Refuses blank nodes that take more runs of Hash N-Degree Quads to tell apart, in time and memory that do not grow with their number |
-| `signal`                 | The caller's                     | Stops the canonicalization at the next check                        |
+| `signal`                 | The caller's                     | Stops the canonicalization at the next check                                                                                        |
 
 A part of the Recommendation that is not here is listed under "Not included" in the [proofs guide](proofs.md), with its
 reason.

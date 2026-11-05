@@ -35,7 +35,7 @@ JSON.parse(atob(jws.split(".")[0].replaceAll("-", "+").replaceAll("_", "/")));
 | Export                                             | Does                                                                                                                |
 | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `Signer`                                           | The port: `algorithm`, an optional `keyId`, and `sign(data, options)`, which answers the signature in its JOSE form |
-| `createCryptoKeySigner(key, options)`                | Makes a `Signer` from a private `CryptoKey`, after checking that the key fits the algorithm                         |
+| `createCryptoKeySigner(key, options)`              | Makes a `Signer` from a private `CryptoKey`, after checking that the key fits the algorithm                         |
 | `signCompactJws(header, payload, signer, options)` | Signs `payload` and returns the compact JWS, after checking the header, the signer and the signature                |
 
 ## Algorithms
@@ -43,7 +43,7 @@ JSON.parse(atob(jws.split(".")[0].replaceAll("-", "+").replaceAll("_", "/")));
 `algorithm` is a JOSE name (RFC 7518, RFC 8037, RFC 8812). `none` and the HMAC algorithms are refused: a signer holds a private
 key.
 
-| Algorithm                 | Key of `createCryptoKeySigner`                                         | Signature                                       |
+| Algorithm                 | Key of `createCryptoKeySigner`                                       | Signature                                       |
 | ------------------------- | -------------------------------------------------------------------- | ----------------------------------------------- |
 | `RS256`, `RS384`, `RS512` | `RSASSA-PKCS1-v1_5`, imported with `SHA-256`, `SHA-384` or `SHA-512` | The size of the modulus                         |
 | `PS256`, `PS384`, `PS512` | `RSA-PSS`, imported with the same hash; salt as long as the hash     | The size of the modulus                         |
@@ -63,23 +63,23 @@ key.
 
 ## The header and the signature
 
-| `signCompactJws` does                                                                                       | When                                                       |
-| ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Puts `alg` of the signer first in the protected header, then `kid` of the signer, then the rest of `header`; a member that is `undefined` names nothing and leaves the signer's | Always |
-| Refuses a header that names another `alg` than the signer's                                                 | Before the signer is called                                |
-| Refuses a header that names another `kid` than the signer's                                                 | Before the signer is called, when the signer has a `keyId` |
-| Refuses a header whose `jwk` holds a private key (`d`)                                                      | Before the signer is called                                |
-| Calls the signer once, with the ASCII bytes of `base64url(header).base64url(payload)`                       | After the checks                                           |
-| Refuses a signature that is not a `Uint8Array`, or an ECDSA signature of the wrong length                   | After the signer answers, before the signature is used     |
-| Returns `base64url(header).base64url(payload).base64url(signature)`                                         | Always                                                     |
+| `signCompactJws` does                                                                                                                                                           | When                                                       |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Puts `alg` of the signer first in the protected header, then `kid` of the signer, then the rest of `header`; a member that is `undefined` names nothing and leaves the signer's | Always                                                     |
+| Refuses a header that names another `alg` than the signer's                                                                                                                     | Before the signer is called                                |
+| Refuses a header that names another `kid` than the signer's                                                                                                                     | Before the signer is called, when the signer has a `keyId` |
+| Refuses a header whose `jwk` holds a private key (`d`)                                                                                                                          | Before the signer is called                                |
+| Calls the signer once, with the ASCII bytes of `base64url(header).base64url(payload)`                                                                                           | After the checks                                           |
+| Refuses a signature that is not a `Uint8Array`, or an ECDSA signature of the wrong length                                                                                       | After the signer answers, before the signature is used     |
+| Returns `base64url(header).base64url(payload).base64url(signature)`                                                                                                             | Always                                                     |
 
 ## Options and limits
 
-| Option                            | Default  | Where                                         |
-| --------------------------------- | -------- | --------------------------------------------- |
+| Option                              | Default  | Where                                         |
+| ----------------------------------- | -------- | --------------------------------------------- |
 | `createCryptoKeySigner` `algorithm` | Required | The JOSE algorithm of the key                 |
 | `createCryptoKeySigner` `keyId`     | none     | The `kid` of the signatures                   |
-| `signCompactJws` `signal`         | none     | Ends the caller's wait and goes to the signer |
+| `signCompactJws` `signal`           | none     | Ends the caller's wait and goes to the signer |
 
 Neither function limits the size of a payload: the host bounds what it signs.
 
@@ -96,13 +96,13 @@ Neither function limits the size of a payload: the host bounds what it signs.
 
 ## Errors
 
-| Error                      | When                                                                                                                                                  | What to do                                                |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `DataError`                | `createCryptoKeySigner`: the algorithm is not one that a `CryptoKey` signs, the key is not private or does not fit the algorithm (kind, hash or curve)  | Import or generate the key for the algorithm              |
-| `DataError`                | `signCompactJws`: the signer has no known algorithm or no `sign` function, the header or the payload has the wrong type, or the header cannot be JSON | Fix the arguments                                         |
-| `DataError`                | `signCompactJws`: the header names another algorithm or key than the signer's, or its `jwk` holds `d`                                                 | Leave `alg` and `kid` to the signer; publish a public key |
-| `DataError`                | `signCompactJws`: the signature is not a `Uint8Array`, or an ES256, ES384, ES512 or ES256K signature has the wrong length                             | Convert DER to the fixed-length R and S in the signer     |
-| The `reason` of the signal | The caller aborted                                                                                                                                    | Nothing: the caller ended the wait                        |
+| Error                      | When                                                                                                                                                   | What to do                                                |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| `DataError`                | `createCryptoKeySigner`: the algorithm is not one that a `CryptoKey` signs, the key is not private or does not fit the algorithm (kind, hash or curve) | Import or generate the key for the algorithm              |
+| `DataError`                | `signCompactJws`: the signer has no known algorithm or no `sign` function, the header or the payload has the wrong type, or the header cannot be JSON  | Fix the arguments                                         |
+| `DataError`                | `signCompactJws`: the header names another algorithm or key than the signer's, or its `jwk` holds `d`                                                  | Leave `alg` and `kid` to the signer; publish a public key |
+| `DataError`                | `signCompactJws`: the signature is not a `Uint8Array`, or an ES256, ES384, ES512 or ES256K signature has the wrong length                              | Convert DER to the fixed-length R and S in the signer     |
+| The `reason` of the signal | The caller aborted                                                                                                                                     | Nothing: the caller ended the wait                        |
 
 ## Data flows
 

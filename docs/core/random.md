@@ -28,7 +28,7 @@ Math.floor(seeded.uniform() * 8); // => 2
 
 | Export          | Does                                                                                                                                     |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `Random`        | The type: an object with `uniform()`, which answers a number from 0 up to, and not including, 1, with the same chance for every value   |
+| `Random`        | The type: an object with `uniform()`, which answers a number from 0 up to, and not including, 1, with the same chance for every value    |
 | `SYSTEM_RANDOM` | A `Random` over `crypto.getRandomValues`. Each draw holds 53 random bits, so every draw is exact and none is predictable from the others |
 
 ## Rules
@@ -51,12 +51,12 @@ Math.floor(seeded.uniform() * 8); // => 2
 
 | Not included           | Why                                                                                                   |
 | ---------------------- | ----------------------------------------------------------------------------------------------------- |
-| A seeded generator     | A test brings its own, as an object of one line, and the library need not choose an algorithm for it |
+| A seeded generator     | A test brings its own, as an object of one line, and the library need not choose an algorithm for it  |
 | Randomness for secrets | Tokens and identifiers that guard a protocol come from `crypto` inside the package, never from a port |
 
 ## Differences from the references
 
-| Reference                                          | Difference                                                                                                                                                         |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Math.random()`                                    | Not used in any package: `pnpm lint` fails on it in `packages/*/src`. `SYSTEM_RANDOM` draws 53 bits from `crypto.getRandomValues`                                   |
+| Reference                                               | Difference                                                                                                                                                                    |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Math.random()`                                         | Not used in any package: `pnpm lint` fails on it in `packages/*/src`. `SYSTEM_RANDOM` draws 53 bits from `crypto.getRandomValues`                                             |
 | `Random` of `@assesskit/runtime` and `@measurekit/core` | The same shape, `uniform()`, so that a host passes one source to every family. Each family defines its own copy, since packages of different families never import each other |

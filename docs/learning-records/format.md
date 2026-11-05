@@ -19,14 +19,22 @@ import { formatStatement } from "@interopkit/learning-records";
 
 const statement = {
   actor: { name: "Example Learner", mbox: "mailto:learner@example.org" },
-  verb: { id: "http://adlnet.gov/expapi/verbs/completed", display: { "en-US": "completed", "fr-FR": "completed (fr)" } },
-  object: { id: "https://example.org/activities/course-1", definition: { name: { en: "Course 1", fr: "Course 1 (fr)" } } },
+  verb: {
+    id: "http://adlnet.gov/expapi/verbs/completed",
+    display: { "en-US": "completed", "fr-FR": "completed (fr)" },
+  },
+  object: {
+    id: "https://example.org/activities/course-1",
+    definition: { name: { en: "Course 1", fr: "Course 1 (fr)" } },
+  },
 };
 formatStatement(statement, "ids"); // => { actor: { mbox: "mailto:learner@example.org" }, verb: { id: "http://adlnet.gov/expapi/verbs/completed" }, object: { id: "https://example.org/activities/course-1" } }
 
 const canonical = formatStatement(statement, "canonical", {
   languages: ["fr-CA", "fr"],
-  activities: new Map([["https://example.org/activities/course-1", { name: { en: "Course one", fr: "Course one (fr)" } }]]),
+  activities: new Map([
+    ["https://example.org/activities/course-1", { name: { en: "Course one", fr: "Course one (fr)" } }],
+  ]),
 });
 canonical.verb.display; // => { "fr-FR": "completed (fr)" }
 canonical.object; // => { id: "https://example.org/activities/course-1", definition: { name: { fr: "Course one (fr)" } } }

@@ -72,17 +72,17 @@ refuses loopback, private and link-local addresses.
 
 ## Options
 
-| Option          | Meaning                                                                                                                                                                | Default    |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| `baseUrl`       | The address of the provider before the path of the version: an `https` URL without credentials, query or fragment, whose path does not end with `/ims/case/v1p1`       | required   |
-| `fetch`         | The `fetch` that makes the requests                                                                                                                                    | required   |
-| `version`       | `"1.1"` or `"1.0"`: the path, and the rules that the answers are read by                                                                                               | `"1.1"`    |
-| `authorization` | `(options) => Promise<string \| undefined>`: the value of the `Authorization` header, such as `Bearer abc`, or `undefined` for none. It is called before every request | none       |
-| `timeoutMs`     | The most time in milliseconds that one request may take, from the request to the last byte of the answer                                                               | 10,000     |
-| `maxBytes`      | The most bytes of one answer                                                                                                                                           | 16,777,216 |
+| Option          | Meaning                                                                                                                                                                                                                             | Default    |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `baseUrl`       | The address of the provider before the path of the version: an `https` URL without credentials, query or fragment, whose path does not end with `/ims/case/v1p1`                                                                    | required   |
+| `fetch`         | The `fetch` that makes the requests                                                                                                                                                                                                 | required   |
+| `version`       | `"1.1"` or `"1.0"`: the path, and the rules that the answers are read by                                                                                                                                                            | `"1.1"`    |
+| `authorization` | `(options) => Promise<string \| undefined>`: the value of the `Authorization` header, such as `Bearer abc`, or `undefined` for none. It is called before every request                                                              | none       |
+| `timeoutMs`     | The most time in milliseconds that one request may take, from the request to the last byte of the answer                                                                                                                            | 10,000     |
+| `maxBytes`      | The most bytes of one answer                                                                                                                                                                                                        | 16,777,216 |
 | `maxTokens`     | The most tokens of JSON in one answer: each bracket, brace, colon and comma, each string, each number and each `true`, `false` and `null`. Counted before the answer is parsed, because the memory of a parse grows with the tokens | 2,000,000  |
-| `pageSize`      | The number of documents that `documents` asks for in one request                                                                                                       | 100        |
-| `signal`        | An `AbortSignal` that ends the wait of every call                                                                                                                      | none       |
+| `pageSize`      | The number of documents that `documents` asks for in one request                                                                                                                                                                    | 100        |
+| `signal`        | An `AbortSignal` that ends the wait of every call                                                                                                                                                                                   | none       |
 
 `authorization` is where the credential of the host comes in. It can return a token that a cache keeps fresh, such as the one that
 `createTokenCache` of `@interopkit/core/oauth` returns, with `Bearer ` in front. It receives a `signal` that joins the signal of
@@ -118,21 +118,21 @@ flowchart TD
   full -->|"no"| done
 ```
 
-| Rule                        | Behavior                                                                                                                    |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| The offset of the next page | The offset plus the number of documents the page held, so a provider that caps the page below `limit` is followed           |
+| Rule                        | Behavior                                                                                                                                                             |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The offset of the next page | The offset plus the number of documents the page held, so a provider that caps the page below `limit` is followed                                                    |
 | A document seen before      | Given once, matched by identifier in either case: a collection that changes between pages may repeat a document. With `fields`, the client asks for `identifier` too |
-| `Link` header               | Read for `rel="next"` only. The client builds the next request itself and never requests an address that the provider gives |
-| An empty first page         | The iteration ends without a document                                                                                       |
-| A 404 for the first page    | A `ServiceError`: the path is wrong or the provider has no such service                                                     |
+| `Link` header               | Read for `rel="next"` only. The client builds the next request itself and never requests an address that the provider gives                                          |
+| An empty first page         | The iteration ends without a document                                                                                                                                |
+| A 404 for the first page    | A `ServiceError`: the path is wrong or the provider has no such service                                                                                              |
 
 ### The query
 
-| `CaseQuery` property | Meaning                                                                         | Default |
-| -------------------- | ------------------------------------------------------------------------------- | ------- |
-| `sort`               | The field to sort on, or a path through nested objects with dots                | none    |
-| `orderBy`            | `"asc"` or `"desc"`                                                             | none    |
-| `filter`             | A comparison, or two comparisons joined by `and` or `or`; see below             | none    |
+| `CaseQuery` property | Meaning                                                                                     | Default |
+| -------------------- | ------------------------------------------------------------------------------------------- | ------- |
+| `sort`               | The field to sort on, or a path through nested objects with dots                            | none    |
+| `orderBy`            | `"asc"` or `"desc"`                                                                         | none    |
+| `filter`             | A comparison, or two comparisons joined by `and` or `or`; see below                         | none    |
 | `fields`             | The fields to return, and only those; the documents then have those fields and `identifier` | none    |
 
 A query is checked when `documents` is called, before any request: a property that a query does not have, a field that is not a
@@ -143,11 +143,11 @@ with other than two comparisons is a `DataError`.
 `{ field, predicate, value }` with a predicate of `=`, `!=`, `>`, `>=`, `<`, `<=` or `~`. The binding asks a provider to compare
 without regard to case, `=` of a list to need every element, and `~` to need any.
 
-| The `filter` of the query                                                                                                                       | The value of the parameter                                  |
-| ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `{ field: "version", predicate: "=", value: "1.0" }`                                                                                            | `version='1.0'`                                             |
+| The `filter` of the query                                                                                                                       | The value of the parameter                                    |
+| ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `{ field: "version", predicate: "=", value: "1.0" }`                                                                                            | `version='1.0'`                                               |
 | `{ and: [{ field: "version", predicate: "=", value: "1.0" }, { field: "lastChangeDateTime", predicate: ">", value: "2016-12-12T00:00:00Z" }] }` | `version='1.0' AND lastChangeDateTime>'2016-12-12T00:00:00Z'` |
-| `{ field: "title", predicate: "~", value: "children's" }`                                                                                       | `title~'children''s'`                                       |
+| `{ field: "title", predicate: "~", value: "children's" }`                                                                                       | `title~'children''s'`                                         |
 
 The binding gives no way to write a single quote inside a value. The client writes it twice, as the provider of this package
 reads it (`title~'children''s'`); a provider that reads it otherwise needs the value cut at the quote and filtered with `~`.
@@ -171,33 +171,41 @@ import { createCaseClient } from "@interopkit/competency-frameworks/client";
 const client = createCaseClient({
   baseUrl: "https://standards.example.org",
   fetch: async () =>
-    new Response(JSON.stringify({ CFDocuments: [{ identifier: "8f3e2a14-4c1b-4d77-9a3e-1b2c3d4e5f60", lastChangeDateTime: "2024-06-13T18:46:03+00:00" }] }), {
-      status: 200,
-      headers: { "X-Total-Count": "1" },
-    }),
+    new Response(
+      JSON.stringify({
+        CFDocuments: [
+          { identifier: "8f3e2a14-4c1b-4d77-9a3e-1b2c3d4e5f60", lastChangeDateTime: "2024-06-13T18:46:03+00:00" },
+        ],
+      }),
+      {
+        status: 200,
+        headers: { "X-Total-Count": "1" },
+      },
+    ),
 });
 const stamps = [];
-for await (const document of client.documents({ fields: ["identifier", "lastChangeDateTime"] })) stamps.push(document.lastChangeDateTime);
+for await (const document of client.documents({ fields: ["identifier", "lastChangeDateTime"] }))
+  stamps.push(document.lastChangeDateTime);
 stamps; // => ["2024-06-13T18:46:03+00:00"]
 ```
 
 ## Errors
 
-| Case                                                                                              | Result                                                                                                                       |
-| ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| The configuration, a query, an identifier, `options` or the value of `authorization` is not valid | `DataError` that names the option and what it must be, before any request                                                    |
-| An identifier is empty, `.` or `..`                                                               | `DataError`: a URL would resolve it to another path. Any other identifier is percent-encoded into one segment                |
-| The provider does not know the object (404)                                                       | `undefined` from a call for one entity                                                                                       |
-| Another status: 400, 401, 403, 429, 500 or any other                                              | `ServiceError` with `status`, `headers` and `body`; read it with `readStatusInfo` of `@interopkit/core`                                            |
-| The provider did not answer within `timeoutMs`, or `fetch` rejected                               | `ServiceError` with status 0                                                                                                 |
-| The answer is larger than `maxBytes`                                                              | `ServiceError` with the status of the answer, naming the limit; the body is cancelled. Raise `maxBytes` for a larger package |
+| Case                                                                                              | Result                                                                                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The configuration, a query, an identifier, `options` or the value of `authorization` is not valid | `DataError` that names the option and what it must be, before any request                                                                                                                                               |
+| An identifier is empty, `.` or `..`                                                               | `DataError`: a URL would resolve it to another path. Any other identifier is percent-encoded into one segment                                                                                                           |
+| The provider does not know the object (404)                                                       | `undefined` from a call for one entity                                                                                                                                                                                  |
+| Another status: 400, 401, 403, 429, 500 or any other                                              | `ServiceError` with `status`, `headers` and `body`; read it with `readStatusInfo` of `@interopkit/core`                                                                                                                 |
+| The provider did not answer within `timeoutMs`, or `fetch` rejected                               | `ServiceError` with status 0                                                                                                                                                                                            |
+| The answer is larger than `maxBytes`                                                              | `ServiceError` with the status of the answer, naming the limit; the body is cancelled. Raise `maxBytes` for a larger package                                                                                            |
 | The answer has more tokens of JSON than `maxTokens`                                               | `LimitError`: `The CASE provider at <url> answered with a body of more than N tokens of JSON, above the limit of the option maxTokens.` Raise `maxTokens` for a larger package; a framework of 10,000 items has 990,000 |
-| The answer is a redirect                                                                          | `ServiceError`: the client follows none. Use the address that the provider redirects to as `baseUrl`                         |
-| The answer is not UTF-8, or nests more than 128 levels of JSON                                    | `DataError`, or a `LimitError` for the levels, that names the provider and says which, before the answer is parsed           |
-| The answer is not JSON, or is JSON that is not valid CASE                                         | `DataError`: `The CASE provider at <url> answered with data that is not valid CASE: <the first fault>`                       |
-| The client is configured for 1.0 and `discovery` is called                                        | `DataError`: 1.0 defines no discovery file                                                                                   |
-| The `signal` of the call or the configuration aborts                                              | The call rejects with `signal.reason`                                                                                        |
-| `authorization` rejects                                                                           | Its error, unchanged, and no request is made                                                                                 |
+| The answer is a redirect                                                                          | `ServiceError`: the client follows none. Use the address that the provider redirects to as `baseUrl`                                                                                                                    |
+| The answer is not UTF-8, or nests more than 128 levels of JSON                                    | `DataError`, or a `LimitError` for the levels, that names the provider and says which, before the answer is parsed                                                                                                      |
+| The answer is not JSON, or is JSON that is not valid CASE                                         | `DataError`: `The CASE provider at <url> answered with data that is not valid CASE: <the first fault>`                                                                                                                  |
+| The client is configured for 1.0 and `discovery` is called                                        | `DataError`: 1.0 defines no discovery file                                                                                                                                                                              |
+| The `signal` of the call or the configuration aborts                                              | The call rejects with `signal.reason`                                                                                                                                                                                   |
+| `authorization` rejects                                                                           | Its error, unchanged, and no request is made                                                                                                                                                                            |
 
 `readStatusInfo(error)` of `@interopkit/core` returns `{ info, retryAfterSeconds }`. `info` is the `imsx_StatusInfo` in the body, whose `imsx_codeMinor`
 names the cause (`invalid_filter_field`, `invalid_selection_field`, `unknownobject`, `invalid_uuid`, `server_busy`,
@@ -207,23 +215,23 @@ not. `retryAfterSeconds` is `Retry-After` when it is a number of seconds. The fo
 
 ### Failure paths
 
-| What                 | Fails                                                | Hangs                              | Called again                                                                                               | May call back |
-| -------------------- | ---------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------- |
-| `fetch`              | `ServiceError`; 404 for one entity gives `undefined` | `timeoutMs`, then status 0         | Safe: GET only. A collection that changes between pages may repeat or skip a document; repeats are dropped | Nothing       |
+| What                 | Fails                                                | Hangs                                                                                                   | Called again                                                                                               | May call back |
+| -------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------- |
+| `fetch`              | `ServiceError`; 404 for one entity gives `undefined` | `timeoutMs`, then status 0                                                                              | Safe: GET only. A collection that changes between pages may repeat or skip a document; repeats are dropped | Nothing       |
 | `authorization`      | Its error reaches the caller; no request is made     | The caller's `signal` is passed on, and the wait ends when it aborts, whether the function stops or not | Called before every request, so it may return a fresh token                                                | Nothing       |
-| The answer too large | `ServiceError` naming the limit                      | As `fetch`                         | The same answer until `maxBytes` grows                                                                     | Nothing       |
+| The answer too large | `ServiceError` naming the limit                      | As `fetch`                                                                                              | The same answer until `maxBytes` grows                                                                     | Nothing       |
 
 ## Limits
 
-| Limit                         | Value      | Refused with             |
-| ----------------------------- | ---------- | ------------------------ |
-| `timeoutMs`                   | 10,000 ms  | `ServiceError`, status 0 |
-| `maxBytes`                    | 16,777,216 | `ServiceError`           |
-| `maxTokens`                   | 2,000,000  | `LimitError`             |
-| Levels of JSON in an answer   | 128: an extension, which the readers bound to 64 levels, may sit below the levels of a package | `LimitError` |
-| `pageSize`                    | 100        | The provider caps it     |
-| Logical operators in a filter | 1          | `DataError`              |
-| Redirects                     | 0          | `ServiceError`           |
+| Limit                         | Value                                                                                          | Refused with             |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------ |
+| `timeoutMs`                   | 10,000 ms                                                                                      | `ServiceError`, status 0 |
+| `maxBytes`                    | 16,777,216                                                                                     | `ServiceError`           |
+| `maxTokens`                   | 2,000,000                                                                                      | `LimitError`             |
+| Levels of JSON in an answer   | 128: an extension, which the readers bound to 64 levels, may sit below the levels of a package | `LimitError`             |
+| `pageSize`                    | 100                                                                                            | The provider caps it     |
+| Logical operators in a filter | 1                                                                                              | `DataError`              |
+| Redirects                     | 0                                                                                              | `ServiceError`           |
 
 ## Not included
 

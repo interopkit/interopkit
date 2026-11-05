@@ -44,26 +44,26 @@ of that Attachment. The host sends both, with `writeMultipart` of `@interopkit/l
 
 ## How a signature is made and checked
 
-| Step       | Signing                                                                                                                                | Verifying                                                                                                    |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Step       | Signing                                                                                                                                | Verifying                                                                                                      |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | Payload    | The JSON of the Statement as a provider reads it, before the signature is added                                                        | The JSON must be a Statement that an LRS reads, and the same Statement as the one received (`isSameStatement`) |
-| Header     | `alg` of the signer, `kid` when the signer has a key id, `x5c` when the option gives a chain                                           | `alg` must be RS256, RS384 or RS512; `x5c`, when present, is a list of base64 certificates                   |
-| Key        | The `Signer` signs; its algorithm is RS256, RS384 or RS512                                                                             | The leaf of `x5c` verifies; else `key`; a `jwk` in the header is never used                                  |
-| Attachment | `usageType` `http://adlnet.gov/expapi/attachments/signature`, `contentType` `application/octet-stream`, `length` and `sha2` of the JWS | Not read: the caller gives the bytes of the part that holds the signature                                    |
-| Trust      | Not decided                                                                                                                            | `trustCertificate` decides whether the chain is trusted; the result is `certified`                           |
+| Header     | `alg` of the signer, `kid` when the signer has a key id, `x5c` when the option gives a chain                                           | `alg` must be RS256, RS384 or RS512; `x5c`, when present, is a list of base64 certificates                     |
+| Key        | The `Signer` signs; its algorithm is RS256, RS384 or RS512                                                                             | The leaf of `x5c` verifies; else `key`; a `jwk` in the header is never used                                    |
+| Attachment | `usageType` `http://adlnet.gov/expapi/attachments/signature`, `contentType` `application/octet-stream`, `length` and `sha2` of the JWS | Not read: the caller gives the bytes of the part that holds the signature                                      |
+| Trust      | Not decided                                                                                                                            | `trustCertificate` decides whether the chain is trusted; the result is `certified`                             |
 
 The signature is RSA PKCS#1 v1.5, which is deterministic: the same Statement and key give the same signature. A Statement that has
 a signature already is refused, since an LRS reads one signature.
 
 ## Options
 
-| Option             | Of                                          | Default                                            | Meaning                                                                                         |
-| ------------------ | ------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `x5c`              | `signStatement`                             | none                                               | The certificate chain of the key, leaf first, each as the base64 of its DER encoding            |
-| `signal`           | `signStatement`, `verifyStatementSignature` | none                                               | Ends the caller's wait; the signer and `trustCertificate` receive it                            |
+| Option             | Of                                          | Default                                            | Meaning                                                                                                                                                                                                                                                                                                                            |
+| ------------------ | ------------------------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x5c`              | `signStatement`                             | none                                               | The certificate chain of the key, leaf first, each as the base64 of its DER encoding                                                                                                                                                                                                                                               |
+| `signal`           | `signStatement`, `verifyStatementSignature` | none                                               | Ends the caller's wait; the signer and `trustCertificate` receive it                                                                                                                                                                                                                                                               |
 | `version`          | `signStatement`, `verifyStatementSignature` | `"2.0.0"`                                          | The version of xAPI. `signStatement` reads the Statement by its provider rules. `verifyStatementSignature` reads the Statement by its rules, and on `"1.0.3"` compares it with the payload in the form of 1.0.3, since the route of 1.0.3 answers a Statement of 2.0 without what 1.0.3 does not have and the signature keeps them |
-| `key`              | `verifyStatementSignature`                  | none: a JWS without `x5c` is `no-key`              | The public RSASSA-PKCS1-v1_5 key, made for the hash of the algorithm, when the JWS has no `x5c` |
-| `trustCertificate` | `verifyStatementSignature`                  | none: the leaf is checked and trust is not claimed | `(chain, options) => Promise<boolean>`: whether the chain is trusted, leaf first                |
+| `key`              | `verifyStatementSignature`                  | none: a JWS without `x5c` is `no-key`              | The public RSASSA-PKCS1-v1_5 key, made for the hash of the algorithm, when the JWS has no `x5c`                                                                                                                                                                                                                                    |
+| `trustCertificate` | `verifyStatementSignature`                  | none: the leaf is checked and trust is not claimed | `(chain, options) => Promise<boolean>`: whether the chain is trusted, leaf first                                                                                                                                                                                                                                                   |
 
 ## The result of a verification
 
@@ -87,8 +87,8 @@ standard asks for the compact one.
 
 ## Limits
 
-| Limit       | Value                                                                    | Applies to                                                                                                                           |
-| ----------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Limit       | Value                                                                           | Applies to                                                                                                                           |
+| ----------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | The payload | 10,485,760 bytes, 64 levels and 1,000,000 tokens, those of `parseStatementJson` | A payload over them is `malformed`. The handler of an LRS reads it within its own `maxBodyBytes`, `maxDepth` and `maxTokens` instead |
 
 The worst payload within them, a JWS of 10 MiB near a million tokens of distinct names, ends within a heap of
@@ -119,8 +119,8 @@ An error of the signer, of `trustCertificate`, and the `reason` of a `signal` pa
 
 ## Differences from the references
 
-| Reference    | Difference                                                                                                                                                                                                                |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Reference    | Difference                                                                                                                                                                                                                                                                                                           |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | The standard | "Logically equivalent" is not defined for a signature; the package uses the equivalence of the immutability rules (`isSameStatement`) and, since that leaves them out, holds the `id`, the `timestamp` and the Attachments of the payload to the Statement; `stored`, `authority` and `version` are the LRS's to set |
-| The standard | The Statement signed is "the complete Statement before the signature was added"; a Statement without an id is signed without one, and the LRS may give it one without breaking the signature                              |
-| jwcrypto     | Signatures made by jwcrypto with RS256, RS384 and RS512 and an X.509 chain verify, and the cases in which they must not are refused with the reasons above (`validation/xapi_signatures.py`)                              |
+| The standard | The Statement signed is "the complete Statement before the signature was added"; a Statement without an id is signed without one, and the LRS may give it one without breaking the signature                                                                                                                         |
+| jwcrypto     | Signatures made by jwcrypto with RS256, RS384 and RS512 and an X.509 chain verify, and the cases in which they must not are refused with the reasons above (`validation/xapi_signatures.py`)                                                                                                                         |

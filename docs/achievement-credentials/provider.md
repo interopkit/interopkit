@@ -30,13 +30,13 @@ flowchart TD
   operation -->|"getProfile, putProfile"| profile["ProfileStore: 200, 404,<br/>422 not a profile"]
 ```
 
-| Part                                                            | Holds                                                                                         |
-| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `handleCredentialsRequest`, `CredentialsProviderOptions`        | The router and the five operations of an API, over the stores                                 |
-| `CredentialStore`, `CredentialsPage`, `CredentialList`          | Where the credentials of each user are kept, and the page that the list asks for              |
-| `ReceivedCredential`, `UpsertOutcome`                           | What an upsert gives the store: the credential as it came and as the model reads it           |
-| `ProfileStore`                                                  | Where the profile of each user is kept                                                        |
-| `CredentialsAccess`                                             | What `authorize` answers: the owner of the token, or a refusal with 401, 403 or 429           |
+| Part                                                     | Holds                                                                               |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `handleCredentialsRequest`, `CredentialsProviderOptions` | The router and the five operations of an API, over the stores                       |
+| `CredentialStore`, `CredentialsPage`, `CredentialList`   | Where the credentials of each user are kept, and the page that the list asks for    |
+| `ReceivedCredential`, `UpsertOutcome`                    | What an upsert gives the store: the credential as it came and as the model reads it |
+| `ProfileStore`                                           | Where the profile of each user is kept                                              |
+| `CredentialsAccess`                                      | What `authorize` answers: the owner of the token, or a refusal with 401, 403 or 429 |
 
 These types come from `@interopkit/achievement-credentials/provider` only. `@interopkit/core/http` holds what the providers of the 1EdTech services share:
 the request and the answer, `AccessDecision`, the paging by `limit` and `offset`, and the `imsx_StatusInfo` of a failure.
@@ -149,33 +149,33 @@ two with `selectNewerCredential`, and answers `"unchanged"` when it keeps the on
 Each API is below its own path: `{basePath}/ims/ob/v3p0` for `api: "badges"`, `{basePath}/ims/clr/v2p0` for `api: "clr"`. A host
 that serves both mounts two handlers.
 
-| Endpoint            | Operation               | Scope (`.../ob/v3p0/scope/` or `.../clr/v2p0/scope/`) | Port                    | Answer                                                               |
-| ------------------- | ----------------------- | ----------------------------------------------------- | ----------------------- | -------------------------------------------------------------------- |
+| Endpoint            | Operation               | Scope (`.../ob/v3p0/scope/` or `.../clr/v2p0/scope/`) | Port                     | Answer                                                               |
+| ------------------- | ----------------------- | ----------------------------------------------------- | ------------------------ | -------------------------------------------------------------------- |
 | `GET /credentials`  | `getCredentials`        | `credential.readonly`                                 | `CredentialStore.list`   | 200 `GetOpenBadgeCredentialsResponse` or `GetClrCredentialsResponse` |
 | `POST /credentials` | `upsertCredential`      | `credential.upsert`                                   | `CredentialStore.upsert` | 201, 200 with the credential of the request; 304 with no body        |
-| `GET /profile`      | `getProfile`            | `profile.readonly`                                    | `ProfileStore.get`       | 200 `Profile`; 404 when there is none                                 |
+| `GET /profile`      | `getProfile`            | `profile.readonly`                                    | `ProfileStore.get`       | 200 `Profile`; 404 when there is none                                |
 | `PUT /profile`      | `putProfile`            | `profile.update`                                      | `ProfileStore.put`       | 200 the `Profile` that the store returns                             |
-| `GET /discovery`    | `getServiceDescription` | none: OB 6.3 says it MUST NOT be protected            | none                    | 200 `serviceDescription`                                             |
+| `GET /discovery`    | `getServiceDescription` | none: OB 6.3 says it MUST NOT be protected            | none                     | 200 `serviceDescription`                                             |
 
 A path with other segments, a trailing slash or another case is 404; another method is 405 with the methods of the endpoint in
 `Allow`.
 
 ## Options
 
-| Option               | Meaning                                                                                                                       | Default   |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------- |
-| `api`                | `"badges"` or `"clr"`. Required                                                                                               | none      |
-| `credentials`        | The `CredentialStore`. Required                                                                                               | none      |
-| `profiles`           | The `ProfileStore`. Required                                                                                                  | none      |
-| `authorize`          | `(request, scope, { signal }) => CredentialsAccess`: checks the token for the scope and names its owner. Required             | none      |
-| `serviceDescription` | The OpenAPI file of the API, profiled: `info` with the name and the policies, and the authorization code flow with every scope of the API. Required | none |
+| Option               | Meaning                                                                                                                                                                                                                                                           | Default   |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| `api`                | `"badges"` or `"clr"`. Required                                                                                                                                                                                                                                   | none      |
+| `credentials`        | The `CredentialStore`. Required                                                                                                                                                                                                                                   | none      |
+| `profiles`           | The `ProfileStore`. Required                                                                                                                                                                                                                                      | none      |
+| `authorize`          | `(request, scope, { signal }) => CredentialsAccess`: checks the token for the scope and names its owner. Required                                                                                                                                                 | none      |
+| `serviceDescription` | The OpenAPI file of the API, profiled: `info` with the name and the policies, and the authorization code flow with every scope of the API. Required                                                                                                               | none      |
 | `basePath`           | The path the provider is mounted at: `""`, or a path that starts with `/` and does not end with one. It is compared percent-encoded, as `URL` writes the path of a request, so `/café` and `/caf%C3%A9` are one path; one whose dot segments leave `/` is refused | `""`      |
-| `pageSize`           | Credentials in a page when the request has no `limit`; lowered to `maxPageSize` when above it                                 | 100       |
-| `maxPageSize`        | The most credentials in a page; a larger `limit` is lowered to it                                                             | 1,000     |
-| `maxBodyBytes`       | The most bytes of a body                                                                                                      | 1,048,576 |
-| `maxTokens`          | The most tokens of JSON in a body, or in the payload of a compact JWS, counted before parsing                                 | 1,000,000 |
-| `verify`             | The options of `verifyCredential`: a credential is verified before it is stored, without following its refresh service        | none      |
-| `signal`             | An `AbortSignal` that ends the wait for the ports and the verifier                                                            | none      |
+| `pageSize`           | Credentials in a page when the request has no `limit`; lowered to `maxPageSize` when above it                                                                                                                                                                     | 100       |
+| `maxPageSize`        | The most credentials in a page; a larger `limit` is lowered to it                                                                                                                                                                                                 | 1,000     |
+| `maxBodyBytes`       | The most bytes of a body                                                                                                                                                                                                                                          | 1,048,576 |
+| `maxTokens`          | The most tokens of JSON in a body, or in the payload of a compact JWS, counted before parsing                                                                                                                                                                     | 1,000,000 |
+| `verify`             | The options of `verifyCredential`: a credential is verified before it is stored, without following its refresh service                                                                                                                                            | none      |
+| `signal`             | An `AbortSignal` that ends the wait for the ports and the verifier                                                                                                                                                                                                | none      |
 
 The URL of the request is the one the client used, and the `Link` header is built from it: behind a proxy, build the request
 from the public address.
@@ -186,15 +186,15 @@ The provider holds no tokens. `authorize` gets the whole request and the scope o
 the access token, for example by introspection at the authorization server or by verifying a JWT, and answers whose resources it
 reaches.
 
-| `authorize` answers                                       | The provider answers                                                                                    |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `{ allowed: true, owner }`                                | Goes on with the stores of `owner`, and of no one else                                                  |
-| `{ allowed: false, reason: "unauthenticated", message?, challenge? }`    | 401 `unauthorizedrequest` with `WWW-Authenticate` of `challenge`, or `Bearer`                            |
-| `{ allowed: false, reason: "forbidden", message? }`                | 403 `forbidden` with `WWW-Authenticate: Bearer error="insufficient_scope", scope="<scope>"` (RFC 6750)  |
-| `{ allowed: false, reason: "too-many-requests", retryAfterSeconds? }`     | 429 `server_busy`, with `Retry-After` when the seconds are given                                        |
-| A `message` in a refusal                                  | The `imsx_description` of the answer, in place of the provider's sentence                               |
-| Rejects or throws                                         | 500 `internal_server_error`                                                                             |
-| Another shape                                             | `DataError`                                                                                             |
+| `authorize` answers                                                   | The provider answers                                                                                   |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `{ allowed: true, owner }`                                            | Goes on with the stores of `owner`, and of no one else                                                 |
+| `{ allowed: false, reason: "unauthenticated", message?, challenge? }` | 401 `unauthorizedrequest` with `WWW-Authenticate` of `challenge`, or `Bearer`                          |
+| `{ allowed: false, reason: "forbidden", message? }`                   | 403 `forbidden` with `WWW-Authenticate: Bearer error="insufficient_scope", scope="<scope>"` (RFC 6750) |
+| `{ allowed: false, reason: "too-many-requests", retryAfterSeconds? }` | 429 `server_busy`, with `Retry-After` when the seconds are given                                       |
+| A `message` in a refusal                                              | The `imsx_description` of the answer, in place of the provider's sentence                              |
+| Rejects or throws                                                     | 500 `internal_server_error`                                                                            |
+| Another shape                                                         | `DataError`                                                                                            |
 
 The stores are not asked when `authorize` refuses. The scopes of one API are not those of the other.
 
@@ -205,10 +205,10 @@ an offset), and passes them to `CredentialStore.list` as a `CredentialsPage`. Th
 `limit` credentials as it keeps them: an object goes into `credential`, a compact JWS into `compactJwsString`, each list in the
 order of the store. Both lists are always present.
 
-| The store                         | `X-Total-Count`     | `Link`                                                                                      |
-| --------------------------------- | ------------------- | ------------------------------------------------------------------------------------------- |
-| Returns `total`                   | The total           | `first`, `prev` when the offset is above 0, `next` when credentials follow, `last`          |
-| Returns no `total` (cannot count) | None (OB 6.4)       | `first`, `prev` when the offset is above 0, `next` when the page is full; no `last`        |
+| The store                         | `X-Total-Count` | `Link`                                                                              |
+| --------------------------------- | --------------- | ----------------------------------------------------------------------------------- |
+| Returns `total`                   | The total       | `first`, `prev` when the offset is above 0, `next` when credentials follow, `last`  |
+| Returns no `total` (cannot count) | None (OB 6.4)   | `first`, `prev` when the offset is above 0, `next` when the page is full; no `last` |
 
 Each link keeps the other parameters of the request. A page past the end is two empty lists.
 
@@ -232,11 +232,11 @@ sequenceDiagram
   H-->>C: 201 or 200 with the request's credential, or 304
 ```
 
-| The body                                                                   | Read as                                                                                           |
-| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `application/json`, `application/vc+ld+json`                              | JSON within `maxBodyBytes` and `maxTokens`, then `readCredential` with the kind of the API        |
-| `text/plain`                                                               | A compact JWS; its payload within `maxTokens`, in any form that `readCredentialJwt` reads, then `readCredential` |
-| Another media type, or none                                                | 415                                                                                               |
+| The body                                     | Read as                                                                                                          |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `application/json`, `application/vc+ld+json` | JSON within `maxBodyBytes` and `maxTokens`, then `readCredential` with the kind of the API                       |
+| `text/plain`                                 | A compact JWS; its payload within `maxTokens`, in any form that `readCredentialJwt` reads, then `readCredential` |
+| Another media type, or none                  | 415                                                                                                              |
 
 The Open Badges API takes an `AchievementCredential` (a type with `AchievementCredential` or `OpenBadgeCredential`), the CLR API
 a `ClrCredential`; a credential of another kind, such as an endorsement, is 422. A CLR in a compact JWS holds its credentials as
@@ -261,72 +261,72 @@ fetch of an address that it names.
 
 ## The ports
 
-| What the port does                                                                                                     | The provider answers                                                              |
-| ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| A method rejects or throws                                                                                             | 500 `internal_server_error`, with nothing of the failure                           |
-| The `signal` aborts                                                                                                    | The request rejects with the reason of the signal, whatever the port does          |
-| `list` answers a shape other than `CredentialList`, a string that is not a compact JWS, or more credentials than the limit | `DataError`: a broken port contract is a bug of the host                      |
-| `upsert` answers something other than `"created"`, `"replaced"` or `"unchanged"`                                       | `DataError`                                                                       |
-| `get` answers something other than an object or `undefined`, `put` something other than an object                     | `DataError`                                                                       |
-| A repeat of a request                                                                                                  | The stores are asked again: an upsert of an equal credential is `"unchanged"`, a `put` replaces again |
+| What the port does                                                                                                         | The provider answers                                                                                  |
+| -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| A method rejects or throws                                                                                                 | 500 `internal_server_error`, with nothing of the failure                                              |
+| The `signal` aborts                                                                                                        | The request rejects with the reason of the signal, whatever the port does                             |
+| `list` answers a shape other than `CredentialList`, a string that is not a compact JWS, or more credentials than the limit | `DataError`: a broken port contract is a bug of the host                                              |
+| `upsert` answers something other than `"created"`, `"replaced"` or `"unchanged"`                                           | `DataError`                                                                                           |
+| `get` answers something other than an object or `undefined`, `put` something other than an object                          | `DataError`                                                                                           |
+| A repeat of a request                                                                                                      | The stores are asked again: an upsert of an equal credential is `"unchanged"`, a `put` replaces again |
 
 Every port receives the `signal` of the options. The handler keeps nothing between requests.
 
 ## Answers
 
-| Status | When                                                                                                   | `imsx_codeMinor`          |
-| ------ | ------------------------------------------------------------------------------------------------------ | ------------------------- |
-| 200    | The list, a replaced credential, the profile, the replaced profile, the service description            |                           |
-| 201    | A new credential                                                                                       |                           |
-| 304    | An upsert that changed nothing, with no body                                                           |                           |
-| 400    | A `limit`, `offset` or `since` that cannot be used, or a parameter given twice                         | `invalid_query_parameter` |
-| 400    | A body that is not UTF-8 or not JSON, or a `text/plain` that is no compact JWS                         | `unknown`                 |
-| 401    | `authorize` refuses: no token it accepts                                                               | `unauthorizedrequest`     |
-| 403    | `authorize` refuses: the token lacks the scope                                                         | `forbidden`               |
-| 404    | A path that is no endpoint of the API, or no profile                                                   | `not_found`               |
-| 405    | A method that the endpoint does not serve                                                              | `not_allowed`             |
-| 413    | A body above `maxBodyBytes`, or JSON over `maxTokens` or 64 levels, in a body or in the payload of its JWS | `unknown`                 |
-| 415    | A body of a media type that the operation does not take                                                | `unknown`                 |
-| 422    | JSON that is not a credential or a profile of the API, a credential of another kind, one that does not verify | `invalid_data`     |
-| 429    | `authorize` refuses: one request too many                                                              | `server_busy`             |
-| 500    | A port rejects                                                                                         | `internal_server_error`   |
+| Status | When                                                                                                          | `imsx_codeMinor`          |
+| ------ | ------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| 200    | The list, a replaced credential, the profile, the replaced profile, the service description                   |                           |
+| 201    | A new credential                                                                                              |                           |
+| 304    | An upsert that changed nothing, with no body                                                                  |                           |
+| 400    | A `limit`, `offset` or `since` that cannot be used, or a parameter given twice                                | `invalid_query_parameter` |
+| 400    | A body that is not UTF-8 or not JSON, or a `text/plain` that is no compact JWS                                | `unknown`                 |
+| 401    | `authorize` refuses: no token it accepts                                                                      | `unauthorizedrequest`     |
+| 403    | `authorize` refuses: the token lacks the scope                                                                | `forbidden`               |
+| 404    | A path that is no endpoint of the API, or no profile                                                          | `not_found`               |
+| 405    | A method that the endpoint does not serve                                                                     | `not_allowed`             |
+| 413    | A body above `maxBodyBytes`, or JSON over `maxTokens` or 64 levels, in a body or in the payload of its JWS    | `unknown`                 |
+| 415    | A body of a media type that the operation does not take                                                       | `unknown`                 |
+| 422    | JSON that is not a credential or a profile of the API, a credential of another kind, one that does not verify | `invalid_data`            |
+| 429    | `authorize` refuses: one request too many                                                                     | `server_busy`             |
+| 500    | A port rejects                                                                                                | `internal_server_error`   |
 
 Every failure is an `imsx_StatusInfo` with `failure`, the severity that OB B.3.6 pairs with the code (`status` for `not_found`,
 `error` for the others), a description, and a detail of `TargetEndSystem` with the code.
 
 ## Limits
 
-| Limit                                   | Value     | Refused with |
-| --------------------------------------- | --------- | ------------ |
-| Bytes of a body (`maxBodyBytes`)        | 1,048,576 | 413          |
-| Tokens of JSON (`maxTokens`)            | 1,000,000 | 400, or 422 for the payload of a JWS |
-| Levels of JSON                          | 64        | 400          |
-| Credentials in a page (`maxPageSize`)   | 1,000     | Lowered to the limit |
-| The verification                        | The limits of `verifyCredential`: its input, its fetches, its endorsements and nested credentials | 422 |
+| Limit                                 | Value                                                                                             | Refused with                         |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| Bytes of a body (`maxBodyBytes`)      | 1,048,576                                                                                         | 413                                  |
+| Tokens of JSON (`maxTokens`)          | 1,000,000                                                                                         | 400, or 422 for the payload of a JWS |
+| Levels of JSON                        | 64                                                                                                | 400                                  |
+| Credentials in a page (`maxPageSize`) | 1,000                                                                                             | Lowered to the limit                 |
+| The verification                      | The limits of `verifyCredential`: its input, its fetches, its endorsements and nested credentials | 422                                  |
 
 A body at the limits that holds the most objects that the tokens allow ends within a heap of 112 MiB, which
 `peak-memory.test.ts` measures; it raises the peak memory of the process by about 120 MiB.
 
 ## Errors
 
-| Case                                                                                                         | Result                                                                                         |
-| ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| The request is not an `HttpRequest`                                                                          | `DataError` from `checkHttpRequest`                                                            |
-| An option is missing, of the wrong type, or unknown, or an option of `verify` is not valid                   | `DataError`: `The provider options is invalid at pageSize: expected a value of at least 1, found 0.` |
-| The service description is not one, has an address that is not `https`, or lacks a scope of the API, when it is served | `DataError` that names what it lacks                                                 |
-| A port breaks its contract                                                                                   | `DataError` that names the port                                                                |
-| The `signal` aborts                                                                                          | The request rejects with the reason of the signal                                              |
+| Case                                                                                                                   | Result                                                                                               |
+| ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| The request is not an `HttpRequest`                                                                                    | `DataError` from `checkHttpRequest`                                                                  |
+| An option is missing, of the wrong type, or unknown, or an option of `verify` is not valid                             | `DataError`: `The provider options is invalid at pageSize: expected a value of at least 1, found 0.` |
+| The service description is not one, has an address that is not `https`, or lacks a scope of the API, when it is served | `DataError` that names what it lacks                                                                 |
+| A port breaks its contract                                                                                             | `DataError` that names the port                                                                      |
+| The `signal` aborts                                                                                                    | The request rejects with the reason of the signal                                                    |
 
 ## Not included
 
-| Not included                                                                   | Why                                                                                         |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| An authorization server: registration, authorization, tokens, revocation       | An application; `authorize` takes the decision, and `@interopkit/core/oauth` is the client side |
-| A store: a database, an account                                                | The host keeps the credentials; the ports are the contract                                  |
-| 202 of `putProfile`, conditional requests and 304 of `putProfile`               | A store returns the profile as it is; nothing in the API says what a condition would be     |
-| 406 for an `Accept` that takes no JSON                                         | Every answer is JSON or the credential of the request, as OB 6.2 says                       |
-| The client credentials grant                                                   | OB 6 leaves system-to-system access out of this version                                     |
-| CORS, caching headers, compression, HEAD and OPTIONS                          | The host's framework answers them                                                           |
+| Not included                                                             | Why                                                                                             |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| An authorization server: registration, authorization, tokens, revocation | An application; `authorize` takes the decision, and `@interopkit/core/oauth` is the client side |
+| A store: a database, an account                                          | The host keeps the credentials; the ports are the contract                                      |
+| 202 of `putProfile`, conditional requests and 304 of `putProfile`        | A store returns the profile as it is; nothing in the API says what a condition would be         |
+| 406 for an `Accept` that takes no JSON                                   | Every answer is JSON or the credential of the request, as OB 6.2 says                           |
+| The client credentials grant                                             | OB 6 leaves system-to-system access out of this version                                         |
+| CORS, caching headers, compression, HEAD and OPTIONS                     | The host's framework answers them                                                               |
 
 ## Differences from the references
 
@@ -334,11 +334,11 @@ The references are the API sections of Open Badges 3.0 and CLR 2.0 and their Ope
 reads: the paths, the methods, the scopes, the query parameters and the media types come from the files, and every answer is
 validated against the schema of its status. The choices are in [spec-gaps](spec-gaps.md).
 
-| Case                                         | The references                                                                 | The provider                                                                      |
-| -------------------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
-| A body that is JSON and not a credential     | The files list 400; OB B.3.6 pairs `invalid_data` with 422                      | 422 `invalid_data`; 400 for a body that does not parse                            |
-| 304 of an upsert                             | The files give it an `imsx_StatusInfo`                                          | No body: a 304 has none (RFC 9110)                                                |
-| The last link when the store cannot count    | OB 6.4: `last` MUST always appear, and `X-Total-Count` is omitted when unknown   | No `last`; `next` while the page is full                                          |
-| `since`                                      | The table says `YYYY-MM-DDThh:mm:ss`; the files give the format `date-time`    | A date and time of RFC 3339 with an offset                                        |
-| A member of `@context` in the files          | A `oneOf` of two schemas of a string, which no context passes                  | The tests read it as `anyOf`                                                      |
-| 413, 415 and 429                             | Not listed; `default` is an `imsx_StatusInfo`                                  | Answered with an `imsx_StatusInfo`                                                |
+| Case                                      | The references                                                                 | The provider                                           |
+| ----------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| A body that is JSON and not a credential  | The files list 400; OB B.3.6 pairs `invalid_data` with 422                     | 422 `invalid_data`; 400 for a body that does not parse |
+| 304 of an upsert                          | The files give it an `imsx_StatusInfo`                                         | No body: a 304 has none (RFC 9110)                     |
+| The last link when the store cannot count | OB 6.4: `last` MUST always appear, and `X-Total-Count` is omitted when unknown | No `last`; `next` while the page is full               |
+| `since`                                   | The table says `YYYY-MM-DDThh:mm:ss`; the files give the format `date-time`    | A date and time of RFC 3339 with an offset             |
+| A member of `@context` in the files       | A `oneOf` of two schemas of a string, which no context passes                  | The tests read it as `anyOf`                           |
+| 413, 415 and 429                          | Not listed; `default` is an `imsx_StatusInfo`                                  | Answered with an `imsx_StatusInfo`                     |

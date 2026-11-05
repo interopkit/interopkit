@@ -13,11 +13,11 @@ flowchart LR
   run -->|"exit 1 on a failed test<br/>or another number of tests"| result["Result"]
 ```
 
-| File                | Holds                                                                                                                            |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| File                | Holds                                                                                                                                              |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `suite.lock.json`   | One entry for each version: the repository, the branch, the commit, the SHA-256 of the archive of that commit, the version and the number of tests |
-| `package-lock.json` | The dependencies of the suite with their hashes: the suite has no lockfile of its own, and the two branches list the same ones   |
-| `run.ts`            | Downloads the suite, starts the LRS, runs the suite, and reads its log                                                           |
+| `package-lock.json` | The dependencies of the suite with their hashes: the suite has no lockfile of its own, and the two branches list the same ones                     |
+| `run.ts`            | Downloads the suite, starts the LRS, runs the suite, and reads its log                                                                             |
 
 ## Running it
 
@@ -33,13 +33,13 @@ pnpm adl-lrs      # builds the packages first: the example LRS imports them as a
 Each suite takes about 30 seconds after the first run. The port is free and on the loopback address, and the user and the password are
 random for the run and never printed.
 
-| Setting       | Value                                                                                                                        |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Setting        | Value                                                                                                                                              |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pinned commits | `d17a26a0139523db65909fe5e9fdd6701c786013` of the branch `LRS-2.0` for 2.0.0, and `5bc232d349c60faded8240da698f195106091638` of `master` for 1.0.3 |
-| Hash          | The archive that GitHub serves for the commit must have the SHA-256 of the lock, or the run stops before it unpacks anything |
-| Install       | `npm ci --ignore-scripts` from the lockfile: no package of the suite runs a script on the machine                            |
-| Tests         | 1,442 and 1,365; a suite with another number fails the run, so a new commit of the suite is noticed and not trusted          |
-| Failure       | Each test that fails is printed with its groups and the error of the assertion, and the run exits with 1                     |
+| Hash           | The archive that GitHub serves for the commit must have the SHA-256 of the lock, or the run stops before it unpacks anything                       |
+| Install        | `npm ci --ignore-scripts` from the lockfile: no package of the suite runs a script on the machine                                                  |
+| Tests          | 1,442 and 1,365; a suite with another number fails the run, so a new commit of the suite is noticed and not trusted                                |
+| Failure        | Each test that fails is printed with its groups and the error of the assertion, and the run exits with 1                                           |
 
 ## What it found
 

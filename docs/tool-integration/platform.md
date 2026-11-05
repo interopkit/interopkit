@@ -30,16 +30,16 @@ sequenceDiagram
   T->>K: key set (/jwks), token (/token)
 ```
 
-| Function                                   | Does                                                                                                      |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| `prepareToolLaunch(message, options)`      | Keeps a message for a tool and returns what the page needs: the URL of the tool's third-party initiated login, the storage page, the names of the two frames and the `allow` list |
-| `handlePlatformRequest(request, options)`  | Answers every request to the platform's origin                                                            |
-| `buildPlatformEndpoints(config)`           | Returns the URLs of the endpoints, which the tool's administrator registers with the tool                 |
-| `buildCapabilitiesScript()`                | Returns the inline script, with its CSP hash, that answers `lti.capabilities` on the host's frame page     |
-| `readDeepLinkingResponse(request, options)` | Reads and verifies the form that a tool posts to the return URL of a Deep Linking request ([Deep Linking](deep-linking.md)) |
-| `readStartAssessment(request, options)`    | Reads and verifies the form that a proctoring tool posts to the start assessment URL ([proctoring](proctoring.md)) |
-| `buildRegistrationInitiation(url, options)` | Returns the tool's initiation URL with the configuration and a single-use registration token ([registration](registration.md)) |
-| `buildToolRegistration(registered, grant)`    | Returns the `ToolRegistration` of a tool that registered itself, with what the administrator grants ([registration](registration.md)) |
+| Function                                    | Does                                                                                                                                                                              |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prepareToolLaunch(message, options)`       | Keeps a message for a tool and returns what the page needs: the URL of the tool's third-party initiated login, the storage page, the names of the two frames and the `allow` list |
+| `handlePlatformRequest(request, options)`   | Answers every request to the platform's origin                                                                                                                                    |
+| `buildPlatformEndpoints(config)`            | Returns the URLs of the endpoints, which the tool's administrator registers with the tool                                                                                         |
+| `buildCapabilitiesScript()`                 | Returns the inline script, with its CSP hash, that answers `lti.capabilities` on the host's frame page                                                                            |
+| `readDeepLinkingResponse(request, options)` | Reads and verifies the form that a tool posts to the return URL of a Deep Linking request ([Deep Linking](deep-linking.md))                                                       |
+| `readStartAssessment(request, options)`     | Reads and verifies the form that a proctoring tool posts to the start assessment URL ([proctoring](proctoring.md))                                                                |
+| `buildRegistrationInitiation(url, options)` | Returns the tool's initiation URL with the configuration and a single-use registration token ([registration](registration.md))                                                    |
+| `buildToolRegistration(registered, grant)`  | Returns the `ToolRegistration` of a tool that registered itself, with what the administrator grants ([registration](registration.md))                                             |
 
 Handlers take an `HttpRequest` and return an `HttpResponse` of [`@interopkit/core/http`](../core/http.md). The host owns the
 routes, the sessions and the stores: `check` confirms that a message is the caller's, `launches` keeps the messages, `once` records
@@ -50,7 +50,11 @@ launches a tool from a platform built on these functions.
 
 ```ts
 import { createCryptoKeySigner } from "@interopkit/core";
-import { buildPlatformEndpoints, handlePlatformRequest, prepareToolLaunch } from "@interopkit/tool-integration/platform";
+import {
+  buildPlatformEndpoints,
+  handlePlatformRequest,
+  prepareToolLaunch,
+} from "@interopkit/tool-integration/platform";
 import { createJwksCache } from "@interopkit/tool-integration";
 
 const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
@@ -60,7 +64,10 @@ const config = {
   origin: "https://lti.platform.example",
   frameOrigin: "https://app.platform.example",
   reservedOrigins: ["https://assets.platform.example"],
-  keys: { signer: createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId: "platform-1" }), publicKeys: [publicKey] },
+  keys: {
+    signer: createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId: "platform-1" }),
+    publicKeys: [publicKey],
+  },
   hintKey: await crypto.subtle.generateKey({ name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]),
 };
 buildPlatformEndpoints(config).token; // => "https://lti.platform.example/token"
@@ -125,27 +132,27 @@ refuses a tool whose `targetLinkUri`, login URL or redirect URIs are on any of t
 
 ## Configuration
 
-| Property           | Meaning                                                                                                                                                                              |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `issuer`           | The `iss` of the platform: an `https` URL without query or fragment; it may have a path, such as one for each tenant                                                                 |
-| `origin`           | The origin that `handlePlatformRequest` serves                                                                                                                                       |
-| `frameOrigin`      | The origin of the page that frames the tool and the storage page                                                                                                                     |
-| `reservedOrigins`  | Other origins of the host from which a tool must never launch, such as the origin of its assets. An empty list is a choice                                                           |
+| Property           | Meaning                                                                                                                                                                                |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `issuer`           | The `iss` of the platform: an `https` URL without query or fragment; it may have a path, such as one for each tenant                                                                   |
+| `origin`           | The origin that `handlePlatformRequest` serves                                                                                                                                         |
+| `frameOrigin`      | The origin of the page that frames the tool and the storage page                                                                                                                       |
+| `reservedOrigins`  | Other origins of the host from which a tool must never launch, such as the origin of its assets. An empty list is a choice                                                             |
 | `keys`             | A `KeySet`: the `Signer` of the `id_token`s, with one of the six algorithms of Security Framework 7.2, and the public keys published at `/jwks`, the current one and any of a rotation |
-| `hintKey`          | The HMAC key (SHA-256, at least 256 bits, usages `sign` and `verify`) that seals the hints, the access tokens, the session data and the Deep Linking data                            |
-| `previousHintKeys` | Earlier hint keys, which still open what they sealed, so that a rotation of `hintKey` breaks nothing in flight. Default: none                                                       |
-| `instance`         | The `tool_platform` claim of every message (Core 5.4.3), with a `guid` of 1 to 255 characters. Default: none                                                                         |
+| `hintKey`          | The HMAC key (SHA-256, at least 256 bits, usages `sign` and `verify`) that seals the hints, the access tokens, the session data and the Deep Linking data                              |
+| `previousHintKeys` | Earlier hint keys, which still open what they sealed, so that a rotation of `hintKey` breaks nothing in flight. Default: none                                                          |
+| `instance`         | The `tool_platform` claim of every message (Core 5.4.3), with a `guid` of 1 to 255 characters. Default: none                                                                           |
 
-| Endpoint      | Path under `origin` | Methods   |
-| ------------- | ------------------- | --------- |
-| Authorization | `/authorize`        | GET, POST |
-| Key set       | `/jwks`             | GET, HEAD |
-| Token         | `/token`            | POST      |
-| Storage page  | `/storage`          | GET       |
-| Grade services | `/contexts/{context}/line-items`, and below it | With `services.gradebook`: see [grade services](grades.md) |
-| Roster services | `/contexts/{context}/memberships`, `/groups`, `/group-sets`, and `/ims/afapnp/v1p0/users/{user}/activities/{activity}/afapnprecords` | With `services.roster`, `groups` and `preferences`: see [roster services](roster.md) |
-| Assessment Control Service | `/assessment-control` | POST, with `services.control`: see [proctoring](proctoring.md) |
-| Dynamic Registration | the issuer's path with `/.well-known/openid-configuration`, `/registration`, `/registration/{client}` | With `services.registrations`: see [registration](registration.md) |
+| Endpoint                   | Path under `origin`                                                                                                                  | Methods                                                                              |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| Authorization              | `/authorize`                                                                                                                         | GET, POST                                                                            |
+| Key set                    | `/jwks`                                                                                                                              | GET, HEAD                                                                            |
+| Token                      | `/token`                                                                                                                             | POST                                                                                 |
+| Storage page               | `/storage`                                                                                                                           | GET                                                                                  |
+| Grade services             | `/contexts/{context}/line-items`, and below it                                                                                       | With `services.gradebook`: see [grade services](grades.md)                           |
+| Roster services            | `/contexts/{context}/memberships`, `/groups`, `/group-sets`, and `/ims/afapnp/v1p0/users/{user}/activities/{activity}/afapnprecords` | With `services.roster`, `groups` and `preferences`: see [roster services](roster.md) |
+| Assessment Control Service | `/assessment-control`                                                                                                                | POST, with `services.control`: see [proctoring](proctoring.md)                       |
+| Dynamic Registration       | the issuer's path with `/.well-known/openid-configuration`, `/registration`, `/registration/{client}`                                | With `services.registrations`: see [registration](registration.md)                   |
 
 A path that names nothing is 404, and a method that a route does not serve is 405 with `Allow`.
 
@@ -154,18 +161,18 @@ A path that names nothing is 404, and a method that a route does not serve is 40
 A `ToolRegistration` is the host's record of one tool. The host's `registration` returns it by client identifier, on
 every login, authentication request and token request, so that a removed or changed tool is followed at once.
 
-| Property       | Meaning                                                                                                                                   |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `clientId`     | The OAuth 2.0 client identifier of the tool                                                                                               |
-| `deploymentIds` | The deployments of the tool, at least one, each of 1 to 255 characters                                                                   |
-| `loginUrl`     | The tool's login initiation URL                                                                                                           |
-| `redirectUris` | The tool's launch URLs, at least one; the authentication request names one of them                                                       |
-| `jwksUrl`      | The tool's key set, fetched through the `jwks` cache. Exactly one of this and `keys`                                                      |
-| `keys`         | The tool's public keys by `kid`: RSA of at least 2,048 bits, or EC on P-256, P-384 or P-521                                                |
-| `scopes`       | The service scopes granted to the tool                                                                                                    |
-| `algorithms`   | The algorithms accepted on the tool's tokens. Default: the six of Security Framework 7.2                                                  |
-| `custom`       | Custom properties of the tool, which every message carries under its own. Default: none                                                   |
-| `allow`        | The `allow` attribute of the tool's frame. Default: none                                                                                  |
+| Property        | Meaning                                                                                     |
+| --------------- | ------------------------------------------------------------------------------------------- |
+| `clientId`      | The OAuth 2.0 client identifier of the tool                                                 |
+| `deploymentIds` | The deployments of the tool, at least one, each of 1 to 255 characters                      |
+| `loginUrl`      | The tool's login initiation URL                                                             |
+| `redirectUris`  | The tool's launch URLs, at least one; the authentication request names one of them          |
+| `jwksUrl`       | The tool's key set, fetched through the `jwks` cache. Exactly one of this and `keys`        |
+| `keys`          | The tool's public keys by `kid`: RSA of at least 2,048 bits, or EC on P-256, P-384 or P-521 |
+| `scopes`        | The service scopes granted to the tool                                                      |
+| `algorithms`    | The algorithms accepted on the tool's tokens. Default: the six of Security Framework 7.2    |
+| `custom`        | Custom properties of the tool, which every message carries under its own. Default: none     |
+| `allow`         | The `allow` attribute of the tool's frame. Default: none                                    |
 
 ## The messages
 
@@ -175,13 +182,13 @@ of the tool's), `targetLinkUri`, `user` (without a `subject` the launch is anony
 `services`, the services that it offers the tool, which need its `context` and are offered only when the host gives their store
 ([grade services](grades.md)).
 
-| `messageType`            | Adds                                                                                                                                                         |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `LtiResourceLinkRequest` | `resourceLink`                                                                                                                                               |
-| `LtiSubmissionReviewRequest` | `forUser`, and `resourceLink` when the line item has one; `services.grades.lineItemId` names the line item of the review, which needs `services.gradebook` |
-| `LtiDeepLinkingRequest`  | `settings`: the settings of DL 4.4.1, and the host's `data`, an object that the platform seals into the `data` claim with the client, deployment, user and settings for 86,400 seconds |
-| `LtiStartProctoring`     | `resourceLink`, `attemptNumber`, `startAssessmentUrl`, `proctoringSettings`; the platform seals the client, deployment, resource link, attempt and user into `session_data` for 3,600 seconds. `services.control`, which no other message may carry, offers the Assessment Control Service with its `actions` |
-| `LtiEndAssessment`       | `attemptNumber`, and `resourceLink`, `proctoringSettings`, `errorMessage`, `errorLog` when there are any                                                      |
+| `messageType`                | Adds                                                                                                                                                                                                                                                                                                          |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `LtiResourceLinkRequest`     | `resourceLink`                                                                                                                                                                                                                                                                                                |
+| `LtiSubmissionReviewRequest` | `forUser`, and `resourceLink` when the line item has one; `services.grades.lineItemId` names the line item of the review, which needs `services.gradebook`                                                                                                                                                    |
+| `LtiDeepLinkingRequest`      | `settings`: the settings of DL 4.4.1, and the host's `data`, an object that the platform seals into the `data` claim with the client, deployment, user and settings for 86,400 seconds                                                                                                                        |
+| `LtiStartProctoring`         | `resourceLink`, `attemptNumber`, `startAssessmentUrl`, `proctoringSettings`; the platform seals the client, deployment, resource link, attempt and user into `session_data` for 3,600 seconds. `services.control`, which no other message may carry, offers the Assessment Control Service with its `actions` |
+| `LtiEndAssessment`           | `attemptNumber`, and `resourceLink`, `proctoringSettings`, `errorMessage`, `errorLog` when there are any                                                                                                                                                                                                      |
 
 The login checks a message twice before it keeps it: its shape, and the rules of the sender that a tool does not enforce: the
 identifiers have at most 255 characters, the URLs are `https`, a role and a context type are of the vocabularies of Core
@@ -193,19 +200,19 @@ Appendix A, `roleScopeMentor` needs the Mentor role, and an extension is named b
 At authorization the custom properties of the tool and of the message (the message's win) are substituted (Core 5.4.6 and
 Appendix B). A value that is `$` and the name of a variable becomes its value; any other value passes unchanged.
 
-| Variables                                                                                  | Answered by                                                     |
-| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
-| `User.id`, `User.image`, `User.scope.mentor`, and `ActualUser.id`, `ActualUser.image`        | The message's `user`, `actualUser` and `roleScopeMentor`        |
-| `Person.name.*` (full, family, given, middle), `Person.email.primary`, and `ActualPerson.*` | The message's `user` and `actualUser`                           |
-| `Person.sourcedId`, `CourseOffering.sourcedId`, `CourseSection.sourcedId`                  | The message's `lis`                                             |
-| `Context.id`, `Context.type`, `Context.label`, `Context.title`                              | The message's `context`                                         |
-| `ResourceLink.id`, `ResourceLink.title`, `ResourceLink.description`                         | The message's `resourceLink`                                    |
-| `Message.returnUrl`, `Message.documentTarget`, `Message.height`, `Message.width`, `Message.locale` | The message's `presentation`                            |
-| `Organization.*`                                                                           | The message's `organization`                                    |
-| `ToolPlatform.*`, `ToolPlatformInstance.*`                                                 | `config.instance`                                               |
-| `LineItems.url`, `LineItem.url`                                                            | The claim of the grade services                                 |
-| Every other name that `substitution.names` lists                                           | `substitution.resolve(name, message, tool)`                     |
-| Every other name                                                                           | Nothing: the value passes unchanged, as Appendix B asks for a variable the platform does not support |
+| Variables                                                                                          | Answered by                                                                                          |
+| -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `User.id`, `User.image`, `User.scope.mentor`, and `ActualUser.id`, `ActualUser.image`              | The message's `user`, `actualUser` and `roleScopeMentor`                                             |
+| `Person.name.*` (full, family, given, middle), `Person.email.primary`, and `ActualPerson.*`        | The message's `user` and `actualUser`                                                                |
+| `Person.sourcedId`, `CourseOffering.sourcedId`, `CourseSection.sourcedId`                          | The message's `lis`                                                                                  |
+| `Context.id`, `Context.type`, `Context.label`, `Context.title`                                     | The message's `context`                                                                              |
+| `ResourceLink.id`, `ResourceLink.title`, `ResourceLink.description`                                | The message's `resourceLink`                                                                         |
+| `Message.returnUrl`, `Message.documentTarget`, `Message.height`, `Message.width`, `Message.locale` | The message's `presentation`                                                                         |
+| `Organization.*`                                                                                   | The message's `organization`                                                                         |
+| `ToolPlatform.*`, `ToolPlatformInstance.*`                                                         | `config.instance`                                                                                    |
+| `LineItems.url`, `LineItem.url`                                                                    | The claim of the grade services                                                                      |
+| Every other name that `substitution.names` lists                                                   | `substitution.resolve(name, message, tool)`                                                          |
+| Every other name                                                                                   | Nothing: the value passes unchanged, as Appendix B asks for a variable the platform does not support |
 
 A variable the message answers but has no value for becomes `""`, which Appendix B gives for a supported variable without a value.
 `substitution.resolve` returns `undefined` to leave a variable unsubstituted, such as one the tool may not see.
@@ -225,10 +232,10 @@ message is not the caller's), looks up the tool with `registration(clientId)`, r
 `launches.put(id, message, expiresAt)` for 300 seconds under a random identifier of 160 bits. The URL of the tool's login carries
 `iss`, `login_hint`, `lti_message_hint`, `target_link_uri`, `client_id`, `lti_deployment_id` and `lti_storage_target`.
 
-| Hint               | Holds                                                                                        |
-| ------------------ | -------------------------------------------------------------------------------------------- |
+| Hint               | Holds                                                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------------------- |
 | `lti_message_hint` | The identifier of the kept message, the client, the deployment, the user's `sub` and an expiry of 300 seconds |
-| `login_hint`       | The identifier of the kept message                                                           |
+| `login_hint`       | The identifier of the kept message                                                                            |
 
 Both are compact JWS with `alg: HS256`, signed with `hintKey`, and signed and not encrypted. The `typ` header names the use
 (`hint`, `login`, `access`, `session-data`, `deep-linking-data`), and a token of one use is refused for another (RFC 8725 section
@@ -242,16 +249,16 @@ twice, a missing or unknown `client_id` or a `redirect_uri` that is not one of t
 that, a refusal is the authentication error response of Security Framework 5.1.1.5: the page posts `error`,
 `error_description` and `state` to the redirect URI, under the status of the refusal.
 
-| Check, in order                                                                    | `error`                                 | Status |
-| ---------------------------------------------------------------------------------- | --------------------------------------- | ------ |
-| `scope=openid`                                                                     | `invalid_scope`                         | 400    |
-| `response_type=id_token`                                                           | `unsupported_response_type`             | 400    |
-| `response_mode=form_post`, `prompt=none`, `nonce`, `state`, `lti_message_hint`     | `invalid_request`                       | 400    |
-| The hint is sealed by this platform with a hint key it holds, not expired, for this client | `login_required`                | 403    |
-| `login_hint` names the message of the hint                                         | `login_required`                        | 403    |
-| `checkLaunch`, when given, returns `true`                                          | `access_denied`                         | 403    |
-| `launches.take(id)` gives the message: once, so a second request is refused        | `login_required`                        | 403    |
-| The deployment of the message is still one of the tool's                           | `unauthorized_client`                   | 400    |
+| Check, in order                                                                            | `error`                     | Status |
+| ------------------------------------------------------------------------------------------ | --------------------------- | ------ |
+| `scope=openid`                                                                             | `invalid_scope`             | 400    |
+| `response_type=id_token`                                                                   | `unsupported_response_type` | 400    |
+| `response_mode=form_post`, `prompt=none`, `nonce`, `state`, `lti_message_hint`             | `invalid_request`           | 400    |
+| The hint is sealed by this platform with a hint key it holds, not expired, for this client | `login_required`            | 403    |
+| `login_hint` names the message of the hint                                                 | `login_required`            | 403    |
+| `checkLaunch`, when given, returns `true`                                                  | `access_denied`             | 403    |
+| `launches.take(id)` gives the message: once, so a second request is refused                | `login_required`            | 403    |
+| The deployment of the message is still one of the tool's                                   | `unauthorized_client`       | 400    |
 
 `checkLaunch` runs before `take`, so a refused check leaves the message. Once the message is taken the launch is spent, and a
 later failure costs a new login, never a second use.
@@ -318,36 +325,36 @@ the origin that asked.
 
 ## Options
 
-| Option                                | Default                | Meaning                                                                                  |
-| ------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------- |
-| `config`                              | required               | The platform                                                                             |
-| `clock`                               | `SYSTEM_CLOCK`         | The time                                                                                 |
-| `registration(clientId, options)`     | required               | Looks up a tool                                                          |
-| `check(message, options)`             | required for the login | Confirms that the message is the caller's, and throws otherwise                          |
-| `launches`                            | required               | The `LaunchStore`: `put` and `take`, atomic across processes                             |
-| `once(id, expiresAt, options)`        | required for requests  | Records an identifier until a time; `false` when it was used. Atomic across processes    |
-| `jwks`                                | required for requests  | The cache of the tools' key sets, from `createJwksCache`                                 |
-| `checkLaunch(launch, options)`        | none                   | A last check of `{ clientId, deploymentId, principal, request }` before the message is taken: the cookies of `request` tell whose browser it is, so one set of options serves every request |
-| `substitution`                        | none                   | `names` and `resolve` of the variables the host resolves                                 |
-| `migrationSecret(consumerKey, options)` | none                 | The LTI 1.1 secret that signs the migration claim                                        |
-| `services`                            | none                   | The stores of the services: `gradebook` ([grade services](grades.md)), `roster`, `groups` and `preferences` ([roster services](roster.md)), `control` ([proctoring](proctoring.md)), `registrations` ([registration](registration.md)) |
-| `openRegistration`                    | `false`                | Accepts a registration without a registration token ([registration](registration.md))   |
-| `discovery`                           | the defaults of each   | What the OpenID configuration says of the messages, the claims and the kinds of subject ([registration](registration.md)) |
-| `pageSize`                            | 100                    | The items of a page of a service when the request names no `limit`                       |
-| `maxPageSize`                         | 1,000                  | The most items of a page of a service                                                    |
-| `maxBodyBytes`                        | 65,536                 | The most bytes of a body, measured before it is parsed                                   |
-| `sessionDataLifetimeSeconds`          | 3,600                  | How long the session data of a Start Proctoring message is valid                         |
-| `deepLinkingLifetimeSeconds`          | 86,400                 | How long the data of a Deep Linking request is valid                                     |
-| `signal`                              | none                   | Ends this caller's wait                                                                  |
+| Option                                  | Default                | Meaning                                                                                                                                                                                                                                |
+| --------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `config`                                | required               | The platform                                                                                                                                                                                                                           |
+| `clock`                                 | `SYSTEM_CLOCK`         | The time                                                                                                                                                                                                                               |
+| `registration(clientId, options)`       | required               | Looks up a tool                                                                                                                                                                                                                        |
+| `check(message, options)`               | required for the login | Confirms that the message is the caller's, and throws otherwise                                                                                                                                                                        |
+| `launches`                              | required               | The `LaunchStore`: `put` and `take`, atomic across processes                                                                                                                                                                           |
+| `once(id, expiresAt, options)`          | required for requests  | Records an identifier until a time; `false` when it was used. Atomic across processes                                                                                                                                                  |
+| `jwks`                                  | required for requests  | The cache of the tools' key sets, from `createJwksCache`                                                                                                                                                                               |
+| `checkLaunch(launch, options)`          | none                   | A last check of `{ clientId, deploymentId, principal, request }` before the message is taken: the cookies of `request` tell whose browser it is, so one set of options serves every request                                            |
+| `substitution`                          | none                   | `names` and `resolve` of the variables the host resolves                                                                                                                                                                               |
+| `migrationSecret(consumerKey, options)` | none                   | The LTI 1.1 secret that signs the migration claim                                                                                                                                                                                      |
+| `services`                              | none                   | The stores of the services: `gradebook` ([grade services](grades.md)), `roster`, `groups` and `preferences` ([roster services](roster.md)), `control` ([proctoring](proctoring.md)), `registrations` ([registration](registration.md)) |
+| `openRegistration`                      | `false`                | Accepts a registration without a registration token ([registration](registration.md))                                                                                                                                                  |
+| `discovery`                             | the defaults of each   | What the OpenID configuration says of the messages, the claims and the kinds of subject ([registration](registration.md))                                                                                                              |
+| `pageSize`                              | 100                    | The items of a page of a service when the request names no `limit`                                                                                                                                                                     |
+| `maxPageSize`                           | 1,000                  | The most items of a page of a service                                                                                                                                                                                                  |
+| `maxBodyBytes`                          | 65,536                 | The most bytes of a body, measured before it is parsed                                                                                                                                                                                 |
+| `sessionDataLifetimeSeconds`            | 3,600                  | How long the session data of a Start Proctoring message is valid                                                                                                                                                                       |
+| `deepLinkingLifetimeSeconds`            | 86,400                 | How long the data of a Deep Linking request is valid                                                                                                                                                                                   |
+| `signal`                                | none                   | Ends this caller's wait                                                                                                                                                                                                                |
 
-| Limit                                           | Value         |
-| ----------------------------------------------- | ------------- |
-| A launch in `launches`, a hint, an `id_token`   | 300 seconds   |
-| Longest accepted lifetime of a client assertion | 3,600 seconds |
-| Lifetime of an access token                     | 3,600 seconds |
+| Limit                                                       | Value          |
+| ----------------------------------------------------------- | -------------- |
+| A launch in `launches`, a hint, an `id_token`               | 300 seconds    |
+| Longest accepted lifetime of a client assertion             | 3,600 seconds  |
+| Lifetime of an access token                                 | 3,600 seconds  |
 | Identifiers of deployments, contexts, resource links, users | 255 characters |
-| Leeway for clock skew                           | 60 seconds    |
-| Cache lifetime of the published key set         | 3,600 seconds |
+| Leeway for clock skew                                       | 60 seconds     |
+| Cache lifetime of the published key set                     | 3,600 seconds  |
 
 The handler measures a body that the host has already read, so the host caps the read before it builds the request.
 
@@ -361,61 +368,61 @@ in the registration needs no fetch.
 
 ## Failure paths
 
-| Port                     | Fails                                                                     | Hangs                                                              | Called again                                                | May call back                         |
-| ------------------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------- | ------------------------------------- |
-| `check`, `registration`  | The login rejects; nothing is kept or signed                              | `signal` reaches it                                                | Each login                                                  | Read-only calls of the host's session |
-| `launches.put`           | The login rejects; no URL, nothing signed                                 | `signal` reaches it                                                | Each login has a new identifier                             | Nothing                               |
-| `registration`           | 500; `undefined`: 400 to the browser, `invalid_client` at `/token`; `readDeepLinkingResponse` rejects with its error, and `undefined` is `client-unknown` | `signal`                                                           | On every request; a host may cache                          | Nothing                               |
-| `checkLaunch`            | 500, the message stays; `false`: `access_denied`, the message stays       | `signal`; the message stays                                        | Each authentication request                                 | Read-only calls                       |
-| `launches.take`          | 500; `undefined`: `login_required`                                        | `signal`; after `take` an abort fails closed and the tool starts again | Atomic: of two, one gets the message                    | Nothing                               |
-| `substitution.resolve`, `migrationSecret` | 500, nothing signed; the launch is spent                 | `signal`                                                           | Each launch                                                 | Read-only calls                       |
-| `config.keys.signer`     | 500, nothing half-signed                                                  | `signal`                                                           | ECDSA signatures differ between calls; both verify          | Nothing                               |
-| `once`                   | 500, no token; `readDeepLinkingResponse` and `readStartAssessment` reject with its error | `signal`                                             | `false`: `invalid_client` for a replayed assertion, `nonce-replayed` for a replayed message | Nothing |
+| Port                                      | Fails                                                                                                                                                     | Hangs                                                                  | Called again                                                                                | May call back                         |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `check`, `registration`                   | The login rejects; nothing is kept or signed                                                                                                              | `signal` reaches it                                                    | Each login                                                                                  | Read-only calls of the host's session |
+| `launches.put`                            | The login rejects; no URL, nothing signed                                                                                                                 | `signal` reaches it                                                    | Each login has a new identifier                                                             | Nothing                               |
+| `registration`                            | 500; `undefined`: 400 to the browser, `invalid_client` at `/token`; `readDeepLinkingResponse` rejects with its error, and `undefined` is `client-unknown` | `signal`                                                               | On every request; a host may cache                                                          | Nothing                               |
+| `checkLaunch`                             | 500, the message stays; `false`: `access_denied`, the message stays                                                                                       | `signal`; the message stays                                            | Each authentication request                                                                 | Read-only calls                       |
+| `launches.take`                           | 500; `undefined`: `login_required`                                                                                                                        | `signal`; after `take` an abort fails closed and the tool starts again | Atomic: of two, one gets the message                                                        | Nothing                               |
+| `substitution.resolve`, `migrationSecret` | 500, nothing signed; the launch is spent                                                                                                                  | `signal`                                                               | Each launch                                                                                 | Read-only calls                       |
+| `config.keys.signer`                      | 500, nothing half-signed                                                                                                                                  | `signal`                                                               | ECDSA signatures differ between calls; both verify                                          | Nothing                               |
+| `once`                                    | 500, no token; `readDeepLinkingResponse` and `readStartAssessment` reject with its error                                                                  | `signal`                                                               | `false`: `invalid_client` for a replayed assertion, `nonce-replayed` for a replayed message | Nothing                               |
 
 A port that answers with something other than its contract (a registration that is not one, a message of another launch, a
 `checkLaunch` or `once` that does not give a boolean, a variable that is not a string) is a `DataError` that the handler throws.
 
 ## Signals
 
-| Point                                                        | Effect of an aborted signal                                                   |
-| ------------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| `prepareToolLaunch`, before `put`                             | Rejects with `signal.reason`; nothing is kept or signed                       |
-| `/authorize`, before `take`                                  | Rejects with `signal.reason`; the message stays                               |
-| `/authorize`, after `take`                                   | Rejects with `signal.reason`; the launch is spent, so the tool starts again   |
-| `/token`, before `once`                                      | Rejects with `signal.reason`; the assertion is unspent                        |
-| `/token`, after `once`                                       | Rejects with `signal.reason`; the assertion is spent, so the tool asks again  |
-| `readDeepLinkingResponse`, before `once`                     | Rejects with `signal.reason`; the response is unspent                         |
-| `readDeepLinkingResponse`, after `once`                      | Rejects with `signal.reason`; the response is spent, so the tool sends a new one |
-| `readStartAssessment`, before and after `once`               | As `readDeepLinkingResponse`: a spent message is sent again with a new nonce  |
+| Point                                          | Effect of an aborted signal                                                      |
+| ---------------------------------------------- | -------------------------------------------------------------------------------- |
+| `prepareToolLaunch`, before `put`              | Rejects with `signal.reason`; nothing is kept or signed                          |
+| `/authorize`, before `take`                    | Rejects with `signal.reason`; the message stays                                  |
+| `/authorize`, after `take`                     | Rejects with `signal.reason`; the launch is spent, so the tool starts again      |
+| `/token`, before `once`                        | Rejects with `signal.reason`; the assertion is unspent                           |
+| `/token`, after `once`                         | Rejects with `signal.reason`; the assertion is spent, so the tool asks again     |
+| `readDeepLinkingResponse`, before `once`       | Rejects with `signal.reason`; the response is unspent                            |
+| `readDeepLinkingResponse`, after `once`        | Rejects with `signal.reason`; the response is spent, so the tool sends a new one |
+| `readStartAssessment`, before and after `once` | As `readDeepLinkingResponse`: a spent message is sent again with a new nonce     |
 
 ## Errors
 
-| Error                                                   | When                                                                                  | What to do                                                        |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `LtiError` `tool-unknown`, `deployment-unknown`         | `prepareToolLaunch`: the tool or its deployment is not the platform's                  | Register the tool, or launch one of its deployments               |
-| `LtiError` `origin-refused`                             | `prepareToolLaunch`: the target or the tool is on an origin of the platform            | Move the tool, or the platform's handler, to another origin       |
-| `LtiError` of `readDeepLinkingResponse`                 | A response fails a check: see [Deep Linking](deep-linking.md)                         | Answer with its `status`                                          |
-| `LtiError` of `readStartAssessment`                     | A Start Assessment message fails a check: see [proctoring](proctoring.md)             | Answer with its `status`                                          |
-| `DataError`                                             | An argument, a message, a request or an option has the wrong shape, or a port broke its contract | Fix the caller or the port                              |
-| The error of a port                                     | `check`, `registration` or `launches.put` rejected during the login                  | The host's                                                        |
+| Error                                           | When                                                                                             | What to do                                                  |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| `LtiError` `tool-unknown`, `deployment-unknown` | `prepareToolLaunch`: the tool or its deployment is not the platform's                            | Register the tool, or launch one of its deployments         |
+| `LtiError` `origin-refused`                     | `prepareToolLaunch`: the target or the tool is on an origin of the platform                      | Move the tool, or the platform's handler, to another origin |
+| `LtiError` of `readDeepLinkingResponse`         | A response fails a check: see [Deep Linking](deep-linking.md)                                    | Answer with its `status`                                    |
+| `LtiError` of `readStartAssessment`             | A Start Assessment message fails a check: see [proctoring](proctoring.md)                        | Answer with its `status`                                    |
+| `DataError`                                     | An argument, a message, a request or an option has the wrong shape, or a port broke its contract | Fix the caller or the port                                  |
+| The error of a port                             | `check`, `registration` or `launches.put` rejected during the login                              | The host's                                                  |
 
 `handlePlatformRequest` answers every refusal of a tool as its specification says and throws only `DataError` and the reason of the
 signal.
 
 ## Data flows
 
-| Data                                                         | Comes from                    | Goes to                                                       | Kept by the package |
-| ------------------------------------------------------------ | ----------------------------- | ------------------------------------------------------------- | ------------------- |
-| The message: names, email, roles, context, custom properties | The host's `MessageInput`     | The host's `LaunchStore` for at most 300 seconds, then the tool in the `id_token` | No |
-| The single-use identifiers of assertions                     | The tool's assertions         | The host's `once`                                             | No                  |
-| The LTI 1.1 secret                                           | `migrationSecret`             | One HMAC, then dropped                                        | No                  |
-| The hints, access tokens, session data, Deep Linking data    | Sealed with the hint key      | The tool, which can read them; the host's `data` holds no secret and no personal data | No |
-| The Deep Linking response: items, titles, texts, addresses   | The tool, in a form the browser posts | The host, from `readDeepLinkingResponse`                | No                  |
-| The members of a context, their groups, the needs of a user  | The host's `RosterStore`, `GroupStore`, `PreferencesStore` | The tool, for the tool's token, as the store gives them | No      |
-| A control request: the candidate, the attempt, the incident  | The proctoring tool           | The host's `AssessmentControl`                                | No                  |
-| The configuration of a tool that registers itself            | The tool                      | The host's `RegistrationStore`                                | No                  |
-| The verified claims of a candidate                           | The proctoring tool, in a form the browser posts | The host, from `readStartAssessment`              | No                  |
-| The nonce of a message of a tool                             | The tool                      | The host's `once`                                             | No                  |
+| Data                                                         | Comes from                                                 | Goes to                                                                               | Kept by the package |
+| ------------------------------------------------------------ | ---------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------- |
+| The message: names, email, roles, context, custom properties | The host's `MessageInput`                                  | The host's `LaunchStore` for at most 300 seconds, then the tool in the `id_token`     | No                  |
+| The single-use identifiers of assertions                     | The tool's assertions                                      | The host's `once`                                                                     | No                  |
+| The LTI 1.1 secret                                           | `migrationSecret`                                          | One HMAC, then dropped                                                                | No                  |
+| The hints, access tokens, session data, Deep Linking data    | Sealed with the hint key                                   | The tool, which can read them; the host's `data` holds no secret and no personal data | No                  |
+| The Deep Linking response: items, titles, texts, addresses   | The tool, in a form the browser posts                      | The host, from `readDeepLinkingResponse`                                              | No                  |
+| The members of a context, their groups, the needs of a user  | The host's `RosterStore`, `GroupStore`, `PreferencesStore` | The tool, for the tool's token, as the store gives them                               | No                  |
+| A control request: the candidate, the attempt, the incident  | The proctoring tool                                        | The host's `AssessmentControl`                                                        | No                  |
+| The configuration of a tool that registers itself            | The tool                                                   | The host's `RegistrationStore`                                                        | No                  |
+| The verified claims of a candidate                           | The proctoring tool, in a form the browser posts           | The host, from `readStartAssessment`                                                  | No                  |
+| The nonce of a message of a tool                             | The tool                                                   | The host's `once`                                                                     | No                  |
 
 ## Differences from the references
 
@@ -425,6 +432,6 @@ package. Where a specification disagrees with an example, see [spec-gaps](spec-g
 
 ## Not included
 
-| Not included                                                                                 | Why                                                          |
-| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Sessions, routes beyond the handler, a database, the page that frames the tool, a picker     | The host's                                                   |
+| Not included                                                                             | Why        |
+| ---------------------------------------------------------------------------------------- | ---------- |
+| Sessions, routes beyond the handler, a database, the page that frames the tool, a picker | The host's |

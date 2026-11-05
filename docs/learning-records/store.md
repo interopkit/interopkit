@@ -119,7 +119,8 @@ for (const request of requests)
             .map(({ key }) => ("stateId" in key ? key.stateId : key.profileId));
         },
         async deleteAll(scope) {
-          for (const [id, { key }] of kept) if (JSON.stringify({ ...key, ...scope }) === JSON.stringify(key)) kept.delete(id);
+          for (const [id, { key }] of kept)
+            if (JSON.stringify({ ...key, ...scope }) === JSON.stringify(key)) kept.delete(id);
         },
       },
       activities: {
@@ -147,15 +148,15 @@ and sends the `HttpResponse`. The header `X-Experience-API-Version` is on every 
 
 ## The resources
 
-| Path below `basePath` | Resource         | Methods                      | Actions                               | Section                          |
-| --------------------- | ---------------- | ---------------------------- | ------------------------------------- | -------------------------------- |
+| Path below `basePath` | Resource         | Methods                      | Actions                                                         | Section                          |
+| --------------------- | ---------------- | ---------------------------- | --------------------------------------------------------------- | -------------------------------- |
 | `statements`          | Statements       | GET, HEAD, PUT, POST         | `statements.read` or `statements.read.mine`, `statements.write` | [Statements](#statements)        |
-| `activities/state`    | State            | GET, HEAD, PUT, POST, DELETE | `state.read`, `state.write`           | [Documents](#documents)          |
-| `agents/profile`      | Agent Profile    | GET, HEAD, PUT, POST, DELETE | `profiles.read`, `profiles.write`     | [Documents](#documents)          |
-| `activities/profile`  | Activity Profile | GET, HEAD, PUT, POST, DELETE | `profiles.read`, `profiles.write`     | [Documents](#documents)          |
-| `agents`              | Agents           | GET, HEAD                    | `agents.read`                         | [Agents](#agents-and-activities) |
-| `activities`          | Activities       | GET, HEAD                    | `activities.read`                     | [Agents](#agents-and-activities) |
-| `about`               | About            | GET, HEAD                    | none                                  | [About](#about)                  |
+| `activities/state`    | State            | GET, HEAD, PUT, POST, DELETE | `state.read`, `state.write`                                     | [Documents](#documents)          |
+| `agents/profile`      | Agent Profile    | GET, HEAD, PUT, POST, DELETE | `profiles.read`, `profiles.write`                               | [Documents](#documents)          |
+| `activities/profile`  | Activity Profile | GET, HEAD, PUT, POST, DELETE | `profiles.read`, `profiles.write`                               | [Documents](#documents)          |
+| `agents`              | Agents           | GET, HEAD                    | `agents.read`                                                   | [Agents](#agents-and-activities) |
+| `activities`          | Activities       | GET, HEAD                    | `activities.read`                                               | [Agents](#agents-and-activities) |
+| `about`               | About            | GET, HEAD                    | none                                                            | [About](#about)                  |
 
 ## Statements
 
@@ -261,10 +262,10 @@ RFC 9110 and the standard (4.1.4):
 The route of 1.0.3 lets State go without concurrency headers and asks one of a PUT of a profile (1.0.3 Communication 3.1), so a
 PUT with neither header differs there:
 
-| A PUT with neither header, on 1.0.3 | The document exists | There is none  |
-| ----------------------------------- | ------------------- | -------------- |
-| State                               | Replaced            | Written        |
-| Agent Profile, Activity Profile     | 409                 | 400            |
+| A PUT with neither header, on 1.0.3 | The document exists | There is none |
+| ----------------------------------- | ------------------- | ------------- |
+| State                               | Replaced            | Written       |
+| Agent Profile, Activity Profile     | 409                 | 400           |
 
 A `DELETE` takes `If-Match` and no other header: with a tag that is not the document's, or with no document, the answer is 412,
 and without the header the document is removed, or is already not there and the answer is 204. A member of a header is compared
@@ -310,54 +311,54 @@ A credential with `statements.read.mine` and not `statements.read` reads only th
 `page.authority`, which `matchesStatementQuery` takes as its option, and a Statement of another authority asked for by id is 404.
 The other scopes of 1.0.3 map to the actions as follows; OAuth itself, and `define`, are the host's.
 
-| Scope of 1.0.3 | Actions |
-| --- | --- |
-| `statements/write` | `statements.write` |
-| `statements/read/mine` | `statements.read.mine` |
-| `statements/read` | `statements.read` |
-| `state` | `state.read`, `state.write` |
-| `profile` | `profiles.read`, `profiles.write` |
-| `all/read` | every action that reads |
-| `all` | every action |
-| `define` | None: `ActivityStore.observe` gets the `authority`, and the host decides what becomes canonical |
+| Scope of 1.0.3         | Actions                                                                                         |
+| ---------------------- | ----------------------------------------------------------------------------------------------- |
+| `statements/write`     | `statements.write`                                                                              |
+| `statements/read/mine` | `statements.read.mine`                                                                          |
+| `statements/read`      | `statements.read`                                                                               |
+| `state`                | `state.read`, `state.write`                                                                     |
+| `profile`              | `profiles.read`, `profiles.write`                                                               |
+| `all/read`             | every action that reads                                                                         |
+| `all`                  | every action                                                                                    |
+| `define`               | None: `ActivityStore.observe` gets the `authority`, and the host decides what becomes canonical |
 
 ## Options
 
-| Option                   | Of           | Default                               | Meaning                                                                                                        |
-| ------------------------ | ------------ | ------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `statements`             | `LrsOptions` | required                              | The `StatementStore`                                                                                           |
-| `documents`              | `LrsOptions` | required                              | The `DocumentStore`                                                                                            |
-| `activities`             | `LrsOptions` | required                              | The `ActivityStore`                                                                                            |
-| `agents`                 | `LrsOptions` | a Person with the Agent's identifiers | The `AgentStore`                                                                                               |
-| `access`                 | `LrsOptions` | required                              | Decides who asks and what they may do                                                                          |
-| `clock`                  | `LrsOptions` | `SYSTEM_CLOCK`                        | The time of the LRS; `stored` of a Statement and `updated` of a document are its `now`                         |
+| Option                   | Of           | Default                               | Meaning                                                                                                                                                                                                                                                      |
+| ------------------------ | ------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `statements`             | `LrsOptions` | required                              | The `StatementStore`                                                                                                                                                                                                                                         |
+| `documents`              | `LrsOptions` | required                              | The `DocumentStore`                                                                                                                                                                                                                                          |
+| `activities`             | `LrsOptions` | required                              | The `ActivityStore`                                                                                                                                                                                                                                          |
+| `agents`                 | `LrsOptions` | a Person with the Agent's identifiers | The `AgentStore`                                                                                                                                                                                                                                             |
+| `access`                 | `LrsOptions` | required                              | Decides who asks and what they may do                                                                                                                                                                                                                        |
+| `clock`                  | `LrsOptions` | `SYSTEM_CLOCK`                        | The time of the LRS; `stored` of a Statement and `updated` of a document are its `now`                                                                                                                                                                       |
 | `basePath`               | `LrsOptions` | `"/xapi"`                             | The path the LRS is mounted at: `""`, or a path that starts with `/` and does not end with one. It is compared percent-encoded, as `URL` writes the path of a request, so `/café` and `/caf%C3%A9` are one path; one whose dot segments leave `/` is refused |
-| `versions`               | `LrsOptions` | `["2.0.0", "1.0.3"]`                  | The versions the LRS serves, the latest first; a request of another is 400, and About lists these              |
-| `newId`                  | `LrsOptions` | `crypto.randomUUID`                   | Makes the id of a Statement that has none                                                                      |
-| `accept`                 | `LrsOptions` | none                                  | A check after the standard's, the Attachments and the signatures, for the rules of a profile; it sees the Statements as sent ([Statements](#statements)) and the access with its `principal`, and an error among its findings refuses with `acceptStatus` |
-| `acceptStatus`           | `LrsOptions` | 400                                   | The status of a refusal by `accept`: 400, or 403, which cmi5 asks for                                          |
-| `trustCertificate`       | `LrsOptions` | none: anyone's certificate is taken   | Whether the chain of a signed Statement is trusted; a chain that it does not trust is 400; the signature is checked against the leaf whatever it says |
-| `keepSubmittedAuthority` | `LrsOptions` | false                                 | Keeps the `authority` a Statement brings, which the standard allows only with a strong trust relationship      |
-| `aboutExtensions`        | `LrsOptions` | none                                  | A JSON object that About gives as `extensions`                                                                 |
-| `limits`                 | `LrsOptions` | the limits below                      | `LrsLimits`                                                                                                    |
-| `signal`                 | `LrsOptions` | none                                  | Ends every wait of the handler and reaches every port                                                          |
+| `versions`               | `LrsOptions` | `["2.0.0", "1.0.3"]`                  | The versions the LRS serves, the latest first; a request of another is 400, and About lists these                                                                                                                                                            |
+| `newId`                  | `LrsOptions` | `crypto.randomUUID`                   | Makes the id of a Statement that has none                                                                                                                                                                                                                    |
+| `accept`                 | `LrsOptions` | none                                  | A check after the standard's, the Attachments and the signatures, for the rules of a profile; it sees the Statements as sent ([Statements](#statements)) and the access with its `principal`, and an error among its findings refuses with `acceptStatus`    |
+| `acceptStatus`           | `LrsOptions` | 400                                   | The status of a refusal by `accept`: 400, or 403, which cmi5 asks for                                                                                                                                                                                        |
+| `trustCertificate`       | `LrsOptions` | none: anyone's certificate is taken   | Whether the chain of a signed Statement is trusted; a chain that it does not trust is 400; the signature is checked against the leaf whatever it says                                                                                                        |
+| `keepSubmittedAuthority` | `LrsOptions` | false                                 | Keeps the `authority` a Statement brings, which the standard allows only with a strong trust relationship                                                                                                                                                    |
+| `aboutExtensions`        | `LrsOptions` | none                                  | A JSON object that About gives as `extensions`                                                                                                                                                                                                               |
+| `limits`                 | `LrsOptions` | the limits below                      | `LrsLimits`                                                                                                                                                                                                                                                  |
+| `signal`                 | `LrsOptions` | none                                  | Ends every wait of the handler and reaches every port                                                                                                                                                                                                        |
 
 ## Limits
 
-| Limit              | Default    | Refused with | Applies to                                                                         |
-| ------------------ | ---------- | ------------ | ---------------------------------------------------------------------------------- |
+| Limit              | Default    | Refused with | Applies to                                                                                                                                            |
+| ------------------ | ---------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `maxBodyBytes`     | 10,485,760 | 413          | The body of a request, before the store is called; and the bytes of the signatures of its Statements, counted once for each Statement that names them |
-| `maxBatch`         | 1,000      | 413          | The Statements of one request                                                      |
-| `maxParts`         | 100        | 413          | The parts of a multipart request, the Statements included                          |
-| `maxPartBytes`     | 10,485,760 | 413          | One part of a multipart request                                                    |
-| `maxDocumentBytes` | 1,048,576  | 413          | A State or profile document, and the result of a merge                             |
-| `maxDepth`         | 64         | 413          | The nesting of the JSON of a request, a document and an `agent` parameter included |
-| `maxTokens`        | 1,000,000  | 413          | The tokens of the JSON of a request, a document and an `agent` parameter included; the payload of a signature over it is a malformed signature, 400 |
-| `maxFindings`      | 1,000      | 400          | The errors counted in the Statements of a request                                  |
-| 32 parameters      | fixed      | 400          | A form of the alternate request syntax, counted before it is read                  |
-| 3 tries            | fixed      | 409          | A write or removal of a document that loses a race against another writer          |
-| `pageSize`         | 100        | Capped       | The Statements of a page when the request has no `limit`                           |
-| `maxPageSize`      | 1,000      | Capped       | The largest page: a `limit` of 0 or above it is lowered to it                      |
+| `maxBatch`         | 1,000      | 413          | The Statements of one request                                                                                                                         |
+| `maxParts`         | 100        | 413          | The parts of a multipart request, the Statements included                                                                                             |
+| `maxPartBytes`     | 10,485,760 | 413          | One part of a multipart request                                                                                                                       |
+| `maxDocumentBytes` | 1,048,576  | 413          | A State or profile document, and the result of a merge                                                                                                |
+| `maxDepth`         | 64         | 413          | The nesting of the JSON of a request, a document and an `agent` parameter included                                                                    |
+| `maxTokens`        | 1,000,000  | 413          | The tokens of the JSON of a request, a document and an `agent` parameter included; the payload of a signature over it is a malformed signature, 400   |
+| `maxFindings`      | 1,000      | 400          | The errors counted in the Statements of a request                                                                                                     |
+| 32 parameters      | fixed      | 400          | A form of the alternate request syntax, counted before it is read                                                                                     |
+| 3 tries            | fixed      | 409          | A write or removal of a document that loses a race against another writer                                                                             |
+| `pageSize`         | 100        | Capped       | The Statements of a page when the request has no `limit`                                                                                              |
+| `maxPageSize`      | 1,000      | Capped       | The largest page: a `limit` of 0 or above it is lowered to it                                                                                         |
 
 The tokens of a body are counted before it is parsed, since the memory of a parse grows with the tokens and not with the bytes:
 a text of 10 MiB can have ten million of them. The check of the Statements of a request stops at the first error beyond
@@ -392,31 +393,31 @@ always answers `written`: a State PUT without a precondition on the route of 1.0
 Statement References of 4.1.6.1; a store that holds Statements in a database can mirror it in its own query and test the
 mirror against it. `target` finds any Statement by its id in lower case, a voided one too.
 
-| Port fails or is called again                            | The handler does                                                                                                                                                       |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A port rejects                                           | Answers 500 with a message that says nothing of the cause; what `insert` stored stays stored                                                                           |
-| `insert` returns an id that it held                      | Answers 204 when the Statement is the same by `isSameStatement`, 409 when it is another                                                                                  |
-| `observe` rejects                                        | Answers 500 while the Statements stay stored; a resend answers 204 and observes again                                                                                  |
-| `write` or `delete` does not do what the condition asked | Reads the document again, judges again, and tries again, up to three tries                                                                             |
-| A port does not answer                                   | Waits for the `signal` of the options and rejects with its reason                                                                                                      |
+| Port fails or is called again                            | The handler does                                                                                                                                                                                                                             |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A port rejects                                           | Answers 500 with a message that says nothing of the cause; what `insert` stored stays stored                                                                                                                                                 |
+| `insert` returns an id that it held                      | Answers 204 when the Statement is the same by `isSameStatement`, 409 when it is another                                                                                                                                                      |
+| `observe` rejects                                        | Answers 500 while the Statements stay stored; a resend answers 204 and observes again                                                                                                                                                        |
+| `write` or `delete` does not do what the condition asked | Reads the document again, judges again, and tries again, up to three tries                                                                                                                                                                   |
+| A port does not answer                                   | Waits for the `signal` of the options and rejects with its reason                                                                                                                                                                            |
 | A port breaks its contract                               | Throws a `DataError`: more Statements than the limit, a voided Statement, a Statement of another authority for a credential that reads its own, a document without an ETag, an answer outside the set of outcomes, an Activity of another id |
 
 ## Errors
 
-| Answer or error                                                                  | When                                                                                                                     | What to do                                                                 |
-| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
-| 400 with a message                                                               | A parameter, a header, the body, a Statement or a signature is wrong                                                     | Show the message to the sender: it names the path                          |
-| 401, 403, 429                                                                    | `access` refused the request, or the credentials lack the action                                                         | Send the credentials the host asks for                                     |
-| 404                                                                              | The path names no resource, or the LRS holds no such Statement or document                                               | Check the id                                                               |
-| 405 with `Allow`                                                                 | The resource has no such method                                                                                          | Use a method of `Allow`                                                    |
-| 400 on the route of 1.0.3                                                        | A PUT of a profile has no precondition and no document exists                                                            | Send `If-None-Match: *`                                                    |
-| 409                                                                              | The LRS holds another Statement with the id; a PUT has no precondition over a document that exists; writers kept winning | Send a new id, or `If-Match` with the ETag, or read the document and retry |
-| 412                                                                              | `If-Match` or `If-None-Match` is not met                                                                                 | Read the document again                                                    |
+| Answer or error                                                                  | When                                                                                                                                                           | What to do                                                                 |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| 400 with a message                                                               | A parameter, a header, the body, a Statement or a signature is wrong                                                                                           | Show the message to the sender: it names the path                          |
+| 401, 403, 429                                                                    | `access` refused the request, or the credentials lack the action                                                                                               | Send the credentials the host asks for                                     |
+| 404                                                                              | The path names no resource, or the LRS holds no such Statement or document                                                                                     | Check the id                                                               |
+| 405 with `Allow`                                                                 | The resource has no such method                                                                                                                                | Use a method of `Allow`                                                    |
+| 400 on the route of 1.0.3                                                        | A PUT of a profile has no precondition and no document exists                                                                                                  | Send `If-None-Match: *`                                                    |
+| 409                                                                              | The LRS holds another Statement with the id; a PUT has no precondition over a document that exists; writers kept winning                                       | Send a new id, or `If-Match` with the ETag, or read the document and retry |
+| 412                                                                              | `If-Match` or `If-None-Match` is not met                                                                                                                       | Read the document again                                                    |
 | 413                                                                              | A body, a batch, a part, a number of parts or a document is over its limit, or its JSON over the limit of its levels or tokens: every `LimitError` of a reader | Send less, or raise the limit                                              |
-| 500                                                                              | A port rejected                                                                                                          | Look at the host's own log; the answer says nothing of the cause           |
-| `DataError`: `The configuration of the LRS is invalid: <sentence>.`              | An option has the wrong type                                                                                             | Pass the option as the table says                                          |
-| `DataError`: `The decision of access is invalid at <path>: <sentence>.`          | `access` answered with something that is no decision                                                                     | Answer `{ allowed, ... }` as `Access` says                                 |
-| `DataError`: `The answer of DocumentStore.get is invalid at <path>: <sentence>.` | A store broke its contract                                                                                               | Fix the store                                                              |
+| 500                                                                              | A port rejected                                                                                                                                                | Look at the host's own log; the answer says nothing of the cause           |
+| `DataError`: `The configuration of the LRS is invalid: <sentence>.`              | An option has the wrong type                                                                                                                                   | Pass the option as the table says                                          |
+| `DataError`: `The decision of access is invalid at <path>: <sentence>.`          | `access` answered with something that is no decision                                                                                                           | Answer `{ allowed, ... }` as `Access` says                                 |
+| `DataError`: `The answer of DocumentStore.get is invalid at <path>: <sentence>.` | A store broke its contract                                                                                                                                     | Fix the store                                                              |
 
 A refusal is written as plain text, JSON `{ "message": "..." }` or HTML, as `Accept` prefers by RFC 9110 section 12.5.1, and as
 plain text when it prefers none or prefers them alike:
@@ -431,17 +432,17 @@ plain text when it prefers none or prefers them alike:
 
 ## Not included
 
-| Not included                                          | Why                                                                   |
-| ----------------------------------------------------- | --------------------------------------------------------------------- |
-| A conditional GET (`If-None-Match` answered with 304) | The standard asks only for the ETag on a GET                          |
-| A database, an index, an account, a rate limit        | The host's: the ports and `access` are where they plug in             |
-| Deleting a Statement                                  | The standard asks that Statements are not deleted; voiding is the way |
-| A time later than the clock                           | The standard says an LRS shall not reject it                          |
+| Not included                                          | Why                                                                                                     |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| A conditional GET (`If-None-Match` answered with 304) | The standard asks only for the ETag on a GET                                                            |
+| A database, an index, an account, a rate limit        | The host's: the ports and `access` are where they plug in                                               |
+| Deleting a Statement                                  | The standard asks that Statements are not deleted; voiding is the way                                   |
+| A time later than the clock                           | The standard says an LRS shall not reject it                                                            |
 | A 406 answer                                          | A refusal is always written in one of its three types, since an error has to be answered in some format |
-| The versions 0.9 and 0.95                             | Earlier than 1.0.0, which 1.0.3 asks an LRS to refuse (Communication 3.3) |
+| The versions 0.9 and 0.95                             | Earlier than 1.0.0, which 1.0.3 asks an LRS to refuse (Communication 3.3)                               |
 
 ## Differences from the references
 
-| Reference    | Difference                                                                                                                                                                    |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RFC 9110     | A member of `If-Match` that is no entity tag names no tag and the answer is 412; a `DELETE` of a document that does not exist is 204                                          |
+| Reference | Difference                                                                                                                           |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| RFC 9110  | A member of `If-Match` that is no entity tag names no tag and the answer is 412; a `DELETE` of a document that does not exist is 204 |

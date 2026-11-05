@@ -18,19 +18,19 @@ flowchart LR
   model --> rules["Mutation rules<br/>pnpm check:rules"]
 ```
 
-| Layer         | Question                                                                                           | Where                                                                                                                  | Runs                  |
-| ------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------- |
-| Tables        | Does the model have each class, property, action and vocabulary that the pages print?               | `entities.spec`, `events.spec`, `profiles.spec`, `versions.spec` tests                                                 | `pnpm test:spec`      |
-| Examples      | Do the readers read every example that the pages print?                                             | The same files, through `readSpecPage`                                                                                 | `pnpm test:spec`      |
-| Contexts      | Does a published context define every term that the model reads or writes?                          | `context.corpus`, `versions.corpus` tests                                                                              | `pnpm test:corpus`    |
-| Fixtures      | Do the readers read the fixtures of `caliper-spec` and refuse the malformed ones?                    | `events.corpus`, `entities.corpus`, `profiles.corpus`, `endpoint.corpus`, `versions.corpus` tests                      | `pnpm test:corpus`    |
-| Schemas       | Do the readers give the verdict of the draft 4 schemas on generated values and on values changed in one place? | `events.corpus`, `entities.corpus`, `versions.corpus` tests                                                  | `pnpm test:corpus`    |
-| Profiles      | Does `validateEvent` agree with every row of the tables of section 3 and of the certification guide? | `profiles.spec`, `profiles.corpus`, `validate` tests, `scripts/caliper-rules.ts`                                      | `pnpm test:spec`      |
-| Endpoint      | Does it answer each status in the order of its checks, and cost an unauthorized caller no parsing?   | `endpoint.test.ts`                                                                                                     | `pnpm test`           |
-| Round trip    | Does what a sensor sends reach `accept` equal, in 1.2 and in 1.1?                                    | `endpoint.test.ts`, `roundtrip.corpus.test.ts`, `versions.corpus.test.ts`, `examples/learning-analytics/test`          | `pnpm test`, `pnpm test:corpus` |
-| Rules         | Does a test fail when a rule that keeps the endpoint safe is removed from the code?                  | `scripts/rules/learning-analytics.ts`                                                                                  | `pnpm check:rules`    |
-| Runtimes      | Does the example give the same results everywhere?                                                   | `compat/`                                                                                                              | `pnpm compat:runtimes`         |
-| Browsers      | Does the path of a sensor run in the engines of the browsers, with the `uuid` built for them?        | `sensor.browser.test.ts`                                                                                               | `pnpm test:browser`   |
+| Layer      | Question                                                                                                       | Where                                                                                                         | Runs                            |
+| ---------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| Tables     | Does the model have each class, property, action and vocabulary that the pages print?                          | `entities.spec`, `events.spec`, `profiles.spec`, `versions.spec` tests                                        | `pnpm test:spec`                |
+| Examples   | Do the readers read every example that the pages print?                                                        | The same files, through `readSpecPage`                                                                        | `pnpm test:spec`                |
+| Contexts   | Does a published context define every term that the model reads or writes?                                     | `context.corpus`, `versions.corpus` tests                                                                     | `pnpm test:corpus`              |
+| Fixtures   | Do the readers read the fixtures of `caliper-spec` and refuse the malformed ones?                              | `events.corpus`, `entities.corpus`, `profiles.corpus`, `endpoint.corpus`, `versions.corpus` tests             | `pnpm test:corpus`              |
+| Schemas    | Do the readers give the verdict of the draft 4 schemas on generated values and on values changed in one place? | `events.corpus`, `entities.corpus`, `versions.corpus` tests                                                   | `pnpm test:corpus`              |
+| Profiles   | Does `validateEvent` agree with every row of the tables of section 3 and of the certification guide?           | `profiles.spec`, `profiles.corpus`, `validate` tests, `scripts/caliper-rules.ts`                              | `pnpm test:spec`                |
+| Endpoint   | Does it answer each status in the order of its checks, and cost an unauthorized caller no parsing?             | `endpoint.test.ts`                                                                                            | `pnpm test`                     |
+| Round trip | Does what a sensor sends reach `accept` equal, in 1.2 and in 1.1?                                              | `endpoint.test.ts`, `roundtrip.corpus.test.ts`, `versions.corpus.test.ts`, `examples/learning-analytics/test` | `pnpm test`, `pnpm test:corpus` |
+| Rules      | Does a test fail when a rule that keeps the endpoint safe is removed from the code?                            | `scripts/rules/learning-analytics.ts`                                                                         | `pnpm check:rules`              |
+| Runtimes   | Does the example give the same results everywhere?                                                             | `compat/`                                                                                                     | `pnpm compat:runtimes`          |
+| Browsers   | Does the path of a sensor run in the engines of the browsers, with the `uuid` built for them?                  | `sensor.browser.test.ts`                                                                                      | `pnpm test:browser`             |
 
 The model that the tables, the contexts and the fixtures are compared with has these counts, and a test fails when a table prints a
 class, an action or a role that it lacks:
@@ -47,24 +47,24 @@ the last three; `pnpm bench` needs `pnpm corpus`.
 
 ## The sources
 
-| Source                                                                                  | What it is                                                                                                   | Pinned by                                                          |
-| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
-| The pages of Caliper 1.2, the Library Use Profile and the certification guide           | Tables of events, entities, actions, vocabularies and the rows of the profiles                              | `scripts/caliper-tables.lock.json`: the hash of the tables, not of the bytes |
-| The page of Caliper 1.1                                                                 | The same, in its own layout, with the classes and properties that it deprecates                              | The same lock, with `layout: "v1p1"`                               |
-| `1EdTech/caliper-spec` at `60f7cb7`                                                     | Fixtures of 1.2 (144 positive, 279 negative) and of 1.1 (129), the draft 4 schemas of both (110 and 77), the contexts of 1.2 and of 1.1 with its six extension profiles | `scripts/corpus.lock.json`: the hash of the archive |
-| The published context of Caliper 1.2                                                    | The terms and their types                                                                                    | `scripts/schemas.lock.json`                                        |
+| Source                                                                        | What it is                                                                                                                                                              | Pinned by                                                                    |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| The pages of Caliper 1.2, the Library Use Profile and the certification guide | Tables of events, entities, actions, vocabularies and the rows of the profiles                                                                                          | `scripts/caliper-tables.lock.json`: the hash of the tables, not of the bytes |
+| The page of Caliper 1.1                                                       | The same, in its own layout, with the classes and properties that it deprecates                                                                                         | The same lock, with `layout: "v1p1"`                                         |
+| `1EdTech/caliper-spec` at `60f7cb7`                                           | Fixtures of 1.2 (144 positive, 279 negative) and of 1.1 (129), the draft 4 schemas of both (110 and 77), the contexts of 1.2 and of 1.1 with its six extension profiles | `scripts/corpus.lock.json`: the hash of the archive                          |
+| The published context of Caliper 1.2                                          | The terms and their types                                                                                                                                               | `scripts/schemas.lock.json`                                                  |
 
 The license of the repository does not allow redistribution, so `pnpm corpus` fetches it and nothing of it is committed.
 
 ## The fixtures
 
-| Set                                 | What the readers do                                                                                                                                  |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Positive fixtures of 1.2            | Every event, entity and envelope reads and comes back as the fixture has it                                                                          |
-| Negative fixtures of 1.2            | Every malformed event is refused, and every malformed entity but the four that `entities.corpus.test.ts` lists, which differ from a valid one only in the form of a number     |
-| Fixtures of 1.1                     | Every document but one reads as 1.1 and comes back as the fixture has it. The one that fails names a `profile`, which 1.1 does not define, and a class of the sender's own context |
-| Envelopes of 1.1                    | Every envelope is received with every item, with no finding, strict or not, and is answered 422 by an endpoint that reads 1.2 alone                   |
-| Envelopes of 1.2 through a sensor   | `sendCaliper` posts each envelope from its read items, and `accept` receives the sensor, the time and every item equal to the fixture                |
+| Set                               | What the readers do                                                                                                                                                                |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Positive fixtures of 1.2          | Every event, entity and envelope reads and comes back as the fixture has it                                                                                                        |
+| Negative fixtures of 1.2          | Every malformed event is refused, and every malformed entity but the four that `entities.corpus.test.ts` lists, which differ from a valid one only in the form of a number         |
+| Fixtures of 1.1                   | Every document but one reads as 1.1 and comes back as the fixture has it. The one that fails names a `profile`, which 1.1 does not define, and a class of the sender's own context |
+| Envelopes of 1.1                  | Every envelope is received with every item, with no finding, strict or not, and is answered 422 by an endpoint that reads 1.2 alone                                                |
+| Envelopes of 1.2 through a sensor | `sendCaliper` posts each envelope from its read items, and `accept` receives the sensor, the time and every item equal to the fixture                                              |
 
 The places where a source disagrees with another are in [spec-gaps](./spec-gaps.md), each pinned by a test.
 
@@ -84,14 +84,14 @@ them again after a failure that a resend can cure; the endpoint is `handleCalipe
 memory, and a `fetch` for a sender in the same process; an older sensor posts an envelope of Caliper 1.1 by hand. The tests and the
 scenario show:
 
-| What the scenario shows                                                                                              | Where                          |
-| -------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| A 503 before the endpoint, then a send that is received, with the same identifiers and a later time                  | `scenario.test.ts`             |
-| The attempt reported again arrives, and the endpoint holds each event once by its `id`                               | `endpoint.test.ts`             |
-| The endpoint names the sender by its token, and never by the `sensor` of the envelope                                | `endpoint.test.ts`             |
-| An envelope of 1.1 with a describe and an event is received into the same shape as one of 1.2                        | `endpoint.test.ts`             |
-| An unknown token is 401, and an endpoint that reads 1.2 alone answers 422 to the envelope of 1.1                     | `endpoint.test.ts`             |
-| An item that does not read is left out, and its findings carry the path inside the envelope                          | `endpoint.test.ts`             |
+| What the scenario shows                                                                             | Where              |
+| --------------------------------------------------------------------------------------------------- | ------------------ |
+| A 503 before the endpoint, then a send that is received, with the same identifiers and a later time | `scenario.test.ts` |
+| The attempt reported again arrives, and the endpoint holds each event once by its `id`              | `endpoint.test.ts` |
+| The endpoint names the sender by its token, and never by the `sensor` of the envelope               | `endpoint.test.ts` |
+| An envelope of 1.1 with a describe and an event is received into the same shape as one of 1.2       | `endpoint.test.ts` |
+| An unknown token is 401, and an endpoint that reads 1.2 alone answers 422 to the envelope of 1.1    | `endpoint.test.ts` |
+| An item that does not read is left out, and its findings carry the path inside the envelope         | `endpoint.test.ts` |
 
 ## Runtimes
 
@@ -107,8 +107,8 @@ refused without exhausting the stack of the engine.
 
 ## Not included
 
-| Not included                               | Why                                                                                                                              |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| Certification of a sensor                  | 1EdTech certifies sensors per profile for members. The tables of the guide are read, and the docs say "implements"              |
-| An open Caliper 1.2 endpoint or sensor     | None exists. The collector in `CaliperBootcamp` validates with the same schemas and needs Neo4j, so it would add no evidence      |
-| A budget in time                           | The runners of CI have not sampled the benchmarks yet; the ratios hold on any machine                                            |
+| Not included                           | Why                                                                                                                          |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Certification of a sensor              | 1EdTech certifies sensors per profile for members. The tables of the guide are read, and the docs say "implements"           |
+| An open Caliper 1.2 endpoint or sensor | None exists. The collector in `CaliperBootcamp` validates with the same schemas and needs Neo4j, so it would add no evidence |
+| A budget in time                       | The runners of CI have not sampled the benchmarks yet; the ratios hold on any machine                                        |
