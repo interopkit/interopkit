@@ -71,7 +71,7 @@ are the same Actor.
 | Error                                                          | When                                                     | What to do                                                       |
 | -------------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------- |
 | `The statement is invalid at <path>: <sentence>.`              | Either Statement breaks a rule of an LRS                 | Read it first with `readStatement` and answer the sender         |
-| `The first Actor` or `The second Actor` with `<path>: <sentence>` | `isSameActor` met a value that is not an Agent or a Group | Pass an Actor as `readStatement` reads it                        |
+| `The first Actor` or `The second Actor` with `<path>: <sentence>` | `isSameActor` met a value that is not an Agent or a Group, or one without exactly one identifier, or an anonymous Group without members | Pass an Actor as `readStatement` reads it                        |
 
 ## Not included
 

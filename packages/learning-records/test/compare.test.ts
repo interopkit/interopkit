@@ -66,6 +66,10 @@ describe("isSameActor", () => {
     ["an address that is not a number", { mbox: 5 }],
     ["an account without a name", { account: { homePage: "https://lms.example.org" } }],
     ["a group whose members are not a list", { objectType: "Group", member: "a" }],
+    ["an Agent with two identifiers", { mbox: "mailto:a@example.org", account }],
+    ["an Agent with none", { name: "Learner" }],
+    ["an anonymous Group without members", { objectType: "Group", name: "Team" }],
+    ["a Group whose member has no identifier", { objectType: "Group", member: [{ name: "Learner" }] }],
     ["text", "mailto:a@example.org"],
     ["nothing", undefined],
   ])("refuses %s, as an LRS reads an Actor", (_name, value) => {

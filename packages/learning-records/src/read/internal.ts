@@ -6,6 +6,7 @@
 export { scopeSchema, stateScopeSchema, targetSchema } from "./document-target.js";
 export { error, warning } from "./finding.js";
 export { authoritySchema, identifiedAgentSchema } from "./identified.js";
+export { identifierIssues } from "./identifiers.js";
 export { inspectStatement } from "./inspect.js";
 export { item, member } from "./path.js";
 export { singleActivityIssues } from "./provider.js";
