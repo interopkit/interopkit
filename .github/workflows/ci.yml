@@ -16,8 +16,10 @@ concurrency:
 
 # Every job has a `timeout-minutes` of about three times its last green run, and at least 10 for a job that pulls images or
 # downloads, so that a hung job stops and does not run to the 360 minutes of GitHub, which the Actions minutes of the month cannot
-# bear. `bench` runs the packages one at a time, so its limit is a guess to lower after its first green run. A job that installs the
-# browsers of Playwright has room for three tries of 4 minutes, after which a stalled install is stopped.
+# bear. `bench` runs the packages one at a time, so its limit is a guess to lower after its first green run. The jobs that run a
+# browser run in the image of the Playwright that the lock file pins, which holds its browsers and their system libraries, so that
+# no job installs them: apt under sudo outlives the timeout of a step, and a slow mirror once held such an install past the limit
+# of a job. scripts/test/versions.test.ts holds the tag to the lock file.
 jobs:
   # What a push or a pull request changed since the last commit of main whose run passed, or since the base of a pull request,
   # and so which jobs have something to check. A job that is skipped passes a required check. When nothing can be compared,
@@ -352,18 +354,24 @@ jobs:
     needs: changes
     if: needs.changes.outputs.browsers == 'true'
     runs-on: ubuntu-latest
-    # Three tries of the install at most 4 minutes each, then the tests, which take under a minute.
-    timeout-minutes: 15
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --ipc=host
+    # The image runs as root, and Firefox refuses to start in a home that another user owns, as the runner's is.
+    env:
+      HOME: /root
     steps:
       - uses: actions/checkout@v7
+      # The container's user does not own the checkout, so git refuses it, and the hooks that pnpm install sets up with it,
+      # until it is marked safe.
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # An install that stalls is stopped after 240 s and tried again, three times in all, as STANDARDS section 7 asks of a download.
-      - run: for attempt in 1 2 3; do timeout 240 pnpm exec playwright install --with-deps chromium firefox webkit && exit 0; echo "The install stalled or failed, try $attempt of 3."; done; exit 1
       - run: pnpm test:browser
 
   # The scenarios of the six examples, built as the packages ship, on Node.js, Deno, Bun and workerd (compat/README.md).
@@ -541,18 +549,22 @@ jobs:
     needs: changes
     if: needs.changes.outputs.catapult == 'true'
     runs-on: ubuntu-latest
-    # Three tries of the install of Chromium at most 4 minutes each, then the build and the suite, which take under 2 minutes.
-    timeout-minutes: 15
+    # The build and the suite take under 2 minutes; the image and the archive of CATAPULT are downloads.
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --ipc=host
+    env:
+      HOME: /root
     steps:
       - uses: actions/checkout@v7
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # An install that stalls is stopped after 240 s and tried again, three times in all, as STANDARDS section 7 asks of a download.
-      - run: for attempt in 1 2 3; do timeout 240 pnpm exec playwright install --with-deps chromium && exit 0; echo "The install stalled or failed, try $attempt of 3."; done; exit 1
       # The archive of CATAPULT at its pinned commit, kept between runs by the hash of the lock that pins it.
       - uses: actions/cache@v5
         with:

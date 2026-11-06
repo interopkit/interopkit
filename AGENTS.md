@@ -166,6 +166,10 @@ the same ref cancels the run in progress, and a cancelled run is not a failure. 
 only when it passes, so that per-push CI stays short as Actions minutes are limited. A builder runs the rules of its package
 before a merge (`pnpm check:rules packages/<package>`).
 
+`browsers`, `catapult-lms` and `rules` run in the image of the Playwright that the lock file pins, which holds the browsers,
+so that no job installs them: a bump of Playwright changes the tag in both workflows, which `scripts/test/versions.test.ts`
+holds to the lock file.
+
 Development needs Node.js 22.18+ and pnpm 12. The scripts in `scripts/` are TypeScript that Node runs directly, so their
 relative imports end in `.ts`. On a shared machine run Vitest with `--maxWorkers=2` and containers with `--cpus=2`. The runners of the counterparties in containers (`opensalt`, `sql-lrs`, `pylti1p3`, `moodle`, `validator`) name their containers with `CONTAINER_NAME`, or `COMPOSE_PROJECT_NAME`, and else `interopkit-<counterparty>-<8 hex digits>` (`runName` of `validation/containers/host.ts`, which also holds their other shared helpers).
 

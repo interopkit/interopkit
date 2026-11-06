@@ -35,6 +35,23 @@ describe("the versions of the dependencies", () => {
     expect(loose).toStrictEqual([]);
   });
 
+  it("run the browser jobs in the image of the Playwright that the lock file pins, which holds its browsers", () => {
+    // The lock file has two documents: the second holds the importers, and its root importer the version of Playwright.
+    const lock = readFileSync(join(ROOT, "pnpm-lock.yaml"), "utf8");
+    const root =
+      /\nimporters:\n\n {2}\.:\n([\s\S]*?)\n {2}\S/u.exec(lock.slice(lock.lastIndexOf("\n---\n")))?.[1] ?? "";
+    const pinned = /\n {6}playwright:\n {8}specifier: \S+\n {8}version: (\S+)\n/u.exec(root)?.[1];
+    expect(pinned).toMatch(EXACT);
+    // The browser tests, CATAPULT's LMS suite and the mutation rules.
+    const images = [".github/workflows/ci.yml", ".github/workflows/rules.yml"].flatMap((file) =>
+      [...readFileSync(join(ROOT, file), "utf8").matchAll(/playwright:v([^\s-]+)-noble/gu)].map(
+        ([, version]) => `${file} ${version}`,
+      ),
+    );
+    expect(images.length).toBeGreaterThanOrEqual(3);
+    expect(images.filter((image) => !image.endsWith(` ${pinned}`))).toStrictEqual([]);
+  });
+
   it("find the packages of the workspace", () => {
     expect(WORKSPACE).toEqual(
       expect.arrayContaining([
