@@ -139,10 +139,10 @@ labels that were signed, and the positions of the mandatory statements. It does 
 
 ## Limits
 
+A document over `maxBytes`, or over `maxTokens` counted before any processing, is a `LimitError`, and `false` from `verify`. The other limits are fixed:
+
 | Limit                                              | Value      | Applies to                                                                                                                                                                                                    |
 | -------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `maxBytes`                                         | 1,048,576  | The document with its proof, as JSON, in bytes; a `LimitError`, and `false` from `verify`                                                                                                                     |
-| `maxTokens`                                        | 20,000     | The document with its proof, as JSON, in tokens, counted before any processing; a `LimitError`, and `false` from `verify`                                                                                     |
 | Levels that a document, a proof or a context nests | 64         | Checked before any processing; a `DataError`, and `false` from `verify`; not replaceable                                                                                                                      |
 | Deep iterations of RDF canonicalization            | 1,000      | `maxDeepIterations` of `rdf-canonize`: blank nodes that take more runs of Hash N-Degree Quads to tell apart are refused with a `LimitError` (`maxDeepIterations`), and `false` from `verify`; not replaceable |
 | Bytes of a signature, an HMAC key, a label         | 64, 32, 32 | Fixed by the Recommendation; a proof value with other lengths does not parse                                                                                                                                  |
