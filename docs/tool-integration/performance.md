@@ -70,9 +70,9 @@ cache.
 
 | Entry point                             |   Bytes |   Gzip | Budget | Holds, besides `protocol`, `errors`, `@interopkit/core`, jose and valibot         |
 | --------------------------------------- | ------: | -----: | -----: | --------------------------------------------------------------------------------- |
-| `@interopkit/tool-integration`          |  28,969 | 10,193 | 13,000 | Nothing more: the models, the vocabularies, `LtiError` and the key set cache      |
-| `@interopkit/tool-integration/platform` | 150,249 | 45,412 | 55,500 | Nothing more                                                                      |
-| `@interopkit/tool-integration/tool`     | 144,832 | 44,648 | 54,000 | oauth4webapi, through the OAuth 2.0 client of core that obtains the access tokens |
+| `@interopkit/tool-integration`          |  28,976 | 10,194 | 13,000 | Nothing more: the models, the vocabularies, `LtiError` and the key set cache      |
+| `@interopkit/tool-integration/platform` | 150,087 | 45,411 | 55,500 | Nothing more                                                                      |
+| `@interopkit/tool-integration/tool`     | 144,899 | 44,679 | 54,000 | oauth4webapi, through the OAuth 2.0 client of core that obtains the access tokens |
 
 The platform holds nothing of the tool, nor the tool of the platform. A host that imports one function of an entry point gets less:
 the package has no side effects, so a bundler drops the rest.

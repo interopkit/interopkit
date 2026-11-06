@@ -66,7 +66,7 @@ Node.js 22; other versions differ by up to 1 percent.
 
 | Entry point                                  |  Bytes |   Gzip | Budget | Holds, besides `@interopkit/core`, `model` and valibot |
 | -------------------------------------------- | -----: | -----: | -----: | ------------------------------------------------------ |
-| `@interopkit/competency-frameworks`          | 37,509 | 12,297 | 15,000 | `read`, `version`                                      |
+| `@interopkit/competency-frameworks`          | 37,509 | 12,298 | 15,000 | `read`, `version`                                      |
 | `@interopkit/competency-frameworks/client`   | 47,464 | 15,701 | 19,000 | `read`                                                 |
 | `@interopkit/competency-frameworks/graph`    | 22,140 |  7,732 |  9,500 | nothing else                                           |
 | `@interopkit/competency-frameworks/provider` | 45,776 | 15,012 | 18,000 | `read`, `version`                                      |

@@ -54,7 +54,7 @@ Node.js 22; other versions differ by up to 1 percent.
 | Entry point                               |  Bytes |   Gzip | Budget | Holds, besides `@interopkit/core` and valibot                 |
 | ----------------------------------------- | -----: | -----: | -----: | ------------------------------------------------------------- |
 | `@interopkit/learning-analytics`          | 72,484 | 21,641 | 26,000 | `build`, `model`, `read`, `send`, `v1p1`, `validate`, uuid    |
-| `@interopkit/learning-analytics/endpoint` | 66,215 | 18,817 | 23,000 | `model`, `read`, `v1p1`, `validate`; no sensor and no builder |
+| `@interopkit/learning-analytics/endpoint` | 66,215 | 18,818 | 23,000 | `model`, `read`, `v1p1`, `validate`; no sensor and no builder |
 
 ## Memory
 

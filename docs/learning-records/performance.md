@@ -70,12 +70,12 @@ Node.js 22; other versions differ by up to 1 percent.
 
 | Entry point                                |   Bytes |   Gzip | Budget | Holds, besides `@interopkit/core`, `model`, `read` and valibot                             |
 | ------------------------------------------ | ------: | -----: | -----: | ------------------------------------------------------------------------------------------ |
-| `@interopkit/learning-records`             |  57,710 | 20,072 | 24,500 | `build`, `compare`, `format`, `@noble/hashes`, uuid                                        |
-| `@interopkit/learning-records/attachments` |  62,701 | 23,185 | 28,500 | `@noble/hashes`, the multipart parser of Remix                                             |
-| `@interopkit/learning-records/client`      |  83,370 | 29,742 | 36,000 | `attachments`, `compare`, `@noble/hashes`, the multipart parser                            |
-| `@interopkit/learning-records/profiles`    |  71,679 | 23,612 | 30,000 | none                                                                                       |
-| `@interopkit/learning-records/signing`     |  73,877 | 26,129 | 32,000 | `attachments`, `compare`, `@noble/hashes`, jose                                            |
-| `@interopkit/learning-records/store`       | 137,065 | 46,463 | 56,500 | `attachments`, `compare`, `format`, `signing`, `@noble/hashes`, jose, the multipart parser |
+| `@interopkit/learning-records`             |  58,448 | 20,290 | 24,500 | `build`, `compare`, `format`, `@noble/hashes`, uuid                                        |
+| `@interopkit/learning-records/attachments` |  63,210 | 23,331 | 28,500 | `@noble/hashes`, the multipart parser of Remix                                             |
+| `@interopkit/learning-records/client`      |  83,878 | 29,897 | 36,000 | `attachments`, `compare`, `@noble/hashes`, the multipart parser                            |
+| `@interopkit/learning-records/profiles`    |  73,033 | 24,179 | 30,000 | none                                                                                       |
+| `@interopkit/learning-records/signing`     |  74,466 | 26,312 | 32,000 | `attachments`, `compare`, `@noble/hashes`, jose                                            |
+| `@interopkit/learning-records/store`       | 137,576 | 46,567 | 56,500 | `attachments`, `compare`, `format`, `signing`, `@noble/hashes`, jose, the multipart parser |
 
 No entry point holds the client or the store but its own, and the root holds no multipart parser and no jose.
 

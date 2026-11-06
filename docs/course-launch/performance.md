@@ -37,10 +37,10 @@ Gzip is measured on Node.js 22; other versions of Node.js differ by up to 1 perc
 
 | Entry point                         |   Bytes |   Gzip | Budget | Holds, besides `@interopkit/core`, `model` and valibot                                                                                       |
 | ----------------------------------- | ------: | -----: | -----: | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@interopkit/course-launch`         | 106,634 | 33,017 | 41,000 | `rules`, `structure`, saxes; `compare`, `model` and `read` of learning-records                                                               |
-| `@interopkit/course-launch/package` | 210,795 | 74,134 | 92,500 | `structure`, saxes, zip.js                                                                                                                   |
-| `@interopkit/course-launch/lms`     | 134,564 | 41,967 | 51,500 | `rules`, `structure`, saxes, uuid; `build`, `compare`, `model`, `read` and `store` of learning-records                                       |
-| `@interopkit/course-launch/au`      | 109,804 | 37,719 | 46,000 | `rules`, `@noble/hashes`, the multipart parser of Remix; `attachments`, `build`, `client`, `compare`, `model` and `read` of learning-records |
+| `@interopkit/course-launch`         | 107,307 | 33,223 | 41,000 | `rules`, `structure`, saxes; `compare`, `model` and `read` of learning-records                                                               |
+| `@interopkit/course-launch/package` | 211,112 | 74,251 | 92,500 | `structure`, saxes, zip.js                                                                                                                   |
+| `@interopkit/course-launch/lms`     | 135,213 | 42,177 | 51,500 | `rules`, `structure`, saxes, uuid; `build`, `compare`, `model`, `read` and `store` of learning-records                                       |
+| `@interopkit/course-launch/au`      | 110,546 | 37,954 | 46,000 | `rules`, `@noble/hashes`, the multipart parser of Remix; `attachments`, `build`, `client`, `compare`, `model` and `read` of learning-records |
 
 The LMS loads no ZIP code and the runtime of a unit no LMS, LRS or reader of a structure.
 

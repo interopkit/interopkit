@@ -72,16 +72,16 @@ Gzip is measured on Node.js 22; other versions of Node.js differ by up to 1 perc
 
 | Entry point                           |   Bytes |    Gzip |  Budget | Holds, besides `@interopkit/core`, `model` and valibot                                                                    |
 | ------------------------------------- | ------: | ------: | ------: | ------------------------------------------------------------------------------------------------------------------------- |
-| `@interopkit/achievement-credentials` |  67,971 |  21,605 |  26,500 | `read`, `issue`, `compare`, `@noble/hashes`                                                                               |
-| `/baking`                             |  93,550 |  28,339 |  35,000 | `read`, saxes                                                                                                             |
+| `@interopkit/achievement-credentials` |  67,971 |  21,604 |  26,500 | `read`, `issue`, `compare`, `@noble/hashes`                                                                               |
+| `/baking`                             |  93,545 |  28,330 |  35,000 | `read`, saxes                                                                                                             |
 | `/client`                             |  67,381 |  20,995 |  25,500 | `read`                                                                                                                    |
-| `/keys`                               | 153,304 |  51,820 |  61,500 | jose, the DID drivers of the Interop Alliance and the curves of noble                                                     |
-| `/jwt`                                |  78,938 |  25,399 |  31,000 | `read`, the internals of `keys`, jose                                                                                     |
+| `/keys`                               | 153,285 |  51,806 |  61,500 | jose, the DID drivers of the Interop Alliance and the curves of noble                                                     |
+| `/jwt`                                |  79,014 |  25,416 |  31,000 | `read`, the internals of `keys`, jose                                                                                     |
 | `/data-integrity`                     | 453,389 | 136,886 | 169,500 | `read`, `keys`, jose, jsonld and the cryptosuites of the Interop Alliance, `selective-disclosure`                         |
-| `/status`                             |  97,773 |  32,445 |  39,500 | `read`, `keys`, `jwt`, jose; `data-integrity` on demand                                                                   |
+| `/status`                             |  97,920 |  32,472 |  39,500 | `read`, `keys`, `jwt`, jose; `data-integrity` on demand                                                                   |
 | `/refresh`                            |  20,011 |   6,981 |   7,000 | nothing else                                                                                                              |
-| `/verify`                             | 155,698 |  50,776 |  62,500 | `read`, `issue`, `compare`, `keys`, `jwt`, `status`, `refresh`, jose, `@cfworker/json-schema`; `data-integrity` on demand |
-| `/provider`                           | 120,298 |  39,971 |  45,500 | `read`, `keys`, `jwt`, the internals of `verify`, jose; the rest of `verify` on demand                                    |
+| `/verify`                             | 155,294 |  50,648 |  62,500 | `read`, `issue`, `compare`, `keys`, `jwt`, `status`, `refresh`, jose, `@cfworker/json-schema`; `data-integrity` on demand |
+| `/provider`                           | 119,971 |  39,881 |  45,500 | `read`, `keys`, `jwt`, the internals of `verify`, jose; the rest of `verify` on demand                                    |
 
 A verifier of JWTs, a provider that does not verify and a reader of status lists load no JSON-LD; the DID drivers load only with
 `createKeyResolver`.
