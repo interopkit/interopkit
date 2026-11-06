@@ -328,6 +328,8 @@
     "subregistrations",
     "tincan",
     "NELC",
-    "SPARQL"
-  ]
+    "SPARQL",
+    "stablelib"
+  ],
+  "ignoreRegExpList": ["GHSA(?:-[0-9a-z]{4}){3}"]
 }

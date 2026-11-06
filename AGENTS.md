@@ -305,6 +305,13 @@ relative imports end in `.ts`. On a shared machine run Vitest with `--maxWorkers
   `achievement-credentials`: the authorization server that their OAuth tests run against. For `course-launch`: `@xapi/cmi5`, a
   development dependency of `examples/course-launch` and a unit of other authors that plays sessions against the example LMS;
   `pnpm-workspace.yaml` leaves out the axios and `@xapi/xapi` that it declares, which its build carries.
+- `pnpm check:audit` lets four advisories below high pass, all of development dependencies that read no untrusted input
+  (2026-11-06): minimatch 10.2.6 (GHSA-g3hv-75wg-m249), which TypeDoc runs on the entry points of `typedoc.json`, and whose
+  repair, minimatch 11, makes private the `matchOne` that TypeDoc calls; `@stablelib/ed25519` 1.0.3 (GHSA-x3ff-w252-2g7j),
+  which `@digitalcredentials/verifier-core` loads to verify the credentials of the tests, and whose repair is a major
+  version that its loader does not take; and uuid 9.0.1 (GHSA-w5hq-g745-h8pq) and deepmerge 4.3.1 (GHSA-gcqx-w48m-w2h4, with
+  no repair), which `@xapi/cmi5`, the counterparty of the cmi5 example, carries. `pnpm-workspace.yaml` overrides fast-uri with
+  the release that repairs its four advisories.
 
 ## Deviations from the standards
 
