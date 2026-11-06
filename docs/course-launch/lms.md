@@ -180,14 +180,14 @@ registration and to waivers.
 
 ## Limits
 
-| Limit                              | Value                            | Refused with                                        |
-| ---------------------------------- | -------------------------------- | --------------------------------------------------- |
-| Preferences document a unit writes | 4,096 bytes                      | 403                                                 |
-| The `agent` of a request of a unit | 1,000 tokens of JSON             | Left to the handler's 400                           |
-| Fetch code; session                | 600 s; 86,400 s                  | error-code 1; 401                                   |
-| Statements of a request            | The LRS's limits                 | 413                                                 |
-| Store conflicts                    | 3 retries                        | 500 from handlers; `InteropkitError` from functions |
-| Secrets of fetch codes and tokens  | 32 random bytes, kept as SHA-256 |                                                     |
+| Limit                              | Value                                       | Refused with                                        |
+| ---------------------------------- | ------------------------------------------- | --------------------------------------------------- |
+| Preferences document a unit writes | 4,096 bytes                                 | 403                                                 |
+| The `agent` of a request of a unit | 1,000 tokens of JSON                        | Left to the handler's 400                           |
+| Fetch code; session                | `fetchLifetimeSeconds`; `maxSessionSeconds` | error-code 1; 401                                   |
+| Statements of a request            | The LRS's limits                            | 413                                                 |
+| Store conflicts                    | 3 retries                                   | 500 from handlers; `InteropkitError` from functions |
+| Secrets of fetch codes and tokens  | 32 random bytes, kept as SHA-256            |                                                     |
 
 ## Errors
 
@@ -219,11 +219,10 @@ registration and to waivers.
 
 ## Differences from the references
 
-| Case                                             | CATAPULT's player                                         | Here                                                                                                          |
-| ------------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Reads of a unit                                  | Passes every read through with its own credentials        | Only the registration of the session, its learner, and no Statement by id                                     |
-| The endpoint in the launch URL                   | Without a final slash                                     | The same, so that units that append `/statements` and units that add a slash both reach the LRS               |
-| Order of statements                              | Judged in the order of arrival                            | The same, and a statement timestamped before initialized is refused                                           |
-| A removal of every State document of an activity | Taken                                                     | Refused for any activity, since one of a unit holds `LMS.LaunchData`; a unit removes its documents one by one |
-| Satisfied statements                             | Written after the unit's statement                        | The same, before the LRS answers the unit                                                                     |
-| The challenge of a 401                           | Basic, at which a browser asks the learner for a password | `cmi5 realm="xAPI"`, at which no browser does                                                                 |
+CATAPULT's player differs from the LMS role in the reads of a unit, the endpoint in the launch URL, the order of the statements and
+the removal of State documents: [spec gaps](spec-gaps.md#the-lms) gives each. It differs besides in:
+
+| Case                   | CATAPULT's player                                         | Here                                          |
+| ---------------------- | --------------------------------------------------------- | --------------------------------------------- |
+| Satisfied statements   | Written after the unit's statement                        | The same, before the LRS answers the unit     |
+| The challenge of a 401 | Basic, at which a browser asks the learner for a password | `cmi5 realm="xAPI"`, at which no browser does |

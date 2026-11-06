@@ -114,14 +114,16 @@ structures with a scheme of its own writes them, and imports them into its LMS, 
 
 ## Limits
 
-| Limit                                   | Default                              | Refused with                                                                        |
-| --------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------- |
-| Bytes (`maxBytes`)                      | 16,777,216                           | `LimitError` before the structure is parsed                                         |
-| Depth (`maxDepth`)                      | 64                                   | `LimitError` when the parser meets the element past it                              |
-| Elements and attributes (`maxElements`) | 1,000,000                            | `LimitError` when the parser meets the one past it, before it keeps it              |
-| Encoding                                | UTF-8; UTF-16 with a byte order mark | `DataError` for bytes that are not valid, and for a declaration of another encoding |
-| Findings                                | 1,000                                | The list stops, and its last finding says so                                        |
-| Levels of blocks to write               | 64                                   | `DataError` before the model is read                                                |
+The values of the options are in [Options](#options).
+
+| Limit                     | Value                                | Refused with                                                                        |
+| ------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------- |
+| Bytes                     | `maxBytes`                           | `LimitError` before the structure is parsed                                         |
+| Depth                     | `maxDepth`                           | `LimitError` when the parser meets the element past it                              |
+| Elements and attributes   | `maxElements`                        | `LimitError` when the parser meets the one past it, before it keeps it              |
+| Encoding                  | UTF-8; UTF-16 with a byte order mark | `DataError` for bytes that are not valid, and for a declaration of another encoding |
+| Findings                  | `maxFindings`                        | The list stops, and its last finding says so                                        |
+| Levels of blocks to write | 64                                   | `DataError` before the model is read                                                |
 
 The tests read the worst structures in a process whose heap is bounded, the text of the structure included, on Node.js 22, 24
 and 26; each ends within:

@@ -86,12 +86,14 @@ package sets, and these:
 
 ## Limits
 
-| Limit                                   | Default    | Refused with                                                                                                     |
-| --------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------- |
-| Entries (`maxEntries`)                  | 100,000    | `LimitError` at the entry past it, as zip.js lists them                                                          |
-| Central directory (`maxDirectoryBytes`) | 16,777,216 | `LimitError` before it is read: zip.js reads it in one read, the only read that may ask for so much              |
-| `cmi5.xml` (`maxBytes`)                 | 16,777,216 | `LimitError` for a size above it in its header; zip.js refuses data that inflates past its header, a `DataError` |
-| Archive                                 | none       | A `Blob` is read for its central directory and `cmi5.xml` alone; the host bounds an upload                       |
+The values of the options are in [Options](#options).
+
+| Limit             | Value               | Refused with                                                                                                     |
+| ----------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Entries           | `maxEntries`        | `LimitError` at the entry past it, as zip.js lists them                                                          |
+| Central directory | `maxDirectoryBytes` | `LimitError` before it is read: zip.js reads it in one read, the only read that may ask for so much              |
+| `cmi5.xml`        | `maxBytes`          | `LimitError` for a size above it in its header; zip.js refuses data that inflates past its header, a `DataError` |
+| Archive           | none                | A `Blob` is read for its central directory and `cmi5.xml` alone; the host bounds an upload                       |
 
 The central directory of a package of real courses has a few kilobytes: about 1 KB in each of the six course examples of
 CATAPULT. 16 MiB, as the family's other readers of untrusted input take at most, holds the 100,000 entries with names of about
@@ -118,7 +120,7 @@ archive turns to ZIP64 where its size needs it.
 | A path                          | Names below the root of the package, without `.`, `..`, `\`, `:`, control characters or empty segments |
 | Two paths                       | Never one file to an extractor, with each other or with `cmi5.xml`, by the reader's test of two names  |
 | A relative URL of the structure | Names one of the files                                                                                 |
-| Entries                         | At most the 100,000 that the reader takes by default, checked before anything is written               |
+| Entries                         | At most the `maxEntries` that the reader takes by default, checked before anything is written          |
 | The result                      | Read again by `readCoursePackage` with its default limits before it is returned                        |
 
 ## Errors
@@ -144,6 +146,6 @@ archive turns to ZIP64 where its size needs it.
 
 ## Differences from the references
 
-The player of CATAPULT reads a package with `node-stream-zip`, which takes links, encrypted entries other than `cmi5.xml`, names
-that fold onto each other and data around the archive; the reader refuses them. CATAPULT finds the file of a relative URL by its
-text before `?`; the reader also drops the fragment and decodes the escapes, as a browser does.
+The player of CATAPULT reads a package with `node-stream-zip`, which takes more than this reader does: links, encrypted entries
+other than `cmi5.xml`, names that fold onto each other and data around the archive. How it finds the file of a relative URL
+also differs. [Spec gaps](spec-gaps.md#the-course-package) gives each case with its reading.

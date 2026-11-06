@@ -1,8 +1,8 @@
 # What course-launch supports
 
 The package follows cmi5 Quartz at commit `0ff5b30` of `AICC/CMI-5_Spec_Current`, its `CourseStructure.xsd`, and the list of
-requirements of CATAPULT at `806c0ba`. `scripts/cmi5-requirements.ts` maps each of the 305 requirements of that list to how the
-package meets it, and a test fails when one has no row.
+requirements of CATAPULT at `806c0ba`. `scripts/cmi5-requirements.ts` maps each requirement of that list to how the package
+meets it, and a test fails when one has no row ([evidence](evidence.md#completeness) counts them).
 
 ```mermaid
 flowchart LR

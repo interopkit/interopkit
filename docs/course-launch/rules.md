@@ -151,13 +151,6 @@ of xAPI is not judged by these. `scripts/cmi5-rules.ts` holds a session that bre
 
 ## Differences from the references
 
-CATAPULT's player judges what an assignable unit sends to it; these rules judge the same sentences, and differ where the text
-allows a stricter or a plainer reading:
-
-| Case                                       | CATAPULT                                 | Here                                                                         |
-| ------------------------------------------ | ---------------------------------------- | ---------------------------------------------------------------------------- |
-| The actor of a statement                   | Equal as JSON to the actor of the launch | The same identifier of xAPI; a name or an `objectType` of `Agent` may differ |
-| The activities of the context template     | Each at the same place in its list       | Each in its list, wherever                                                   |
-| `raw`, `min` and `max` of a score          | Any number                               | Integers, as 9.5.1 says                                                      |
-| A statement timestamped before initialized | Taken when it arrives after it           | Refused, since 9.3 orders by timestamp                                       |
-| `progress`                                 | Not judged                               | An integer from 0 to 100 in any statement, and a warning in completed        |
+CATAPULT's player judges what an assignable unit sends to it. These rules judge the same sentences and differ from it in the
+actor of a statement, the activities of the context template, `raw`, `min` and `max`, the order of the statements and
+`progress`: [spec gaps](spec-gaps.md#the-statements-of-a-session) gives each with its reading of the text.

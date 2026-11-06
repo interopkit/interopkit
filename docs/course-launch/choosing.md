@@ -30,5 +30,5 @@ flowchart TD
 
 ## Where the evidence is
 
-[The evidence](evidence.md) gives CATAPULT's two suites at `806c0ba`: 87 of 87 tests of the LMS suite and 54 of 54 sessions of
-the content suite, pinned on 2026-11-03; [supported](supported.md) maps the 305 requirements that CATAPULT lists.
+[The evidence](evidence.md) gives CATAPULT's LMS and content suites with their results; [supported](supported.md) maps the
+requirements that CATAPULT lists.
