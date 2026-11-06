@@ -132,14 +132,26 @@ of xAPI is not judged by these. `scripts/cmi5-rules.ts` holds a session that bre
 
 `validateSessionStatements` takes `maxFindings`, 1,000 by default: the list stops there, and its last finding says so.
 
+## Limits
+
+| Limit                                   | Value         | Refused with                                 |
+| --------------------------------------- | ------------- | -------------------------------------------- |
+| Characters of a launch URL              | 65,536        | `LimitError` (`maxLaunchUrlLength`)          |
+| Tokens of JSON of its actor             | 1,000         | `LimitError` (`maxActorTokens`)              |
+| Findings of `validateSessionStatements` | `maxFindings` | The list stops, and its last finding says so |
+
+Both limits of `readLaunchUrl` are fixed. The readers of the launch data and of the preferences take values that are in memory,
+and the host limits what it reads; the runtime limits the documents it fetches ([the assignable unit](au.md#limits)).
+
 ## Errors
 
-| Error                                                                                                  | What to do                                                           |
-| ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| `DataError` "The launch URL …", "The parameter … of the launch URL …", "The actor of the launch URL …" | Launch the unit from an LMS of cmi5, which gives the five parameters |
-| `DataError` "The launch data is invalid at …"                                                          | The LMS wrote launch data that cmi5 does not define                  |
-| `DataError` "The preferences document is invalid at …"                                                 | Write the languages as RFC 5646 tags separated by commas             |
-| `DataError` "The session is invalid at …", "The options object is invalid at …"                        | Pass the facts and options of the table above                        |
+| Error                                                                                                                                                                       | What to do                                                           |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `DataError` "The launch URL …", "The parameter … of the launch URL …", "The actor of the launch URL …"                                                                      | Launch the unit from an LMS of cmi5, which gives the five parameters |
+| `LimitError` "The launch URL has more than … characters", "The actor of the launch URL has more than … tokens of JSON"; its `limit` names the limit and `maximum` its value | Refuse the launch                                                    |
+| `DataError` "The launch data is invalid at …"                                                                                                                               | The LMS wrote launch data that cmi5 does not define                  |
+| `DataError` "The preferences document is invalid at …"                                                                                                                      | Write the languages as RFC 5646 tags separated by commas             |
+| `DataError` "The session is invalid at …", "The options object is invalid at …"                                                                                             | Pass the facts and options of the table above                        |
 
 ## Not included
 

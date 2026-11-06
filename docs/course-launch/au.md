@@ -105,13 +105,13 @@ initialize by default.
 
 ## Limits
 
-| Limit                                            | Value                                   | Refused with                                          |
-| ------------------------------------------------ | --------------------------------------- | ----------------------------------------------------- |
-| Launch URL; its actor                            | 65,536 characters; 1,000 tokens of JSON | `LimitError` (`maxLaunchUrlLength`, `maxActorTokens`) |
-| Answer of the fetch URL                          | 65,536 bytes, 1,000 tokens of JSON      | `ServiceError`                                        |
-| An answer of the LRS, the launch data among them | 1,048,576 bytes                         | `ServiceError`                                        |
-| Preferences document                             | 4,096 bytes                             | `ServiceError`                                        |
-| A request                                        | `timeoutMs`                             | `ServiceError` with status 0                          |
+| Limit                                            | Value                                            | Refused with                 |
+| ------------------------------------------------ | ------------------------------------------------ | ---------------------------- |
+| Launch URL; its actor                            | The limits of [`readLaunchUrl`](rules.md#limits) | `LimitError`                 |
+| Answer of the fetch URL                          | 65,536 bytes, 1,000 tokens of JSON               | `ServiceError`               |
+| An answer of the LRS, the launch data among them | 1,048,576 bytes                                  | `ServiceError`               |
+| Preferences document                             | 4,096 bytes                                      | `ServiceError`               |
+| A request                                        | `timeoutMs`                                      | `ServiceError` with status 0 |
 
 ## Errors
 
