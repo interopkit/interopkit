@@ -17,10 +17,14 @@ const SOURCES = [
 ];
 
 /**
- * The limit of a test in the projects whose tests do seconds of work on the CPU. It is there to catch a hang, and not to
- * judge speed: a host that runs many test runs at once takes tens of times as long as a quiet one.
+ * The limit of a test and of a hook, in milliseconds, which catches a hang. A test ends within half of it on a runner under
+ * coverage, which runs two to three times as long as a developer's machine, so it holds the tests of about 10 s that STANDARDS
+ * section 7 allows; a test that needs more is cut, never given a longer timeout of its own.
  */
 const HANG_LIMIT = 60_000;
+
+/** The limit of a benchmark file's test and hook, in milliseconds: a benchmark ends within half of it on a CI runner. */
+const BENCHMARK_LIMIT = 120_000;
 
 /** The engines that run, from `BROWSERS` as a comma-separated list: `check:rules` runs one, and CI runs all three. */
 const ENGINES = (process.env.BROWSERS ?? "chromium,firefox,webkit").split(",");
@@ -48,6 +52,7 @@ const nodeProject = (name: string, also: readonly string[] = []): TestProjectInl
     include: [`packages/${name}/test/**/*.test.ts`],
     exclude: ["**/*.browser.test.ts", "**/*.corpus.test.ts", "**/*.spec.test.ts", ...also],
     testTimeout: HANG_LIMIT,
+    hookTimeout: HANG_LIMIT,
   },
 });
 
@@ -109,6 +114,7 @@ export default defineConfig({
           name: "learning-analytics-corpus",
           include: ["packages/learning-analytics/test/**/*.corpus.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -118,6 +124,7 @@ export default defineConfig({
           name: "learning-analytics-spec",
           include: ["packages/learning-analytics/test/**/*.spec.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -127,6 +134,7 @@ export default defineConfig({
           name: "selective-disclosure-corpus",
           include: ["packages/selective-disclosure/test/**/*.corpus.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -136,6 +144,7 @@ export default defineConfig({
           name: "competency-frameworks-corpus",
           include: ["packages/competency-frameworks/test/**/*.corpus.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -145,6 +154,7 @@ export default defineConfig({
           name: "achievement-credentials-corpus",
           include: ["packages/achievement-credentials/test/**/*.corpus.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -154,6 +164,7 @@ export default defineConfig({
           name: "achievement-credentials-spec",
           include: ["packages/achievement-credentials/test/**/*.spec.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -163,6 +174,7 @@ export default defineConfig({
           name: "learning-records-corpus",
           include: ["packages/learning-records/test/**/*.corpus.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -173,6 +185,7 @@ export default defineConfig({
           name: "course-launch-corpus",
           include: ["packages/course-launch/test/**/*.corpus.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -182,6 +195,7 @@ export default defineConfig({
           name: "course-launch-spec",
           include: ["packages/course-launch/test/**/*.spec.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -204,8 +218,8 @@ export default defineConfig({
           name: "competency-frameworks-bench",
           include: [],
           server: { deps: { external: [/\/packages\/competency-frameworks\/dist\//] } },
-          testTimeout: 120_000,
-          hookTimeout: 120_000,
+          testTimeout: BENCHMARK_LIMIT,
+          hookTimeout: BENCHMARK_LIMIT,
           benchmark: {
             include: ["packages/competency-frameworks/test/**/*.bench.ts"],
             // Vitest counts the export getters that a benchmark reads, which slows the benchmarks of the package down.
@@ -232,8 +246,8 @@ export default defineConfig({
           name: "learning-analytics-bench",
           include: [],
           server: { deps: { external: [/\/packages\/learning-analytics\/dist\//] } },
-          testTimeout: 120_000,
-          hookTimeout: 120_000,
+          testTimeout: BENCHMARK_LIMIT,
+          hookTimeout: BENCHMARK_LIMIT,
           benchmark: {
             include: ["packages/learning-analytics/test/**/*.bench.ts"],
             suppressExportGetterWarnings: true,
@@ -258,8 +272,8 @@ export default defineConfig({
           name: "tool-integration-bench",
           include: [],
           server: { deps: { external: [/\/packages\/tool-integration\/dist\//] } },
-          testTimeout: 120_000,
-          hookTimeout: 120_000,
+          testTimeout: BENCHMARK_LIMIT,
+          hookTimeout: BENCHMARK_LIMIT,
           benchmark: {
             include: ["packages/tool-integration/test/**/*.bench.ts"],
             suppressExportGetterWarnings: true,
@@ -284,8 +298,8 @@ export default defineConfig({
           name: "learning-records-bench",
           include: [],
           server: { deps: { external: [/\/packages\/learning-records\/dist\//] } },
-          testTimeout: 120_000,
-          hookTimeout: 120_000,
+          testTimeout: BENCHMARK_LIMIT,
+          hookTimeout: BENCHMARK_LIMIT,
           benchmark: {
             include: ["packages/learning-records/test/**/*.bench.ts"],
             suppressExportGetterWarnings: true,
@@ -311,8 +325,8 @@ export default defineConfig({
           name: "achievement-credentials-bench",
           include: [],
           server: { deps: { external: [/\/packages\/achievement-credentials\/dist\//] } },
-          testTimeout: 120_000,
-          hookTimeout: 120_000,
+          testTimeout: BENCHMARK_LIMIT,
+          hookTimeout: BENCHMARK_LIMIT,
           benchmark: {
             include: ["packages/achievement-credentials/test/**/*.bench.ts"],
             suppressExportGetterWarnings: true,
@@ -335,8 +349,8 @@ export default defineConfig({
           name: "core-bench",
           include: [],
           server: { deps: { external: [/\/packages\/core\/dist\//] } },
-          testTimeout: 120_000,
-          hookTimeout: 120_000,
+          testTimeout: BENCHMARK_LIMIT,
+          hookTimeout: BENCHMARK_LIMIT,
           benchmark: {
             include: ["packages/core/test/**/*.bench.ts"],
             suppressExportGetterWarnings: true,
@@ -358,8 +372,8 @@ export default defineConfig({
           name: "selective-disclosure-bench",
           include: [],
           server: { deps: { external: [/\/packages\/selective-disclosure\/dist\//] } },
-          testTimeout: 120_000,
-          hookTimeout: 120_000,
+          testTimeout: BENCHMARK_LIMIT,
+          hookTimeout: BENCHMARK_LIMIT,
           benchmark: {
             include: ["packages/selective-disclosure/test/**/*.bench.ts"],
             suppressExportGetterWarnings: true,
@@ -385,8 +399,8 @@ export default defineConfig({
           name: "course-launch-bench",
           include: [],
           server: { deps: { external: [/\/packages\/course-launch\/dist\//] } },
-          testTimeout: 120_000,
-          hookTimeout: 120_000,
+          testTimeout: BENCHMARK_LIMIT,
+          hookTimeout: BENCHMARK_LIMIT,
           benchmark: {
             include: ["packages/course-launch/test/**/*.bench.ts"],
             suppressExportGetterWarnings: true,
@@ -400,6 +414,7 @@ export default defineConfig({
           name: "example-tool-integration",
           include: ["examples/tool-integration/test/**/*.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -409,6 +424,7 @@ export default defineConfig({
           name: "example-learning-analytics",
           include: ["examples/learning-analytics/test/**/*.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -420,6 +436,7 @@ export default defineConfig({
           include: ["examples/achievement-credentials/test/**/*.test.ts"],
           exclude: ["**/*.corpus.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -441,6 +458,7 @@ export default defineConfig({
           include: ["examples/competency-frameworks/test/**/*.test.ts"],
           exclude: ["**/*.corpus.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -450,6 +468,7 @@ export default defineConfig({
           name: "example-competency-frameworks-corpus",
           include: ["examples/competency-frameworks/test/conformance.corpus.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -470,6 +489,7 @@ export default defineConfig({
           include: ["examples/learning-records/test/**/*.test.ts"],
           exclude: ["**/*.corpus.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -492,6 +512,7 @@ export default defineConfig({
           include: ["examples/course-launch/test/**/*.test.ts"],
           exclude: ["**/*.corpus.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -516,6 +537,7 @@ export default defineConfig({
           name: "tool-integration-references",
           include: ["packages/tool-integration/test/references*.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -565,6 +587,7 @@ export default defineConfig({
           name: "competency-frameworks-spec",
           include: ["packages/competency-frameworks/test/**/*.spec.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -574,6 +597,7 @@ export default defineConfig({
           name: "selective-disclosure-spec",
           include: ["packages/selective-disclosure/test/**/*.spec.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -583,6 +607,7 @@ export default defineConfig({
           name: "learning-records-spec",
           include: ["packages/learning-records/test/**/*.spec.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -592,6 +617,7 @@ export default defineConfig({
           name: "tool-integration-spec",
           include: ["packages/tool-integration/test/**/*.spec.test.ts"],
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
       {
@@ -600,6 +626,7 @@ export default defineConfig({
           include: ["scripts/test/**/*.test.ts"],
           // The test of check-rules runs Vitest twice in a copy of the repository for each rule it checks.
           testTimeout: HANG_LIMIT,
+          hookTimeout: HANG_LIMIT,
         },
       },
     ],
