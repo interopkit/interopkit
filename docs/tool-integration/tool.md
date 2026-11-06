@@ -154,7 +154,7 @@ key set that `serveToolJwks` answers or from its own registration of the tool.
 | `get(state, options)`         | Returns the record, or `undefined`                                                                                                                     |
 | `delete(state, options)`      | Deletes the record and returns whether there was one. Of two concurrent calls, one returns `true`                                                      |
 
-A login is valid for 600 seconds (`expiresAt`), and the host may delete expired records. `delete` must be atomic: it is what
+A login expires at `expiresAt`, and the host may delete expired records. `delete` must be atomic: it is what
 makes a login complete once.
 
 ## Login and launch
@@ -278,14 +278,6 @@ A platform that moved from LTI 1.1 signs the `oauth_consumer_key` of the integra
 (`oauth_consumer_key_sign`, the Migration Guide). With `migrationSecret`, `handleLaunch` asks the host for that secret and sets
 `migration.verified`; map the 1.1 `user_id` and `context_id` to your records only when it is `true`. The secret serves one HMAC
 and is kept nowhere.
-
-## Deep Linking, proctoring and registration
-
-| Flow                 | After                                              | The tool calls                                                                                                                                                                                                                                                                                | Guide                           |
-| -------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| Deep Linking         | A Deep Linking request                             | `buildDeepLinkingResponse(launch, response, options)`: checks the items against what the request accepts, signs with the registration's `signer`, and returns the page that posts to `launch.settings.returnUrl`, also with no item (Deep Linking 2.0 section 2.3)                            | [Deep Linking](deep-linking.md) |
-| Proctoring           | A Start Proctoring message                         | `buildStartAssessmentPage(launch, input, options)`: the page that posts the signed Start Assessment message to `launch.startAssessmentUrl`; later, `control` of `createServiceClient`                                                                                                         | [Proctoring](proctoring.md)     |
-| Dynamic Registration | The initiation, behind the administrator's session | `readRegistrationInitiation(request)`, `discoverPlatform(initiation, { fetch })`, `registerTool(platform, tool, initiation, { fetch })`, `buildPlatformRegistration(platform, result, { signer, redirectUri })`, `buildRegistrationClosePage()`; the host may show its own pages between them | [Registration](registration.md) |
 
 ## The tool's key set
 
@@ -459,6 +451,13 @@ function of the role takes, such as a misspelled one, is a `DataError`.
 | A score                                                     | The host                      | The platform's score service                                                                        | No                                                 |
 | The answer of a service that failed                         | The platform                  | `ServiceError.body`, to the host: treat it as untrusted text                                        | No                                                 |
 
+## Not included
+
+| Not included                                        | Why                                                                                                     |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| LTI 1.0 to 1.2, Basic Outcomes                      | 1EdTech retired them (OAuth 1.0a, on 2022-06-30); a launch of that form is refused with `legacy-launch` |
+| Sessions, routes, a database, a UI for Deep Linking | The host's                                                                                              |
+
 ## Differences from the references
 
 The references were read where a specification leaves room; [spec-gaps](spec-gaps.md) lists where the text and an example
@@ -469,10 +468,3 @@ disagree.
 | PyLTI1p3                                | Does not read `expires_in` of a token response; names the audience with `auth_audience` | Reads `expires_in` when it is there; the registration has an optional `audience` |
 | PyLTI1p3                                | Appends `/scores` to the line item URL after handling a trailing slash                  | The same: one trailing slash is dropped first                                    |
 | A launch from Canvas, published in 2020 | Sends `null` for a title and a description, and a number in `custom`                    | Reads `null` as absent and a number or a boolean as its text                     |
-
-## Not included
-
-| Not included                                        | Why                                                                                                     |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| LTI 1.0 to 1.2, Basic Outcomes                      | 1EdTech retired them (OAuth 1.0a, on 2022-06-30); a launch of that form is refused with `legacy-launch` |
-| Sessions, routes, a database, a UI for Deep Linking | The host's                                                                                              |

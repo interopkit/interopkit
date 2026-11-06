@@ -184,13 +184,13 @@ A `MessageInput` is plain data that a store can keep and that holds no secret.
 | `extensions`                                                                                             | Optional vendor claims, each named by a URL                                                                                                                     |
 | `services`                                                                                               | Optional: the services the message offers the tool, which need its `context` and are offered only when the host gives their store ([grade services](grades.md)) |
 
-| `messageType`                | Adds                                                                                                                                                                                                                                                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `LtiResourceLinkRequest`     | `resourceLink`                                                                                                                                                                                                                                                                                                |
-| `LtiSubmissionReviewRequest` | `forUser`, and `resourceLink` when the line item has one; `services.grades.lineItemId` names the line item of the review, which needs `services.gradebook`                                                                                                                                                    |
-| `LtiDeepLinkingRequest`      | `settings`: the settings of DL 4.4.1, and the host's `data`, an object that the platform seals into the `data` claim with the client, deployment, user and settings for 86,400 seconds                                                                                                                        |
-| `LtiStartProctoring`         | `resourceLink`, `attemptNumber`, `startAssessmentUrl`, `proctoringSettings`; the platform seals the client, deployment, resource link, attempt and user into `session_data` for 3,600 seconds. `services.control`, which no other message may carry, offers the Assessment Control Service with its `actions` |
-| `LtiEndAssessment`           | `attemptNumber`, and `resourceLink`, `proctoringSettings`, `errorMessage`, `errorLog` when there are any                                                                                                                                                                                                      |
+| `messageType`                | Adds                                                                                                                                                                                                                                                                                                                         |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `LtiResourceLinkRequest`     | `resourceLink`                                                                                                                                                                                                                                                                                                               |
+| `LtiSubmissionReviewRequest` | `forUser`, and `resourceLink` when the line item has one; `services.grades.lineItemId` names the line item of the review, which needs `services.gradebook`                                                                                                                                                                   |
+| `LtiDeepLinkingRequest`      | `settings`: the settings of DL 4.4.1, and the host's `data`, an object that the platform seals into the `data` claim with the client, deployment, user and settings for `deepLinkingLifetimeSeconds`                                                                                                                         |
+| `LtiStartProctoring`         | `resourceLink`, `attemptNumber`, `startAssessmentUrl`, `proctoringSettings`; the platform seals the client, deployment, resource link, attempt and user into `session_data` for `sessionDataLifetimeSeconds`. `services.control`, which no other message may carry, offers the Assessment Control Service with its `actions` |
+| `LtiEndAssessment`           | `attemptNumber`, and `resourceLink`, `proctoringSettings`, `errorMessage`, `errorLog` when there are any                                                                                                                                                                                                                     |
 
 Before it keeps a message, the login checks its shape and the rules of the sender that a tool does not enforce: identifiers of
 at most 255 characters, `https` URLs, roles and context types of the vocabularies of Core Appendix A, and `roleScopeMentor` only
@@ -284,7 +284,7 @@ properties, the signed migration claim, the sealed data and the `tool_platform` 
 | Rotate          | Steps                                                                                                                                                                                                     |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | The signing key | Add the new public key; wait one `max-age`; switch the signer; keep the old public key until every `id_token` it signed has expired (300 seconds), plus one `max-age`; remove it (Security Framework 6.4) |
-| The hint key    | Make the new key `hintKey` and keep the old one in `previousHintKeys` until the longest of what it sealed has expired (the Deep Linking data, 86,400 seconds by default); remove it                       |
+| The hint key    | Make the new key `hintKey` and keep the old one in `previousHintKeys` until the longest of what it sealed has expired (the Deep Linking data, `deepLinkingLifetimeSeconds`); remove it                    |
 
 ## The token endpoint
 
@@ -428,14 +428,14 @@ signal.
 | The verified claims of a candidate                           | The proctoring tool, in a form the browser posts           | The host, from `readStartAssessment`                                                  | No                  |
 | The nonce of a message of a tool                             | The tool                                                   | The host's `once`                                                                     | No                  |
 
-## Differences from the references
-
-None of the libraries read has a platform role (see [architecture](architecture.md)), so the platform is checked against the
-specifications, their examples (the launch of Core Appendix E is issued claim for claim) and the tool role of this package;
-[spec-gaps](spec-gaps.md) lists where a specification disagrees with an example.
-
 ## Not included
 
 | Not included                                                                             | Why        |
 | ---------------------------------------------------------------------------------------- | ---------- |
 | Sessions, routes beyond the handler, a database, the page that frames the tool, a picker | The host's |
+
+## Differences from the references
+
+None of the libraries read has a platform role (see [architecture](architecture.md)), so the platform is checked against the
+specifications, their examples (the launch of Core Appendix E is issued claim for claim) and the tool role of this package;
+[spec-gaps](spec-gaps.md) lists where a specification disagrees with an example.

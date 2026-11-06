@@ -59,18 +59,6 @@ signature:
 | A Deep Linking request, answered with an item that the platform reads with its own data                          | `DeepLink.get_response_jwt`                                                                  |
 | A login whose `target_link_uri` is another URL of the tool than its launch URL                                   | Takes the target from the claim of the launch and sends its launch URL as the redirect URI   |
 
-## Differences from the references
-
-The references are stricter than the specifications in these places. The platform does what the specification says, and a test
-pins what the reference does with it.
-
-| Reference        | What it does                                                             | What the specification says                                                                                           | What a host does                                                                                                        |
-| ---------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `@lti-tool/core` | Refuses a page of members in which a member has no `status` or no `name` | NRPS 2.3: a membership without a status is `Active`; NRPS 2: a tool should never rely on additional member attributes | The platform writes what the store gives and applies no default, so the store gives `status` and `name` for such a tool |
-| `lti-core`       | Verifies RS256 alone                                                     | Security Framework 7.2: an implementation should support all six algorithms that it lists, and uses one of them       | A platform that launches this tool signs with RS256                                                                     |
-
-Proctoring Services and the AfA PNP Connector have no counterparty: their examples and round trips are the evidence.
-
 ## Moodle
 
 [`validation/moodle/`](../../validation/moodle/README.md) starts Moodle 5.3.0 and its database in containers, and runs both roles of
@@ -125,3 +113,15 @@ The scenario launches a resource link, a Deep Linking request, a Start Proctorin
 Assessment message; grades, reads the roster and the groups, pauses a proctored attempt, and registers a second tool through
 Dynamic Registration. Web Crypto signs and verifies ES256 and RS256 and seals with HMAC alike on the four runtimes, and the
 results equal those of Node.js.
+
+## Differences from the references
+
+The references are stricter than the specifications in these places. The platform does what the specification says, and a test
+pins what the reference does with it.
+
+| Reference        | What it does                                                             | What the specification says                                                                                           | What a host does                                                                                                        |
+| ---------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `@lti-tool/core` | Refuses a page of members in which a member has no `status` or no `name` | NRPS 2.3: a membership without a status is `Active`; NRPS 2: a tool should never rely on additional member attributes | The platform writes what the store gives and applies no default, so the store gives `status` and `name` for such a tool |
+| `lti-core`       | Verifies RS256 alone                                                     | Security Framework 7.2: an implementation should support all six algorithms that it lists, and uses one of them       | A platform that launches this tool signs with RS256                                                                     |
+
+Proctoring Services and the AfA PNP Connector have no counterparty: their examples and round trips are the evidence.

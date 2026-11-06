@@ -124,14 +124,12 @@ written and the route does not exist; no message but a Start Proctoring message 
 `control.all` to a tool whose registration grants it.
 
 The host's route at the `startAssessmentUrl` passes the request to `readStartAssessment(request, options)`, which takes the
-options of [`readDeepLinkingResponse`](deep-linking.md#the-platform-role) with the defaults below, and checks, in order:
+options of [`readDeepLinkingResponse`](deep-linking.md#the-platform-role) with the defaults below, and makes its checks up to the
+times of the token (the form, the tool, its algorithm, key and signature, the audience, `exp`, `iat` and `nonce`), with the same
+reasons. Then it checks, in order:
 
 | Check                                                                                                                                                                 | Refused with, a reason of `LtiError`                                                                      |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| A POST of a form with the parameter `JWT`, within `maxFormBytes`                                                                                                      | `request-invalid`; a `LimitError` (`maxFormBytes`) above the limit, which the host answers with 413       |
-| The tool that `iss` names, its algorithm, key and signature                                                                                                           | `token-malformed`, `client-unknown`, `algorithm-unsupported`, `key-unknown`, `signature-invalid`          |
-| `aud` as the platform's issuer; `azp`, when present, as the same                                                                                                      | `audience-mismatch`, `audience-untrusted`, `authorized-party-mismatch`                                    |
-| `exp`, `iat` and `nonce`; an expiry within an hour                                                                                                                    | `claim-missing`, `claim-invalid`, `token-expired`, `issued-in-future`, `assertion-lifetime`               |
 | The message type, the version, a deployment of the tool, the claims of 4.3.1                                                                                          | `message-type-unsupported`, `version-unsupported`, `deployment-unknown`, `claim-missing`, `claim-invalid` |
 | The `nonce`, once                                                                                                                                                     | `nonce-replayed`                                                                                          |
 | The `session_data`: sealed by this platform (or an earlier hint key), for this tool and deployment, for the resource link and the attempt of the message, not expired | `session-data-invalid`                                                                                    |
@@ -160,10 +158,10 @@ after the end. The host maps the actions to its delivery, such as the pause of a
 | Option                                  | Default   | Meaning                                                                   |
 | --------------------------------------- | --------- | ------------------------------------------------------------------------- |
 | `services.control`                      | none      | The `AssessmentControl`; without it the ACS is neither offered nor routed |
-| `sessionDataLifetimeSeconds`            | 3,600     | How long the session data of a Start Proctoring message is valid          |
-| `maxBodyBytes`                          | 65,536    | The most bytes of a control request                                       |
 | `maxFormBytes` of `readStartAssessment` | 65,536    | The most bytes of the form of a Start Assessment message                  |
 | `maxTokens` of `readStartAssessment`    | 1,000,000 | The most JSON tokens of the message                                       |
+
+`maxBodyBytes` and `sessionDataLifetimeSeconds` are options of `handlePlatformRequest` like the others, in [the platform role](platform.md#options).
 
 ## Limits
 

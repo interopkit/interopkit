@@ -143,7 +143,8 @@ and what `discovery` and `config.instance` say.
 | `discovery.messagesSupported`     | the five message types of `MessageInput`                                | The messages of the configuration, with their placements                          |
 | `discovery.claimsSupported`       | `iss`, `sub`, the names, `email`, `email_verified`, `picture`, `locale` | The claims of a user that the messages carry                                      |
 | `discovery.subjectTypesSupported` | `["public"]`                                                            | `public` or `pairwise`                                                            |
-| `maxBodyBytes`                    | 65,536                                                                  | The most bytes of a registration or an update                                     |
+
+`maxBodyBytes` and the other options of `handlePlatformRequest` are in [the platform role](platform.md#options).
 
 `buildRegistrationInitiation(initiationUrl, { config, clock, ttlSeconds })` returns the address that the administrator's page opens:
 the tool's initiation URL with `openid_configuration` and a `registration_token`, sealed with the hint key, that names one
