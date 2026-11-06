@@ -187,11 +187,6 @@ A request for groups with `user_id` reaches the store with `userId`, and the ans
 record route reads `fields` and drops every member of the store's record that it does not name (the connector: "MUST ONLY be
 returned"); the user and the activity of the path reach the store decoded, and the store decides whether the tool may read them.
 
-## Limits
-
-The limits of the client are the options of [the grade services](grades.md#reading-answers); those of the platform are in
-[the platform role](platform.md#options).
-
 ## Failure paths
 
 | Port or call                                    | Fails                                                                                                       | Hangs       | Called again    |
@@ -201,16 +196,6 @@ The limits of the client are the options of [the grade services](grades.md#readi
 
 A store that answers with something other than its contract (a member without roles, a page larger than its limit, a `Deleted`
 member outside the differences, a record that is not an object) is a `DataError` that the handler throws.
-
-## Errors
-
-| Error                                          | When                                                                                       | What to do                                         |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------- |
-| `LtiError` `scope-unavailable`, `scope-denied` | The platform did not offer, or did not grant, the scope of the call                        | Ask the platform's administrator for the scope     |
-| `LtiError` `service-origin-refused`            | The URL may not receive the token                                                          | Name the platform's origins in `serviceOrigins`    |
-| `ServiceError`                                 | The platform answered with an error, among them 404 for a link that is gone                | Read its `status`; start again from the first page |
-| `LimitError`, a `DataError`                    | An answer is above `maxTokens`                                                             | Raise `maxTokens` for a platform you trust         |
-| `DataError`                                    | An argument has the wrong type, an answer breaks its model, or a store breaks its contract | Fix the caller or the store                        |
 
 ## Data flows
 
@@ -225,6 +210,21 @@ These services carry personal data: names, email addresses, roles and the needs 
 
 Beyond a user's identifier and roles, a platform shares only what it agreed with the tool (NRPS 2.0): the store decides what a
 member carries.
+
+## Limits
+
+The limits of the client are the options of [the grade services](grades.md#reading-answers); those of the platform are in
+[the platform role](platform.md#options).
+
+## Errors
+
+| Error                                          | When                                                                                       | What to do                                         |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------- |
+| `LtiError` `scope-unavailable`, `scope-denied` | The platform did not offer, or did not grant, the scope of the call                        | Ask the platform's administrator for the scope     |
+| `LtiError` `service-origin-refused`            | The URL may not receive the token                                                          | Name the platform's origins in `serviceOrigins`    |
+| `ServiceError`                                 | The platform answered with an error, among them 404 for a link that is gone                | Read its `status`; start again from the first page |
+| `LimitError`, a `DataError`                    | An answer is above `maxTokens`                                                             | Raise `maxTokens` for a platform you trust         |
+| `DataError`                                    | An argument has the wrong type, an answer breaks its model, or a store breaks its contract | Fix the caller or the store                        |
 
 ## Not included
 

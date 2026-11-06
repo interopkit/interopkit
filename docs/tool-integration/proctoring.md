@@ -163,11 +163,6 @@ after the end. The host maps the actions to its delivery, such as the pause of a
 
 `maxBodyBytes` and `sessionDataLifetimeSeconds` are options of `handlePlatformRequest` like the others, in [the platform role](platform.md#options).
 
-## Limits
-
-Besides the options above, a Start Assessment message is signed for 300 seconds and accepted with a lifetime of at most 3,600;
-the client reads an answer of the ACS within the options of [the grade services](grades.md#the-tool-role).
-
 ## Failure paths
 
 | Port                   | Fails                                                                                              | Hangs                | Called again                                                          |
@@ -177,6 +172,19 @@ the client reads an answer of the ACS within the options of [the grade services]
 | The tool's key set     | `ServiceError`; a failed fetch is not kept. A set that is not a JWK Set is `key-unknown`           | The cache's deadline | Shared by concurrent callers                                          |
 | The service `Fetch`    | `ServiceError` with the status, the headers and the body; nothing retries                          | `timeoutMs`          | An action in doubt is sent again, and the platform answers the status |
 | The `signer`           | The call rejects with its error; nothing half-signed is posted                                     | `signal`             | Each message has a new nonce                                          |
+
+## Data flows
+
+| Data                                         | Comes from             | Goes to                                           | Kept by the package |
+| -------------------------------------------- | ---------------------- | ------------------------------------------------- | ------------------- |
+| The session data                             | Sealed by the platform | The tool, which returns it; signed, not encrypted | No                  |
+| The verified claims: names, email, a picture | The proctoring tool    | The platform's host, in a form the browser posts  | No                  |
+| A control request: the incident, the reason  | The proctoring tool    | The host's `AssessmentControl`                    | No                  |
+
+## Limits
+
+Besides the options above, a Start Assessment message is signed for 300 seconds and accepted with a lifetime of at most 3,600;
+the client reads an answer of the ACS within the options of [the grade services](grades.md#the-tool-role).
 
 ## Errors
 
@@ -188,14 +196,6 @@ the client reads an answer of the ACS within the options of [the grade services]
 | `LtiError` of `readStartAssessment`, 400 or 401          | The form or the token fails a check                                                                                                   | Answer with its `status`                                               |
 | `LimitError` from `readStartAssessment`                  | The form is over `maxFormBytes`                                                                                                       | Answer 413                                                             |
 | `LtiError` `nonce-replayed`, `session-data-invalid`, 403 | A replay, or session data that is not this platform's, this tool's, this attempt's or current                                         | Answer 403; the candidate starts again from the platform               |
-
-## Data flows
-
-| Data                                         | Comes from             | Goes to                                           | Kept by the package |
-| -------------------------------------------- | ---------------------- | ------------------------------------------------- | ------------------- |
-| The session data                             | Sealed by the platform | The tool, which returns it; signed, not encrypted | No                  |
-| The verified claims: names, email, a picture | The proctoring tool    | The platform's host, in a form the browser posts  | No                  |
-| A control request: the incident, the reason  | The proctoring tool    | The host's `AssessmentControl`                    | No                  |
 
 ## Not included
 

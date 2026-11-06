@@ -84,6 +84,20 @@ package sets, and these:
 
 `writeCoursePackage` takes `launchSchemes`, which it writes and reads its structure with, and `signal`.
 
+## Writing a package
+
+`writeCoursePackage` writes `cmi5.xml` with [`writeCourseStructure`](structure.md) and then the files in the order of the map,
+each compressed and dated midnight of 1980-01-01, the first date that ZIP holds, so the same course writes the same bytes; the
+archive turns to ZIP64 where its size needs it.
+
+| Rule                            | Value                                                                                                  |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| A path                          | Names below the root of the package, without `.`, `..`, `\`, `:`, control characters or empty segments |
+| Two paths                       | Never one file to an extractor, with each other or with `cmi5.xml`, by the reader's test of two names  |
+| A relative URL of the structure | Names one of the files                                                                                 |
+| Entries                         | At most the `maxEntries` that the reader takes by default, checked before anything is written          |
+| The result                      | Read again by `readCoursePackage` with its default limits before it is returned                        |
+
 ## Limits
 
 The values of the options are in [Options](#options).
@@ -108,20 +122,6 @@ The tests read the worst packages in a process whose heap is bounded, on Node.js
 | A `cmi5.xml` that inflates to 64 MiB and says it has 64 bytes | 11 MiB                                                                      |
 
 With the default heap of V8, the resident memory grows further before V8 collects, by about 100 MiB for each of the first two.
-
-## Writing a package
-
-`writeCoursePackage` writes `cmi5.xml` with [`writeCourseStructure`](structure.md) and then the files in the order of the map,
-each compressed and dated midnight of 1980-01-01, the first date that ZIP holds, so the same course writes the same bytes; the
-archive turns to ZIP64 where its size needs it.
-
-| Rule                            | Value                                                                                                  |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| A path                          | Names below the root of the package, without `.`, `..`, `\`, `:`, control characters or empty segments |
-| Two paths                       | Never one file to an extractor, with each other or with `cmi5.xml`, by the reader's test of two names  |
-| A relative URL of the structure | Names one of the files                                                                                 |
-| Entries                         | At most the `maxEntries` that the reader takes by default, checked before anything is written          |
-| The result                      | Read again by `readCoursePackage` with its default limits before it is returned                        |
 
 ## Errors
 

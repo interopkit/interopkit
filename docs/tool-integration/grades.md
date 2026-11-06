@@ -198,11 +198,6 @@ that gives more than `limit` items breaks its contract. A score reaches `keepSco
 `timestamp` to the millisecond; the store keeps it unless a strictly later one is kept, and an equal time replaces, so a retry
 completes.
 
-## Limits
-
-The limits of the client are its options above; those of the platform (`maxBodyBytes`, `pageSize`, `maxPageSize`, the lifetime of
-an access token) are in [the platform role](platform.md#options).
-
 ## Failure paths
 
 | Port or call                      | Fails                                                                                                                                                                | Hangs                                  | Called again                                                                                                                                                            |
@@ -216,6 +211,19 @@ an access token) are in [the platform role](platform.md#options).
 A store that answers with something other than its contract (a line item that is not one, a page larger than its limit, a
 `keepScore` that is not `"kept"`, `"older"` or `undefined`) is a `DataError` that the handler throws.
 
+## Data flows
+
+| Data              | Comes from                    | Goes to                                                                                                                                          | Kept by the package           |
+| ----------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------- |
+| An access token   | The platform's token endpoint | The services of the platform, in `Authorization`; the client's cache until near its expiry; the host's `TokenStore` when given, until its expiry | Only in memory, in the client |
+| A score, a result | The tool's host               | The platform's `GradebookStore`, through the score service                                                                                       | No                            |
+| Line items        | Either side                   | The other side                                                                                                                                   | No                            |
+
+## Limits
+
+The limits of the client are its options above; those of the platform (`maxBodyBytes`, `pageSize`, `maxPageSize`, the lifetime of
+an access token) are in [the platform role](platform.md#options).
+
 ## Errors
 
 | Error                                               | When                                                                  | What to do                                                                 |
@@ -227,14 +235,6 @@ A store that answers with something other than its contract (a line item that is
 | `ServiceError`                                      | The token endpoint or a service answered with an error, or not at all | Read its `status` and `Retry-After`; resend a score with a later timestamp |
 | `DataError`                                         | An argument has the wrong type, or a body breaks its model            | Fix the caller                                                             |
 | `LimitError`, a `DataError`                         | An answer is above `maxTokens`                                        | Raise `maxTokens` for a platform you trust                                 |
-
-## Data flows
-
-| Data              | Comes from                    | Goes to                                                                                                                                          | Kept by the package           |
-| ----------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------- |
-| An access token   | The platform's token endpoint | The services of the platform, in `Authorization`; the client's cache until near its expiry; the host's `TokenStore` when given, until its expiry | Only in memory, in the client |
-| A score, a result | The tool's host               | The platform's `GradebookStore`, through the score service                                                                                       | No                            |
-| Line items        | Either side                   | The other side                                                                                                                                   | No                            |
 
 ## Not included
 

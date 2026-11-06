@@ -186,6 +186,16 @@ for await (const document of client.documents({ fields: ["identifier", "lastChan
 stamps; // => ["2024-06-13T18:46:03+00:00"]
 ```
 
+## Limits
+
+Besides the options above:
+
+| Limit                         | Value                                                                                          | Refused with   |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- | -------------- |
+| Levels of JSON in an answer   | 128: an extension, which the readers bound to 64 levels, may sit below the levels of a package | `LimitError`   |
+| Logical operators in a filter | 1                                                                                              | `DataError`    |
+| Redirects                     | 0                                                                                              | `ServiceError` |
+
 ## Errors
 
 | Case                                                                                              | Result                                                                                                                                  | What to do                                                                                         |
@@ -213,16 +223,6 @@ not. `retryAfterSeconds` is `Retry-After` when it is a number of seconds. The fo
 Nothing is called back. `authorization` is called before every request, so it may return a fresh token; its wait ends when
 the caller's signal aborts, whether the function stops or not. Every call is a GET and safe to repeat; a collection that changes
 between pages may repeat or skip a document, and repeats are dropped.
-
-## Limits
-
-Besides the options above:
-
-| Limit                         | Value                                                                                          | Refused with   |
-| ----------------------------- | ---------------------------------------------------------------------------------------------- | -------------- |
-| Levels of JSON in an answer   | 128: an extension, which the readers bound to 64 levels, may sit below the levels of a package | `LimitError`   |
-| Logical operators in a filter | 1                                                                                              | `DataError`    |
-| Redirects                     | 0                                                                                              | `ServiceError` |
 
 ## Not included
 

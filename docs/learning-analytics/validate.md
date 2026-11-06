@@ -103,6 +103,15 @@ The General Profile allows any `Agent` as actor, any action and any entity as ob
 | `version`     | The version of Caliper that governs the value, `"1.2"` or `"1.1"`. A value of 1.1 is judged by its shape alone, since the tables of the profiles are those of 1.2 ([Caliper 1.1](./versions.md)) | `"1.2"` |
 | `maxFindings` | The most findings that the call lists. The check stops at the first finding beyond it and says so in the last                                                                                    | 1,000   |
 
+## Data that flows
+
+| Data                | From       | To                                                                                                                                                            |
+| ------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The event or entity | The caller | Read as a copy; nothing is kept                                                                                                                               |
+| A finding           | The check  | The caller. A `message` of the shape can quote the value that it found, so treat it as untrusted text; the other messages name terms of the vocabularies only |
+
+The library stores nothing and logs nothing.
+
 ## Limits
 
 Besides `maxFindings`, a value nests at most 64 levels, which no option changes: a deeper value is one `invalid-value` finding,
@@ -132,12 +141,3 @@ A value that is not an event is not an error of the call: it is a finding.
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | The JSON schemas of `caliper-spec` | They hold no rule of a profile. This package reads the tables, so an action, an actor or an object that the schemas allow is a finding when the profile does not |
 | The certification service          | Not run: certification needs membership. The tables of its guide are read, and the docs say "implements", never "certified"                                      |
-
-## Data that flows
-
-| Data                | From       | To                                                                                                                                                            |
-| ------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The event or entity | The caller | Read as a copy; nothing is kept                                                                                                                               |
-| A finding           | The check  | The caller. A `message` of the shape can quote the value that it found, so treat it as untrusted text; the other messages name terms of the vocabularies only |
-
-The library stores nothing and logs nothing.

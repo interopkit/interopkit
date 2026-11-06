@@ -181,10 +181,6 @@ When the administrator activates a tool, the host gives `buildToolRegistration(r
 tools: the login initiation URL, the redirect URIs, the key set URL and the custom properties of the configuration, with the scopes
 and the deployments that the administrator grants.
 
-## Limits
-
-The limits are the options above, and a registration token serves one registration.
-
 ## Failure paths
 
 | Port                | Fails                                                                                       | Hangs       | Called again                                                                                    |
@@ -192,6 +188,21 @@ The limits are the options above, and a registration token serves one registrati
 | `RegistrationStore` | 500 with nothing of the cause; a refusal is 400; an answer that is not one is a `DataError` | `signal`    | The token is spent, so a retry after a timeout is 401 and the tool restarts from the initiation |
 | `once`              | 500, nothing registered; a value that is not a boolean is a `DataError`                     | `signal`    | `false` is 401                                                                                  |
 | The tool's `fetch`  | `ServiceError`; nothing retries                                                             | `timeoutMs` | A registration is not idempotent: a retry is a new registration, unless the token was spent     |
+
+## Data flows
+
+| Data                                                 | Comes from    | Goes to                                          | Kept by the package |
+| ---------------------------------------------------- | ------------- | ------------------------------------------------ | ------------------- |
+| The registration token                               | The platform  | The tool, then back to the platform, once        | No                  |
+| The tool's configuration: names, contacts, addresses | The tool      | The host's `RegistrationStore`                   | No                  |
+| The registration access token of another platform    | That platform | The host's record, then that platform's endpoint | No                  |
+
+The configuration's `client_name`, `logo_uri` and the other texts and addresses are data: the platform's pages that show them to an
+administrator escape them, and fetch a logo, if at all, through the host's guarded `fetch`.
+
+## Limits
+
+The limits are the options above, and a registration token serves one registration.
 
 ## Errors
 
@@ -204,17 +215,6 @@ The limits are the options above, and a registration token serves one registrati
 | `DataError` from the tool's steps        | An argument has the wrong type, or the platform's configuration or answer breaks the specification | Fix the caller; the platform's answer is refused                                                         |
 | `ServiceError` from `registerTool`       | The platform refused the registration (400 with `invalid_client_metadata`) or did not answer       | Read `body`; the administrator starts again                                                              |
 | `DataError` from `handlePlatformRequest` | The platform cannot serve Dynamic Registration, or a port broke its contract                       | Fix the configuration or the port                                                                        |
-
-## Data flows
-
-| Data                                                 | Comes from    | Goes to                                          | Kept by the package |
-| ---------------------------------------------------- | ------------- | ------------------------------------------------ | ------------------- |
-| The registration token                               | The platform  | The tool, then back to the platform, once        | No                  |
-| The tool's configuration: names, contacts, addresses | The tool      | The host's `RegistrationStore`                   | No                  |
-| The registration access token of another platform    | That platform | The host's record, then that platform's endpoint | No                  |
-
-The configuration's `client_name`, `logo_uri` and the other texts and addresses are data: the platform's pages that show them to an
-administrator escape them, and fetch a logo, if at all, through the host's guarded `fetch`.
 
 ## Not included
 

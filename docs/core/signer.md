@@ -84,6 +84,13 @@ key.
 
 Neither function limits the size of a payload: the host bounds what it signs.
 
+## Data flows
+
+| Data            | Comes from | Goes to                                | Kept by the package |
+| --------------- | ---------- | -------------------------------------- | ------------------- |
+| The payload     | The caller | The signer, as bytes, and the JWS      | No                  |
+| The private key | The host   | Nothing: only `Signer.sign` touches it | No                  |
+
 ## Errors
 
 | Error                                    | When                                                                                                                                                   | What to do                                                |
@@ -94,13 +101,6 @@ Neither function limits the size of a payload: the host bounds what it signs.
 | `DataError`                              | `signCompactJws`: the signature is not a `Uint8Array`, or an ES256, ES384, ES512 or ES256K signature has the wrong length                              | Convert DER to the fixed-length R and S in the signer     |
 | The signer's error                       | The signer rejected; nothing is returned half-signed                                                                                                   | Fix the signer or its service                             |
 | The `reason` of the signal               | The caller aborted, before or during the call; a signer that has begun may finish, and its signature is dropped                                        | Nothing: the caller ended the wait                        |
-
-## Data flows
-
-| Data            | Comes from | Goes to                                | Kept by the package |
-| --------------- | ---------- | -------------------------------------- | ------------------- |
-| The payload     | The caller | The signer, as bytes, and the JWS      | No                  |
-| The private key | The host   | Nothing: only `Signer.sign` touches it | No                  |
 
 ## Not included
 

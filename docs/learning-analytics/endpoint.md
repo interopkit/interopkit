@@ -162,11 +162,6 @@ down), `caliperSupportedVersions` (the contexts of `versions`, in that order) an
 | `extensions`      | A JSON object for `caliperSupportedExtensions`                                                                                              | none             |
 | `signal`          | An `AbortSignal` that ends the wait for `authorize` and `accept`                                                                            | none             |
 
-## Limits
-
-Besides `maxPayloadBytes`, `maxTokens` and `maxFindings`, JSON nests at most 64 levels (413), and a `detail` is cut at 500
-characters. The limits bound parsing, not reading: the host caps the read of the request before it builds the `HttpRequest`.
-
 ## Failure paths
 
 | Port        | Fails                                 | Hangs                                                       | Called again                                                                               | May call back               |
@@ -176,14 +171,6 @@ characters. The limits bound parsing, not reading: the host caps the read of the
 
 A port that breaks its contract is a mistake of the host, not of the sender: `authorize` that answers something other than
 `undefined` or an object with a non-empty `principal` makes the handler throw a `DataError`.
-
-## Errors
-
-| Error               | When                                                                                                                    | What to do                               |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `DataError`         | The request or the options have the wrong type, or `authorize` breaks its contract                                      | Fix the host. The sender is not at fault |
-| `DataError`         | `readEnvelope` finds the value is no envelope, of a version that `versions` leaves out, or with an error under `strict` | Answer the sender, or fix what it sent   |
-| The `signal` reason | The signal aborted while a port waited                                                                                  | Nothing: nobody is left to answer        |
 
 ## Data that flows
 
@@ -195,6 +182,19 @@ A port that breaks its contract is a mistake of the host, not of the sender: `au
 
 Events may carry personal data. The endpoint never dereferences an IRI or a context, so what an event names costs the host no
 request.
+
+## Limits
+
+Besides `maxPayloadBytes`, `maxTokens` and `maxFindings`, JSON nests at most 64 levels (413), and a `detail` is cut at 500
+characters. The limits bound parsing, not reading: the host caps the read of the request before it builds the `HttpRequest`.
+
+## Errors
+
+| Error               | When                                                                                                                    | What to do                               |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `DataError`         | The request or the options have the wrong type, or `authorize` breaks its contract                                      | Fix the host. The sender is not at fault |
+| `DataError`         | `readEnvelope` finds the value is no envelope, of a version that `versions` leaves out, or with an error under `strict` | Answer the sender, or fix what it sent   |
+| The `signal` reason | The signal aborted while a port waited                                                                                  | Nothing: nobody is left to answer        |
 
 ## Not included
 

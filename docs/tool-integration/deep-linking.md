@@ -156,16 +156,6 @@ sanitized and a `link` shown are the host's. A file's `url` is short-lived: fetc
 | `maxContentItems` | 100            | The most items of a response                                                          |
 | `signal`          | none           | Ends this caller's wait                                                               |
 
-## Limits
-
-Besides the options above:
-
-| Limit                                       | Value         |
-| ------------------------------------------- | ------------- |
-| A response of a tool, as signed             | 300 seconds   |
-| The longest lifetime accepted of a response | 3,600 seconds |
-| Clock skew                                  | 60 seconds    |
-
 ## Failure paths
 
 | Port                      | Fails                                                                                    | Hangs                | Called again                                               |
@@ -175,6 +165,26 @@ Besides the options above:
 | The tool's key set        | `ServiceError`; a failed fetch is not kept. A set that is not a JWK Set is `key-unknown` | The cache's deadline | Shared by concurrent callers                               |
 | The tool's `registration` | `buildDeepLinkingResponse` rejects; `undefined` is `platform-unknown`                    | `signal`             | Pure; a host may cache                                     |
 | The `signer`              | The call rejects with its error; nothing half-signed is posted                           | `signal`             | Each response has a new nonce                              |
+
+## Data flows
+
+| Data                                              | Comes from                | Goes to                                                                       | Kept by the package |
+| ------------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------- | ------------------- |
+| The host's `data`, the settings, the user's `sub` | The host's `MessageInput` | The tool, sealed (signed, not encrypted) in the request; back in the response | No                  |
+| The items                                         | The tool's host           | The platform's host, in a form posted by the browser                          | No                  |
+| The nonce of a response                           | The tool                  | The host's `once`                                                             | No                  |
+
+The data is signed and not encrypted: the tool can read it, so it holds no secret and no personal data.
+
+## Limits
+
+Besides the options above:
+
+| Limit                                       | Value         |
+| ------------------------------------------- | ------------- |
+| A response of a tool, as signed             | 300 seconds   |
+| The longest lifetime accepted of a response | 3,600 seconds |
+| Clock skew                                  | 60 seconds    |
 
 ## Errors
 
@@ -189,16 +199,6 @@ Besides the options above:
 | `DataError` from `readDeepLinkingResponse`                    | The request or an option has the wrong type, or a port breaks its contract                               | Fix the host                                     |
 
 Each `LtiError` carries the HTTP `status` that the host answers with.
-
-## Data flows
-
-| Data                                              | Comes from                | Goes to                                                                       | Kept by the package |
-| ------------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------- | ------------------- |
-| The host's `data`, the settings, the user's `sub` | The host's `MessageInput` | The tool, sealed (signed, not encrypted) in the request; back in the response | No                  |
-| The items                                         | The tool's host           | The platform's host, in a form posted by the browser                          | No                  |
-| The nonce of a response                           | The tool                  | The host's `once`                                                             | No                  |
-
-The data is signed and not encrypted: the tool can read it, so it holds no secret and no personal data.
 
 ## Not included
 

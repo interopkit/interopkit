@@ -108,6 +108,11 @@ the envelope.
 
 `CALIPER_VERSIONS` lists the two, and `CALIPER_1_1_CONTEXT` is the context of 1.1 that an envelope names in `dataVersion`.
 
+## Limits
+
+The limits of [receiving events](./endpoint.md#options) hold for both versions, and a 1.1 reading takes the memory of a 1.2
+reading.
+
 ## Errors
 
 | Error                 | When                                                                                         | What to do                                       |
@@ -115,11 +120,6 @@ the envelope.
 | `DataError`           | `version` is not `"1.2"` or `"1.1"`, `versions` is empty, repeats a version or holds another | Fix the call                                     |
 | `DataError`           | A document does not read as the version: the `DataError` names the path                      | Ask the sender for 1.2, or change what it sends  |
 | 422 from the endpoint | The `dataVersion` names a version that `versions` leaves out, or none that the package knows | Add the version to `versions`, or ask the sender |
-
-## Limits
-
-The limits of [receiving events](./endpoint.md#options) hold for both versions, and a 1.1 reading takes the memory of a 1.2
-reading.
 
 ## Not included
 

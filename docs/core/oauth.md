@@ -214,6 +214,15 @@ stores it.
 | `refreshSkewSeconds` of the cache | 60                            | How long before its expiry a cached token counts as expired         |
 | Most bytes of an answer           | 65,536                        | The size limit of [service calls](service.md); not replaceable here |
 
+## Data flows
+
+| Data              | Comes from  | Goes to                                              | Kept by the package                       |
+| ----------------- | ----------- | ---------------------------------------------------- | ----------------------------------------- |
+| The client secret | The host    | The token endpoint, in a header or the body          | No                                        |
+| The private key   | The host    | Nothing: only the `Signer` touches it                | No                                        |
+| The tokens        | The server  | The host                                             | In a cache that the host makes, in memory |
+| The code verifier | The package | The host, in `PendingAuthorization`; then the server | No                                        |
+
 ## Errors
 
 | Error                              | When                                                                                                                                                                                                                                    | What to do                                                                                                           |
@@ -228,15 +237,6 @@ stores it.
 | The `reason` of the signal         | The caller aborted, before the call (no request) or during it                                                                                                                                                                           | Nothing: the caller ended the wait                                                                                   |
 
 Nothing is kept between calls and nothing is called back; revocation is safe to repeat.
-
-## Data flows
-
-| Data              | Comes from  | Goes to                                              | Kept by the package                       |
-| ----------------- | ----------- | ---------------------------------------------------- | ----------------------------------------- |
-| The client secret | The host    | The token endpoint, in a header or the body          | No                                        |
-| The private key   | The host    | Nothing: only the `Signer` touches it                | No                                        |
-| The tokens        | The server  | The host                                             | In a cache that the host makes, in memory |
-| The code verifier | The package | The host, in `PendingAuthorization`; then the server | No                                        |
 
 ## Not included
 

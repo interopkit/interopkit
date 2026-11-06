@@ -127,6 +127,12 @@ it.
 | `selectNewerCredential(a, b)`     | The argument itself, of two equal credentials, with the later `validFrom` (`issuanceDate` under the Data Model 1.1), compared as instants so that an offset does not matter; the first when the instants are the same. A store compares the credentials of both models alike                                                                                                                                                       |
 | `summarizeCredential(credential)` | What a wallet shows, of a credential under either data model: the `kind` (`badge`, `clr` or `endorsement`); the `name`, `description` and `image` of the credential or, for an achievement credential that has none, of its achievement; the `issuer` and its name; `validFrom`, `validUntil`, and the `awardedDate` when there is one, which a displayer shows as the date of issue, since a reissue moves `validFrom` (OB B.1.2) |
 
+## Limits
+
+| Limit                      | Value | Refused with |
+| -------------------------- | ----- | ------------ |
+| Levels that an input nests | 64    | `DataError`  |
+
 ## Errors
 
 | Case                                                                                                                           | Result                                                                                                                                                | What to do                                                                 |
@@ -138,12 +144,6 @@ it.
 | `isSameCredential` or `selectNewerCredential` is given a value that is not an object with an `issuer`                          | `DataError`: `The first credential is invalid: expected an object, found null.`                                                                       | Pass credentials as `readCredential` returns them                          |
 | `selectNewerCredential` is given credentials that are not the same, or one with no `validFrom` that is a date and time         | `DataError`: `The credentials are not the same credential: they differ in id or in the id of the issuer.`                                             | Compare only the same credential, with `isSameCredential` first            |
 | `summarizeCredential` is given a value that is not a credential, or a `VerifiableCredential` of no class of Open Badges or CLR | `DataError`, from the reader or: `The credential is a VerifiableCredential of no class that Open Badges or CLR defines, so there is nothing to show.` | Pass a credential of Open Badges or CLR                                    |
-
-## Limits
-
-| Limit                      | Value | Refused with |
-| -------------------------- | ----- | ------------ |
-| Levels that an input nests | 64    | `DataError`  |
 
 ## Not included
 

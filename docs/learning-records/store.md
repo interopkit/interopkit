@@ -351,29 +351,6 @@ The other scopes of 1.0.3 map to the actions as follows; OAuth itself, and `defi
 | `limits`                 | `LrsOptions` | the limits below                      | `LrsLimits`                                                                                                                                                                                                                                                  |
 | `signal`                 | `LrsOptions` | none                                  | Ends every wait of the handler and reaches every port                                                                                                                                                                                                        |
 
-## Limits
-
-| Limit              | Default    | Refused with | Applies to                                                                                                                                            |
-| ------------------ | ---------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `maxBodyBytes`     | 10,485,760 | 413          | The body of a request, before the store is called; and the bytes of the signatures of its Statements, counted once for each Statement that names them |
-| `maxBatch`         | 1,000      | 413          | The Statements of one request                                                                                                                         |
-| `maxParts`         | 100        | 413          | The parts of a multipart request, the Statements included                                                                                             |
-| `maxPartBytes`     | 10,485,760 | 413          | One part of a multipart request                                                                                                                       |
-| `maxDocumentBytes` | 1,048,576  | 413          | A State or profile document, and the result of a merge                                                                                                |
-| `maxDepth`         | 64         | 413          | The nesting of the JSON of a request, a document and an `agent` parameter included                                                                    |
-| `maxTokens`        | 1,000,000  | 413          | The tokens of the JSON of a request, a document and an `agent` parameter included; the payload of a signature over it is a malformed signature, 400   |
-| `maxFindings`      | 1,000      | 400          | The errors counted in the Statements of a request                                                                                                     |
-| 32 parameters      | fixed      | 400          | A form of the alternate request syntax, counted before it is read                                                                                     |
-| 3 tries            | fixed      | 409          | A write or removal of a document that loses a race against another writer                                                                             |
-| `pageSize`         | 100        | Capped       | The Statements of a page when the request has no `limit`                                                                                              |
-| `maxPageSize`      | 1,000      | Capped       | The largest page: a `limit` of 0 or above it is lowered to it                                                                                         |
-
-The tokens of a body are counted before it is parsed, since the memory of a parse grows with the tokens and not with the bytes:
-a text of 10 MiB can have ten million of them. The check of the Statements of a request stops at the first error beyond
-`maxFindings` and refuses the request with a message that says that there may be more, so a batch that is wrong in a million
-places costs the memory of the limit. Warnings do not count. The headers of a part of a multipart request are at most 8,192
-bytes, which is 413.
-
 ## The ports
 
 | Port             | Method              | Does                                                                                                                                     |
@@ -409,6 +386,29 @@ mirror against it. `target` finds any Statement by its id in lower case, a voide
 | `write` or `delete` does not do what the condition asked | Reads the document again, judges again, and tries again, up to three tries                                                                                                                                                                   |
 | A port does not answer                                   | Waits for the `signal` of the options and rejects with its reason                                                                                                                                                                            |
 | A port breaks its contract                               | Throws a `DataError`: more Statements than the limit, a voided Statement, a Statement of another authority for a credential that reads its own, a document without an ETag, an answer outside the set of outcomes, an Activity of another id |
+
+## Limits
+
+| Limit              | Default    | Refused with | Applies to                                                                                                                                            |
+| ------------------ | ---------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `maxBodyBytes`     | 10,485,760 | 413          | The body of a request, before the store is called; and the bytes of the signatures of its Statements, counted once for each Statement that names them |
+| `maxBatch`         | 1,000      | 413          | The Statements of one request                                                                                                                         |
+| `maxParts`         | 100        | 413          | The parts of a multipart request, the Statements included                                                                                             |
+| `maxPartBytes`     | 10,485,760 | 413          | One part of a multipart request                                                                                                                       |
+| `maxDocumentBytes` | 1,048,576  | 413          | A State or profile document, and the result of a merge                                                                                                |
+| `maxDepth`         | 64         | 413          | The nesting of the JSON of a request, a document and an `agent` parameter included                                                                    |
+| `maxTokens`        | 1,000,000  | 413          | The tokens of the JSON of a request, a document and an `agent` parameter included; the payload of a signature over it is a malformed signature, 400   |
+| `maxFindings`      | 1,000      | 400          | The errors counted in the Statements of a request                                                                                                     |
+| 32 parameters      | fixed      | 400          | A form of the alternate request syntax, counted before it is read                                                                                     |
+| 3 tries            | fixed      | 409          | A write or removal of a document that loses a race against another writer                                                                             |
+| `pageSize`         | 100        | Capped       | The Statements of a page when the request has no `limit`                                                                                              |
+| `maxPageSize`      | 1,000      | Capped       | The largest page: a `limit` of 0 or above it is lowered to it                                                                                         |
+
+The tokens of a body are counted before it is parsed, since the memory of a parse grows with the tokens and not with the bytes:
+a text of 10 MiB can have ten million of them. The check of the Statements of a request stops at the first error beyond
+`maxFindings` and refuses the request with a message that says that there may be more, so a batch that is wrong in a million
+places costs the memory of the limit. Warnings do not count. The headers of a part of a multipart request are at most 8,192
+bytes, which is 413.
 
 ## Errors
 

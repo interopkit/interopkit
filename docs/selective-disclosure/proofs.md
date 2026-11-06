@@ -137,6 +137,27 @@ labels that were signed, and the positions of the mandatory statements. It does 
 | `created` shows in every one           | Like every proof option it is signed, so a holder cannot hide when the credential was signed. Data Integrity leaves it optional: an issuer to whom that matters leaves it out, and puts the dates a credential needs in claims a holder can hide                                           |
 | A **base proof** stays with the holder | It holds the HMAC key and the signature of every statement, so whoever has it sees which statements exist. `verify` answers `false` for it, and `isBaseProof` lets the caller say why                                                                                                      |
 
+## Failure paths
+
+| Port or call    | Fails                                                                  | Hangs                                             | Called again                                                                                                   | May call back  |
+| --------------- | ---------------------------------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------------- |
+| `contexts`      | The caller gets its error as it was, from every function, `verify` too | `signal` ends the caller's wait with its `reason` | Once for each URL a call needs, in each call; it may be asked for the same URL by two steps of one call        | Nothing        |
+| `signer.sign`   | The caller gets its error as it was                                    | `signal` ends the wait                            | Once, with the hash of the proof options, the public key of the proof and the hash of the mandatory statements | Nothing        |
+| `signal` aborts | The call rejects with the `reason`; the work that runs on is dropped   | Not applicable                                    | Not applicable                                                                                                 | Not applicable |
+
+The work of the JSON-LD processors is CPU work and runs on after an abort; the result is dropped. Nothing is written
+anywhere, so there is nothing to undo.
+
+## Runtimes and dependencies
+
+The package uses Web Crypto and no other platform API. It makes the HMAC labels of blank nodes itself (section 3.4.4 of the
+Recommendation), because the function of the primitives encodes them with a library that needs the `Buffer` of Node.js
+wherever a bundler does not apply that library's `browser` field, as esbuild does not. `@digitalbazaar/di-sd-primitives` imports
+`node:crypto` for its hashes on Node.js and swaps in Web Crypto through its `browser` field, which a bundler for browsers or
+workers applies (esbuild with `--platform=browser`), so the bundle needs no Node.js compatibility. CI runs the tests on Node.js
+22 and 24. `jsonld` and `rdf-canonize` come with the primitives. Each runtime dependency, with its version, license and reason,
+is in [SECURITY.md](../../SECURITY.md).
+
 ## Limits
 
 A document over `maxBytes`, or over `maxTokens` counted before any processing, is a `LimitError`, and `false` from `verify`. The other limits are fixed:
@@ -193,17 +214,6 @@ reaches the caller as it was.
 | `The context loader must return the context of ...`             | The loader answered with something other than a JSON object                                                                                                   | Return the parsed context document                                                             |
 | `The option publicKeyJwk holds a private key (d)`               | `verify` got a private JWK                                                                                                                                    | Pass the public key                                                                            |
 
-## Failure paths
-
-| Port or call    | Fails                                                                  | Hangs                                             | Called again                                                                                                   | May call back  |
-| --------------- | ---------------------------------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------------- |
-| `contexts`      | The caller gets its error as it was, from every function, `verify` too | `signal` ends the caller's wait with its `reason` | Once for each URL a call needs, in each call; it may be asked for the same URL by two steps of one call        | Nothing        |
-| `signer.sign`   | The caller gets its error as it was                                    | `signal` ends the wait                            | Once, with the hash of the proof options, the public key of the proof and the hash of the mandatory statements | Nothing        |
-| `signal` aborts | The call rejects with the `reason`; the work that runs on is dropped   | Not applicable                                    | Not applicable                                                                                                 | Not applicable |
-
-The work of the JSON-LD processors is CPU work and runs on after an abort; the result is dropped. Nothing is written
-anywhere, so there is nothing to undo.
-
 ## Not included
 
 | Not included                                                         | Why                                                                                                                                                                                                                                         |
@@ -227,13 +237,3 @@ anywhere, so there is nothing to undo.
 | Digital Bazaar                                   | `verify` takes a JWK, not a verification method, and the three roles are plain functions over plain data, not suites of `jsonld-signatures`                                                                                                                            |
 | Digital Bazaar                                   | Mandatory positions must ascend and name a statement; signatures, keys and labels are checked for their lengths; pointers are checked; `maxBytes`, `maxTokens` and a fixed count of deep iterations bound a call, where Digital Bazaar's suite has no limit of its own |
 | Digital Bazaar and the primitives                | Statements are sorted by UTF-16 code unit, as `Array.prototype.sort` does, and not by code point: they differ only for a statement that compares a character outside the BMP with one in U+E000 to U+FFFF                                                              |
-
-## Runtimes and dependencies
-
-The package uses Web Crypto and no other platform API. It makes the HMAC labels of blank nodes itself (section 3.4.4 of the
-Recommendation), because the function of the primitives encodes them with a library that needs the `Buffer` of Node.js
-wherever a bundler does not apply that library's `browser` field, as esbuild does not. `@digitalbazaar/di-sd-primitives` imports
-`node:crypto` for its hashes on Node.js and swaps in Web Crypto through its `browser` field, which a bundler for browsers or
-workers applies (esbuild with `--platform=browser`), so the bundle needs no Node.js compatibility. CI runs the tests on Node.js
-22 and 24. `jsonld` and `rdf-canonize` come with the primitives. Each runtime dependency, with its version, license and reason,
-is in [SECURITY.md](../../SECURITY.md).

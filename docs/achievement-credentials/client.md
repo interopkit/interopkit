@@ -172,6 +172,22 @@ the number of credentials, not their size.
 A credential comes as the model has it (`readCredential` of the kind the API exchanges), and a credential signed as a VC-JWT as
 its compact JWS, in the order of the page: the credentials first, then the compact JWS. Nothing has verified them.
 
+## Limits
+
+| Limit                          | Value         | Refused with                            |
+| ------------------------------ | ------------- | --------------------------------------- |
+| Time of a request              | `timeoutMs`   | `ServiceError`, status 0                |
+| Bytes of an answer             | `maxBytes`    | `ServiceError`                          |
+| Bytes of a service description | 1,048,576     | `ServiceError`                          |
+| Credentials of a page          | `pageSize`    | `DataError` when a page holds more      |
+| Levels of JSON in an answer    | 64            | `LimitError`, before the text is parsed |
+| Tokens of JSON in an answer    | `maxTokens`   | `LimitError`, before the text is parsed |
+| Redirects                      | None followed | `ServiceError`                          |
+
+`JSON.parse` takes about forty times the text of small objects in memory, so the client counts the tokens of an answer before it
+parses it. Lower `maxBytes` for a server that you do not trust: the cost grows with it, and a page of credentials is a few
+kilobytes each.
+
 ## Errors
 
 | Case                                                                                             | Result                                                                                                                                                  | What to do                                                                                             |
@@ -220,22 +236,6 @@ replaces the whole profile.
 | `fetch`              | `ServiceError`; 404 of the profile gives `undefined` | `timeoutMs`, then status 0                                                                              | Safe. A collection that changes between pages may repeat or skip a credential; repeats are dropped | Nothing       |
 | `token`              | Its error reaches the caller; no request is made     | The caller's `signal` is passed on, and the wait ends when it aborts, whether the function stops or not | Called before every request, so it may return a fresh token                                        | Nothing       |
 | The answer too large | `ServiceError` naming the limit                      | As `fetch`                                                                                              | The same answer until `maxBytes` grows                                                             | Nothing       |
-
-## Limits
-
-| Limit                          | Value         | Refused with                            |
-| ------------------------------ | ------------- | --------------------------------------- |
-| Time of a request              | `timeoutMs`   | `ServiceError`, status 0                |
-| Bytes of an answer             | `maxBytes`    | `ServiceError`                          |
-| Bytes of a service description | 1,048,576     | `ServiceError`                          |
-| Credentials of a page          | `pageSize`    | `DataError` when a page holds more      |
-| Levels of JSON in an answer    | 64            | `LimitError`, before the text is parsed |
-| Tokens of JSON in an answer    | `maxTokens`   | `LimitError`, before the text is parsed |
-| Redirects                      | None followed | `ServiceError`                          |
-
-`JSON.parse` takes about forty times the text of small objects in memory, so the client counts the tokens of an answer before it
-parses it. Lower `maxBytes` for a server that you do not trust: the cost grows with it, and a page of credentials is a few
-kilobytes each.
 
 ## Not included
 

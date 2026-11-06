@@ -149,6 +149,13 @@ JSON.parse(String(busy.body)); // => { imsx_codeMajor: "failure", imsx_severity:
 | A refusal of the port  | `buildRefusalResponse(refusal, codes)` answers it with 401, 403 or 429, the code that the service gives the reason, `WWW-Authenticate` on a 401 (`Bearer` unless the refusal has a challenge) and `Retry-After` on a 429 when the refusal gives the seconds                                |
 | A decision of the port | Read with `readAccessDecision(value, label, { grant })`, so that another shape is a `DataError` that names its path; the grant reads what an allowed decision carries, such as an owner                                                                                                    |
 
+## Data flows
+
+| Data                     | Comes from  | Goes to                   | Kept by the package |
+| ------------------------ | ----------- | ------------------------- | ------------------- |
+| The request and its body | The host    | The handler that reads it | No                  |
+| The answer               | The handler | The host, which sends it  | No                  |
+
 ## Errors
 
 | Error        | When                                                                                                                                                               | What to do                                                       |
@@ -165,13 +172,6 @@ JSON.parse(String(busy.body)); // => { imsx_codeMajor: "failure", imsx_severity:
 
 The message of a `DataError` names the offending value, except for a text body, which it does not repeat, since a body may
 hold a token.
-
-## Data flows
-
-| Data                     | Comes from  | Goes to                   | Kept by the package |
-| ------------------------ | ----------- | ------------------------- | ------------------- |
-| The request and its body | The host    | The handler that reads it | No                  |
-| The answer               | The handler | The host, which sends it  | No                  |
 
 ## Not included
 

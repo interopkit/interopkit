@@ -172,6 +172,13 @@ const slow = new ServiceError("refused", 429, JSON.stringify(status), { headers:
 readStatusInfo(slow); // => { info: { imsx_codeMajor: "failure", imsx_severity: "error" }, retryAfterSeconds: 30 }
 ```
 
+## Data flows
+
+| Data                           | Comes from  | Goes to                                                             | Kept by the package |
+| ------------------------------ | ----------- | ------------------------------------------------------------------- | ------------------- |
+| The URL, the headers, the body | The caller  | The `fetch` that the caller passes                                  | No                  |
+| The answer of the service      | The `fetch` | The caller, as bytes or text, or as the text of `ServiceError.body` | No                  |
+
 ## Errors
 
 | Error                            | When                                                                                                                                                                                                                                                                                       | What to do                                                                                                                 |
@@ -185,13 +192,6 @@ readStatusInfo(slow); // => { info: { imsx_codeMajor: "failure", imsx_severity: 
 | The `reason` of the signal       | The caller aborted, before the call (no request is made) or during it                                                                                                                                                                                                                      | Nothing: the caller ended the wait. A request in flight may have reached the service                                       |
 | `DataError` of `readAnswerJson`  | The body is not UTF-8 (`<what> answered with a body that is not UTF-8 text.`), or not JSON, with the `SyntaxError` as `cause` (`<what> answered with a body that is not JSON.`); or an option is not a positive integer, named in the message                                              | Report the service's answer; fix the option                                                                                |
 | `LimitError` of `readAnswerJson` | `maxDepth`: `<what> answered with JSON that nests more than <maxDepth> levels.` `maxTokens`: `<what> answered with a body of more than <maxTokens> tokens of JSON, above the limit of the option maxTokens.`                                                                               | Raise the option if the service is trusted to send that much                                                               |
-
-## Data flows
-
-| Data                           | Comes from  | Goes to                                                             | Kept by the package |
-| ------------------------------ | ----------- | ------------------------------------------------------------------- | ------------------- |
-| The URL, the headers, the body | The caller  | The `fetch` that the caller passes                                  | No                  |
-| The answer of the service      | The `fetch` | The caller, as bytes or text, or as the text of `ServiceError.body` | No                  |
 
 ## Not included
 

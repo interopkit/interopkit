@@ -399,20 +399,6 @@ A port that answers with something other than its contract (a registration that 
 | `readDeepLinkingResponse`, after `once`        | Rejects with `signal.reason`; the response is spent, so the tool sends a new one |
 | `readStartAssessment`, before and after `once` | As `readDeepLinkingResponse`: a spent message is sent again with a new nonce     |
 
-## Errors
-
-| Error                                           | When                                                                                             | What to do                                                  |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
-| `LtiError` `tool-unknown`, `deployment-unknown` | `prepareToolLaunch`: the tool or its deployment is not the platform's                            | Register the tool, or launch one of its deployments         |
-| `LtiError` `origin-refused`                     | `prepareToolLaunch`: the target or the tool is on an origin of the platform                      | Move the tool, or the platform's handler, to another origin |
-| `LtiError` of `readDeepLinkingResponse`         | A response fails a check: see [Deep Linking](deep-linking.md)                                    | Answer with its `status`                                    |
-| `LtiError` of `readStartAssessment`             | A Start Assessment message fails a check: see [proctoring](proctoring.md)                        | Answer with its `status`                                    |
-| `DataError`                                     | An argument, a message, a request or an option has the wrong shape, or a port broke its contract | Fix the caller or the port                                  |
-| The error of a port                             | `check`, `registration` or `launches.put` rejected during the login                              | The host's                                                  |
-
-`handlePlatformRequest` answers every refusal of a tool as its specification says and throws only `DataError` and the reason of the
-signal.
-
 ## Data flows
 
 | Data                                                         | Comes from                                                 | Goes to                                                                               | Kept by the package |
@@ -427,6 +413,20 @@ signal.
 | The configuration of a tool that registers itself            | The tool                                                   | The host's `RegistrationStore`                                                        | No                  |
 | The verified claims of a candidate                           | The proctoring tool, in a form the browser posts           | The host, from `readStartAssessment`                                                  | No                  |
 | The nonce of a message of a tool                             | The tool                                                   | The host's `once`                                                                     | No                  |
+
+## Errors
+
+| Error                                           | When                                                                                             | What to do                                                  |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| `LtiError` `tool-unknown`, `deployment-unknown` | `prepareToolLaunch`: the tool or its deployment is not the platform's                            | Register the tool, or launch one of its deployments         |
+| `LtiError` `origin-refused`                     | `prepareToolLaunch`: the target or the tool is on an origin of the platform                      | Move the tool, or the platform's handler, to another origin |
+| `LtiError` of `readDeepLinkingResponse`         | A response fails a check: see [Deep Linking](deep-linking.md)                                    | Answer with its `status`                                    |
+| `LtiError` of `readStartAssessment`             | A Start Assessment message fails a check: see [proctoring](proctoring.md)                        | Answer with its `status`                                    |
+| `DataError`                                     | An argument, a message, a request or an option has the wrong shape, or a port broke its contract | Fix the caller or the port                                  |
+| The error of a port                             | `check`, `registration` or `launches.put` rejected during the login                              | The host's                                                  |
+
+`handlePlatformRequest` answers every refusal of a tool as its specification says and throws only `DataError` and the reason of the
+signal.
 
 ## Not included
 
