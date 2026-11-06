@@ -223,11 +223,11 @@ jobs:
       - run: pnpm check:release
       # Packs the packages, installs them into a scratch project, imports every subpath in Node.js and type-checks them.
       - run: pnpm check:tarballs
+      - run: pnpm check:licenses
+      - run: pnpm check:audit
       - run: pnpm docs:api
       # The built site: titles, descriptions, canonical URLs and the sitemap, the Markdown copies, llms.txt and the links to it.
       - run: pnpm check:site
-      - run: pnpm check:licenses
-      - run: pnpm check:audit
       # Version and Dependabot pull requests change package files without a changeset of their own.
       - if: >-
           github.event_name == 'pull_request' &&
