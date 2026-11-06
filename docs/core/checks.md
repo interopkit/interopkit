@@ -187,6 +187,12 @@ findExceededJsonLimit("[1, 2, 3]", 64, 6); // => "tokens"
 findExceededJsonLimit('["[[[["]', 2, 10); // => undefined
 ```
 
+## Limits
+
+The limits of the module are its constants: `DEFAULT_MAX_FINDINGS` ([Bounding the findings](#bounding-the-findings)),
+`MAX_JSON_DEPTH` and `MAX_JSON_TOKENS` ([JSON](#json)) and the 1,024 characters of a language tag ([Formats](#formats)). A check
+has no other limit: the host bounds the bytes of what it parses.
+
 ## Errors
 
 | Error       | When                              | What to do                                                                                                                                         |
