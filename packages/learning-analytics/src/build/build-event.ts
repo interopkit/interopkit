@@ -74,6 +74,24 @@ function contextOf(
  * absolute IRI, an action that the event does not allow, a profile that does not have the event, or an input that has an
  * `@context`, and counts the other errors.
  * @see {@link https://www.imsglobal.org/spec/caliper/v1p2 | Caliper Analytics 1.2}
+ *
+ * @example
+ * ```ts
+ * import { formatDateTime } from "@interopkit/core/checks";
+ * import { buildEvent, mintUrn } from "@interopkit/learning-analytics";
+ *
+ * const event = buildEvent({
+ *   id: mintUrn(["event", "session-1", 1]),
+ *   type: "AssessmentEvent",
+ *   profile: "AssessmentProfile",
+ *   actor: { id: "urn:uuid:3f0c8a8e-7b8e-4b6a-9c1d-2a4f6e8b0c1d", type: "Person" },
+ *   action: "Started",
+ *   object: { id: "https://exam.example/tests/42", type: "Assessment" },
+ *   eventTime: formatDateTime(1_700_000_000_000),
+ *   edApp: "https://exam.example",
+ * });
+ * event.id; // => "urn:uuid:017072c6-a4a4-5227-a083-38da34a6f364"
+ * ```
  */
 export function buildEvent(input: EventInput, options?: BuildOptions): CaliperEvent {
   const context = contextOf(input, LIBRARY_EVENT_TYPES, options, "The event");

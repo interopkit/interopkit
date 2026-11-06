@@ -32,6 +32,41 @@ import { notAllowed } from "./status.js";
  * neither `undefined` nor a principal.
  * @throws The reason of the `signal` of the options, when it aborts before the answer is ready.
  * @see {@link https://www.imsglobal.org/spec/caliper/v1p2#endpoint-0 | Caliper Analytics 1.2, Endpoint}
+ *
+ * @example
+ * ```ts
+ * import { handleCaliperRequest } from "@interopkit/learning-analytics/endpoint";
+ *
+ * let sender = "";
+ * const body = JSON.stringify({
+ *   sensor: "https://exam.example/sensors/1",
+ *   sendTime: "2023-11-14T22:13:20.000Z",
+ *   dataVersion: "http://purl.imsglobal.org/ctx/caliper/v1p2",
+ *   data: [
+ *     {
+ *       "@context": "http://purl.imsglobal.org/ctx/caliper/v1p2",
+ *       id: "https://exam.example/users/554433",
+ *       type: "Person",
+ *     },
+ *   ],
+ * });
+ * const response = await handleCaliperRequest(
+ *   {
+ *     method: "POST",
+ *     url: "https://lrs.example/caliper",
+ *     headers: { "content-type": "application/json", authorization: "Bearer secret-1" },
+ *     body: new TextEncoder().encode(body),
+ *   },
+ *   {
+ *     authorize: async (token) => (token === "secret-1" ? { principal: "exam-app" } : undefined),
+ *     accept: async (envelope) => {
+ *       sender = envelope.principal;
+ *     },
+ *   },
+ * );
+ * response.status; // => 200
+ * sender; // => "exam-app"
+ * ```
  */
 export async function handleCaliperRequest(
   request: HttpRequest,
