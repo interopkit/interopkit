@@ -76,12 +76,12 @@ person["@context"]; // => ["https://schema.org/docs/jsonldcontext.json","http://
 An event with a property that its class does not have is refused, so that nothing is dropped without notice. The entities of an
 event are checked by the classes of the [model](./model.md): an object of a class that the property does not take is refused.
 
-| Term kind    | Terms that this version builds                                                                               |
-| ------------ | ------------------------------------------------------------------------------------------------------------ |
-| Event types  | Any of `EVENT_TYPES`: the 21 events of Appendix A, the 3 of the Library Use Profile, and the generic `Event` |
-| Profiles     | Any of `PROFILES`: the 15 profiles of Caliper 1.2 and the Library Use Profile                                |
-| Actions      | The actions that the event type allows, of `ACTIONS`                                                         |
-| Entity types | Any of `ENTITY_TYPES`, as the [model](./model.md) describes them, each as an object or as its IRI            |
+| Term kind    | Terms that this version builds                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------------- |
+| Event types  | Any of `EVENT_TYPES`                                                                              |
+| Profiles     | Any of `PROFILES`                                                                                 |
+| Actions      | The actions that the event type allows, of `ACTIONS`                                              |
+| Entity types | Any of `ENTITY_TYPES`, as the [model](./model.md) describes them, each as an object or as its IRI |
 
 The profile is checked against the rows of its tables as well: `buildEvent` refuses a `GradeEvent` with the `AssessmentProfile`,
 because that profile has no such event, and a `SessionEvent` that logs in an application as the actor. It refuses what
@@ -114,13 +114,9 @@ dereference (Caliper 1.2 section 4.2 says an IRI should be one).
 
 ## Times
 
-`formatDateTime(at)` of `@interopkit/core/checks` writes epoch milliseconds as Caliper requires: `YYYY-MM-DDTHH:mm:ss.SSSZ`, in
-UTC, with milliseconds. The same function writes the Timestamps of xAPI, so one host writes the times of both standards alike.
-
-| Input                                                                   | Result                                                                  |
-| ----------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Whole milliseconds from `-62167219200000` to `253402300799999`          | The time, from `0000-01-01T00:00:00.000Z` to `9999-12-31T23:59:59.999Z` |
-| Anything else, a fraction of a millisecond, `NaN` and a string included | `DataError`                                                             |
+`formatDateTime(at)` of [`@interopkit/core/checks`](../core/checks.md#formats) writes epoch milliseconds as Caliper requires,
+`YYYY-MM-DDTHH:mm:ss.SSSZ` in UTC, and throws a `DataError` for anything else. It writes the Timestamps of xAPI too, so one host
+writes the times of both standards alike.
 
 ## Errors
 

@@ -207,9 +207,9 @@ request.
 
 ## Differences from the references
 
-| Reference                                                   | Difference                                                                                                                                                          |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Section 6.1: 200, 201 and 202 are all allowed for a success | 200 with an empty body, as the section advises                                                                                                                      |
-| Section 6.1: a body that is not `application/json`          | 415 for every other media type, `application/ld+json` too                                                                                                           |
-| The fixture `caliperEndpointConfigPayload.json`             | It writes `caliper_maximum_payload_size` and the other names in snake case; section 6.2 and Figure 12 write them in camel case, which this package serves and reads |
-| A kilobyte of `caliperMaximumPayloadSize`                   | Section 6.2 does not say how many bytes: 1,024 here, rounded down, so that a sensor never sends more than the endpoint takes                                        |
+The success status, the names of the configuration and the kilobyte of `caliperMaximumPayloadSize` are readings of the
+specification that [spec gaps](./spec-gaps.md#transport) records.
+
+| Reference                                          | Difference                                                |
+| -------------------------------------------------- | --------------------------------------------------------- |
+| Section 6.1: a body that is not `application/json` | 415 for every other media type, `application/ld+json` too |

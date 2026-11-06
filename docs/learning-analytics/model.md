@@ -172,11 +172,10 @@ The sentence names the path of the first fault, as code writes it (`members[0].i
 
 ## Not included
 
-| Not included                                                                 | Why                                                                                           |
-| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| The deprecated entities of Caliper 1.1: `Reading` and the four Epub entities | Caliper 1.1 deprecated them, and Caliper 1.2 does not list them. The schemas of 1.2 keep them |
-| A check that a nested `@context` leaves the terms of Caliper as they are     | It takes JSON-LD processing; the package expands no context                                   |
-| That an IRI can be dereferenced, or is unique                                | The reader never fetches an IRI. Section 2.2 says an IRI should be dereferenceable            |
+| Not included                                                             | Why                                                                                |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| A check that a nested `@context` leaves the terms of Caliper as they are | It takes JSON-LD processing; the package expands no context                        |
+| That an IRI can be dereferenced, or is unique                            | The reader never fetches an IRI. Section 2.2 says an IRI should be dereferenceable |
 
 ## Differences from the references
 

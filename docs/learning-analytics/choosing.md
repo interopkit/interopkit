@@ -1,8 +1,8 @@
 # Choosing learning-analytics
 
 When `@interopkit/learning-analytics` fits a project that sends or receives Caliper events, and when another library fits
-better. Each comparator was read at the version that [the comparators](comparators.md) give; that page maps all 36 of their
-capabilities, of which the package has 18 and leaves 18 out with a reason.
+better. Each comparator was read at the version that [the comparators](comparators.md) give; that page maps their capabilities and
+counts what the package has and leaves out.
 
 ```mermaid
 flowchart TD

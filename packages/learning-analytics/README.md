@@ -100,10 +100,10 @@ environment variable, writes no log, and calls the network only through the `fet
 
 | Part of Caliper 1.2 | Built                                                                                                                        |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Entities            | All 69 of Appendix B, the 2 of Appendix C and the 4 of the Library Use Profile, read and built                               |
-| Vocabularies        | The 82 actions, the 16 profile terms, 57 roles, statuses, LTI message types, identifier types, metrics                       |
-| Event types         | All 21 of Appendix A and the 3 of the Library Use Profile, with their actions, actors and objects                            |
-| Profiles            | Their terms, the 91 rows of section 3 and the conformance tables of the certification guide, as findings                     |
+| Entities            | Every entity of Appendices B and C and of the Library Use Profile, read and built                                            |
+| Vocabularies        | The actions, the profile terms, roles, statuses, LTI message types, identifier types and metrics                             |
+| Event types         | Every event of Appendix A and of the Library Use Profile, with its actions, actors and objects                               |
+| Profiles            | Their terms, the rows of section 3 and the conformance tables of the certification guide, as findings                        |
 | Sensor              | One envelope of events and entity describes, `POST` with an optional bearer token, a size limit, and the ping of section 6.2 |
 | Endpoint            | The role of section 6: 200, 400, 401, 415, 422 and the configuration, with `authorize` before any parsing                    |
 | Caliper 1.1         | Read, never written: the events and entities of 1.1 and its six extension profiles, and envelopes of 1.1 at the endpoint     |

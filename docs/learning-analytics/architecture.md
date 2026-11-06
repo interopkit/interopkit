@@ -54,49 +54,14 @@ flowchart BT
 The imports follow the diagram, and Biome keeps them: `send` and `endpoint` never import each other, and neither `build` nor
 `send` imports `v1p1`, since 1.1 is read and never written. `uuid` makes the name-based UUIDs and `valibot` reads the schemas.
 
-## Quick start
-
-```ts
-import { formatDateTime } from "@interopkit/core/checks";
-import { buildEvent, mintUrn, readEntity } from "@interopkit/learning-analytics";
-
-const event = buildEvent({
-  id: mintUrn(["event", "session-1", 1]),
-  type: "AssessmentEvent",
-  profile: "AssessmentProfile",
-  actor: { id: "urn:uuid:3f0c8a8e-7b8e-4b6a-9c1d-2a4f6e8b0c1d", type: "Person" },
-  action: "Started",
-  object: { id: "https://exam.example/tests/42", type: "Assessment" },
-  eventTime: formatDateTime(1_700_000_000_000),
-  edApp: "https://exam.example",
-});
-event.id; // => "urn:uuid:017072c6-a4a4-5227-a083-38da34a6f364"
-event.eventTime; // => "2023-11-14T22:13:20.000Z"
-
-const person = readEntity(
-  JSON.parse(
-    '{"@context":"http://purl.imsglobal.org/ctx/caliper/v1p2","id":"https://example.edu/users/554433","type":"Person"}',
-  ),
-);
-person.type; // => "Person"
-```
-
 ## Data that flows
 
-| Data                               | From                                  | To                                                           |
-| ---------------------------------- | ------------------------------------- | ------------------------------------------------------------ |
-| The actor, the IRIs, times, scores | The calls of the host to `buildEvent` | The body of the request, to the endpoint                     |
-| An entity describe                 | The caller of `readEntity`            | The model, as a copy; nothing is kept                        |
-| The bearer token                   | `options.token`                       | The `Authorization` header of the endpoint, and nowhere else |
-| The envelope that an endpoint gets | The request, through the host         | `accept`, as a copy; the library keeps nothing               |
-| The answer of the endpoint         | The endpoint                          | `ServiceError.body`, and nowhere else                        |
+Each guide that moves data has a Data that flows table: [sending](./send.md#data-that-flows), [judging](./validate.md#data-that-flows)
+and [receiving](./endpoint.md#data-that-flows). The library stores nothing, logs nothing and sends nothing but the request.
 
-The library stores nothing, logs nothing and sends nothing but the request. What to put in an actor and in the parts of an
-identifier is in [sending events](./send.md#data-that-flows).
+## Not included
 
-## Not in this package
-
-| What                                                 | Reason                                                                                                                                 |
+| Not included                                         | Why                                                                                                                                    |
 | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Which event of a product becomes which Caliper event | Only the adapter of a product knows its parties, steps and rules. The [example](../../examples/learning-analytics/README.md) shows one |
 | Retries, queues, batching, backoff                   | Whether and when to resend depends on the host's queue. Stable identifiers make a resend safe                                          |

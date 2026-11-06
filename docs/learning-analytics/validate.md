@@ -72,8 +72,8 @@ An entity that an event gives as its IRI names no class, so only its place is ju
 ## The tables
 
 The profiles of Caliper 1.2 print a table of rows, one for each event and action, with the classes of the actor, the object, the
-entity that the action generates and the target. The package holds the 91 rows of section 3 and the 3 of the Library Use Profile,
-the General Profile, and the 92 rows of the event conformance tables of the certification guide, each as the page prints it. Tests
+entity that the action generates and the target. The package holds the rows of section 3 and of the Library Use Profile,
+the General Profile, and the rows of the event conformance tables of the certification guide, each as the page prints it. Tests
 read the pinned pages and compare every row.
 
 ```mermaid
@@ -128,11 +128,10 @@ A value that is not an event is not an error of the call: it is a finding.
 
 ## Differences from the references
 
-| Reference                               | Difference                                                                                                                                                                                  |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The JSON schemas of `caliper-spec`      | They hold no rule of a profile. This package reads the tables, so an action, an actor or an object that the schemas allow is a finding when the profile does not                            |
-| The certification service               | Not run: certification needs membership. The tables of its guide are read, and the docs say "implements", never "certified"                                                                 |
-| Two envelope fixtures of `caliper-spec` | They mark a `NavigationEvent` with the General Profile, which section 3.15 allows the generic `Event` alone: the finding is an error, and a test pins both. See [spec-gaps](./spec-gaps.md) |
+| Reference                          | Difference                                                                                                                                                       |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The JSON schemas of `caliper-spec` | They hold no rule of a profile. This package reads the tables, so an action, an actor or an object that the schemas allow is a finding when the profile does not |
+| The certification service          | Not run: certification needs membership. The tables of its guide are read, and the docs say "implements", never "certified"                                      |
 
 ## Data that flows
 

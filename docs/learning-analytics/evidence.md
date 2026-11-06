@@ -31,15 +31,7 @@ flowchart LR
 | Runtimes   | Does the example give the same results everywhere?                                                             | `compat/`                                                                                                     | `pnpm compat:runtimes`          |
 | Browsers   | Does the path of a sensor run in the engines of the browsers, with the `uuid` built for them?                  | `sensor.browser.test.ts`                                                                                      | `pnpm test:browser`             |
 
-The model that the tables, the contexts and the fixtures are compared with has these counts, and a test fails when a table prints a
-class, an action or a role that it lacks:
-
-```ts
-import { ACTIONS, CALIPER_VERSIONS, ENTITY_TYPES, EVENT_TYPES, ROLES } from "@interopkit/learning-analytics";
-
-[EVENT_TYPES.length, ENTITY_TYPES.length, ACTIONS.length, ROLES.length]; // => [25, 76, 82, 57]
-CALIPER_VERSIONS; // => ["1.2", "1.1"]
-```
+The counts of the model that the tables, the contexts and the fixtures are compared with are in [supported](supported.md).
 
 `pnpm test:spec` needs `pnpm spec-examples`, `pnpm caliper-tables`, `pnpm schemas` and `pnpm corpus` first; `pnpm test:corpus` needs
 the last three; `pnpm bench` needs `pnpm corpus`.
