@@ -115,6 +115,50 @@ function authenticationRequest(
  * @throws `LtiError` (`platform-unknown`) when the tool has no registration for the platform, and (`deployment-unknown`) when
  * the initiation names a deployment that the registration does not list.
  * @throws The `reason` of `options.signal` when it aborts before the login is saved.
+ *
+ * @example
+ * ```ts
+ * import { createCryptoKeySigner } from "@interopkit/core";
+ * import { handleLogin } from "@interopkit/tool-integration/tool";
+ *
+ * const keys = await crypto.subtle.generateKey(
+ *   { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
+ *   false,
+ *   ["sign"],
+ * );
+ * const registration = {
+ *   issuer: "https://lms.example.edu",
+ *   clientId: "962fa4d8-bcbf-49a0-94b2-2de05ad274af",
+ *   deploymentIds: ["07940580-b309-415e-a37c-914d387c1150"],
+ *   authenticationUrl: "https://lms.example.edu/auth",
+ *   jwksUrl: "https://lms.example.edu/jwks",
+ *   accessTokenUrl: "https://lms.example.edu/token",
+ *   redirectUri: "https://tool.example.com/lti/launch",
+ *   signer: createCryptoKeySigner(keys.privateKey, { algorithm: "RS256", keyId: "tool-1" }),
+ * };
+ * const logins = new Map();
+ * const clock = { now: () => Date.now() };
+ * const login = new URL("https://tool.example.com/lti/login");
+ * login.search = new URLSearchParams({
+ *   iss: registration.issuer,
+ *   login_hint: "user-1",
+ *   target_link_uri: "https://tool.example.com/lti/launch",
+ * }).toString();
+ * const response = await handleLogin(
+ *   { method: "GET", url: login.href, headers: {}, body: new Uint8Array() },
+ *   {
+ *     registration: async () => registration,
+ *     clock,
+ *     store: {
+ *       put: async (state, record) => void logins.set(state, record),
+ *       get: async (state) => logins.get(state),
+ *       delete: async (state) => logins.delete(state),
+ *     },
+ *   },
+ * );
+ * response.status; // => 302
+ * logins.size; // => 1
+ * ```
  */
 export async function handleLogin(request: HttpRequest, options: LtiLoginOptions): Promise<HttpResponse> {
   checkHttpRequest(request);

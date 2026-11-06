@@ -173,6 +173,14 @@ const CONTEXT_TYPE_BY_NAME: ReadonlyMap<string, string> = new Map(
  * @see {@link https://standards.1edtech.org/lti/specifications/core/lti-spec#role-vocabularies | LTI 1.3 Core, Appendix A}
  * @param role - A role of a message.
  * @returns The URI of the role, or the role itself when it is not a simple name of a context role.
+ *
+ * @example
+ * ```ts
+ * import { canonicalizeRole } from "@interopkit/tool-integration";
+ *
+ * canonicalizeRole("Instructor"); // => "http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor"
+ * canonicalizeRole("http://purl.imsglobal.org/vocab/lis/v2/institution/person#Student"); // => "http://purl.imsglobal.org/vocab/lis/v2/institution/person#Student"
+ * ```
  */
 export function canonicalizeRole(role: string): string {
   return CONTEXT_ROLE_BY_NAME.get(role) ?? role;

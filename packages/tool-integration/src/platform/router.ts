@@ -55,6 +55,52 @@ const KEY_SET_MAX_AGE_SECONDS = 3600;
  * @throws `DataError` when the request or the options have the wrong type, or a port answers with something other than its
  * contract: a registration that is not one, a message of another launch, a `checkLaunch` or `once` that does not give a boolean.
  * @throws The reason of `options.signal` when it aborts before the answer is ready.
+ *
+ * @example
+ * ```ts
+ * import { createCryptoKeySigner } from "@interopkit/core";
+ * import { createJwksCache } from "@interopkit/tool-integration";
+ * import { handlePlatformRequest } from "@interopkit/tool-integration/platform";
+ *
+ * const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+ * const publicKey = { ...(await crypto.subtle.exportKey("jwk", pair.publicKey)), kid: "platform-1", alg: "ES256" };
+ * const config = {
+ *   issuer: "https://platform.example",
+ *   origin: "https://lti.platform.example",
+ *   frameOrigin: "https://app.platform.example",
+ *   reservedOrigins: ["https://assets.platform.example"],
+ *   keys: {
+ *     signer: createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId: "platform-1" }),
+ *     publicKeys: [publicKey],
+ *   },
+ *   hintKey: await crypto.subtle.generateKey({ name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]),
+ * };
+ * const tool = {
+ *   clientId: "tool-1",
+ *   deploymentIds: ["deployment-1"],
+ *   loginUrl: "https://tool.example/login",
+ *   redirectUris: ["https://tool.example/launch"],
+ *   jwksUrl: "https://tool.example/jwks",
+ *   scopes: [],
+ * };
+ * const kept = new Map();
+ * const clock = { now: () => 1_700_000_000_000 };
+ * const jwks = await handlePlatformRequest(
+ *   { method: "GET", url: "https://lti.platform.example/jwks", headers: {}, body: new Uint8Array() },
+ *   {
+ *     config,
+ *     clock,
+ *     registration: async () => tool,
+ *     launches: {
+ *       put: async (id, message) => void kept.set(id, message),
+ *       take: async (id) => kept.get(id),
+ *     },
+ *     once: async () => true,
+ *     jwks: createJwksCache({ fetch, clock }),
+ *   },
+ * );
+ * JSON.parse(String(jwks.body)).keys[0].kid; // => "platform-1"
+ * ```
  */
 export async function handlePlatformRequest(
   request: HttpRequest,
