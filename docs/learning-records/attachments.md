@@ -113,8 +113,5 @@ parser.
 
 ## Differences from the references
 
-| Reference    | Difference                                                                                                                                                              |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The standard | The first part "shall be" `application/json` when it names a type; a part with none is read as JSON anyway. A part with no `Content-Type` is `application/octet-stream` |
-| The standard | "Should only include one copy" of the data of an Attachment that several Statements use: the writer refuses two parts with one hash, and the reader keeps the first     |
-| The standard | An LRS "shall reject" a Statement whose Attachment has neither a `fileUrl` nor a matching part; the writer refuses the same, and also a part that no Attachment names   |
+The first part without a type, the data of an Attachment that several Statements use, a part that no Attachment names and a part
+without a type or an encoding are readings of the standard that [spec gaps](spec-gaps.md) records, each pinned by a test.

@@ -168,15 +168,8 @@ deeper value is `invalid-value`.
 first. A batch has no limit here: the LRS sets the number of Statements.
 
 `maxTokens` bounds the memory of `parseStatementJson`, because a parse grows with the tokens and not with the bytes: the worst
-text, `[0,0,0,...]`, has one token for each byte. Peak memory of the process, measured on Node.js 26, whose empty process is 60 MB:
-
-| Input                                                     | Result                   | Peak memory |
-| --------------------------------------------------------- | ------------------------ | ----------- |
-| 10 MiB of `[0,0,0,...]`, 5,242,880 tokens                 | Refused before the parse | 80 MB       |
-| 1,000,000 tokens of `{"k0":0,"k1":0,...}`, the most names | Read                     | 134 MB      |
-| 1,000,000 tokens of `[{},{},...]`                         | Read                     | 125 MB      |
-| A string of 10 MiB                                        | Read                     | 101 MB      |
-| 300,000 empty objects through `validateStatements`        | 1,001 findings           | 131 MB      |
+text, `[0,0,0,...]`, has one token for each byte. The heap of each reader at its worst input is in
+[performance](performance.md#memory).
 
 The findings add no more than `maxFindings` of about a kilobyte, whatever the size of the value, and the check stops at the first
 finding beyond it, in the rules between properties as in the schema. A text that a limit refuses throws `LimitError` of

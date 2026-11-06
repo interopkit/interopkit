@@ -162,7 +162,5 @@ does not break it.
 
 ## Differences from the references
 
-[The gaps page](spec-gaps.md) lists every place where the texts of 1.0.3 and 2.0 disagree or are silent, and each difference from
-SQL LRS and from the validator of Learning Locker, with the text of the standard. The largest is that SQL LRS 0.9.11 answers a
-Statement of 2.0 on its 1.0.3 route as it holds it, with `contextAgents` and `version` 2.0.0, and compares a resend with the whole
-Statement; the LRS of this package answers the form of 1.0.3, so that what the route answers is a Statement of 1.0.3.
+[The gaps page](spec-gaps.md#xapi-103) lists every place where the texts of 1.0.3 and 2.0 disagree or are silent, and each
+difference from SQL LRS and from the validator of Learning Locker, with the text of the standard.

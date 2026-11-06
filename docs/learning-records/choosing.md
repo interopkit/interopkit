@@ -1,8 +1,8 @@
 # Choosing learning-records
 
 When `@interopkit/learning-records` fits a project that speaks xAPI, and when another library or LRS fits better. Each comparator
-was read on 2026-11-02 at the version that [the comparators](comparators.md) give; that page maps all 71 of their capabilities,
-of which the package has 46, has 3 in part and leaves 22 out with a reason.
+was read on 2026-11-02 at the version that [the comparators](comparators.md) give; that page maps their capabilities and counts
+what the package has, has in part and leaves out.
 
 ```mermaid
 flowchart TD
@@ -38,5 +38,4 @@ flowchart TD
 
 ## Where the evidence is
 
-[The evidence](evidence.md) gives the ADL suites, 1,442 tests of 2.0 and 1,365 of 1.0.3 at their pinned commits, and SQL LRS as
-a counterparty; [performance](performance.md) times the readers against the validator of Learning Locker.
+[The evidence](evidence.md) gives the ADL suites of both versions at their pinned commits, and SQL LRS as a counterparty; [performance](performance.md) times the readers against the validator of Learning Locker.

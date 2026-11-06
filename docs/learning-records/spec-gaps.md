@@ -69,8 +69,8 @@ flowchart LR
 
 ## Where SQL LRS answers otherwise
 
-`pnpm sql-lrs` posts the fixture of each rule to SQL LRS 0.9.11, which passes the ADL suite, and the verdicts agree on 147 of 153
-([evidence](evidence.md)). The six places where they do not are decided by the text of the standard.
+`pnpm sql-lrs` posts the fixture of each rule to SQL LRS 0.9.11, which passes the ADL suite ([evidence](evidence.md#sql-lrs)).
+The places where the verdicts differ are decided by the text of the standard.
 
 | Rule                                                                  | The standard                                                                                    | The reader of an LRS              | SQL LRS      |
 | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------- | ------------ |
@@ -109,9 +109,9 @@ Communication parts of 1.0.3.
 
 ## Where the oracles of 1.0.3 answer otherwise
 
-`pnpm test` runs the 179 fixtures of `scripts/xapi-v1-rules.ts` through the validator of Learning Locker 4.0.0, and the verdicts
-agree on 160. `pnpm sql-lrs` posts them to the route of 1.0.3 of SQL LRS 0.9.11, and the verdicts agree on 163. Each place where
-they do not is pinned in a test and decided by the text of 1.0.3.
+`pnpm test` runs the fixtures of `scripts/xapi-v1-rules.ts` through the validator of Learning Locker 4.0.0, and `pnpm sql-lrs` posts
+them to the route of 1.0.3 of SQL LRS 0.9.11 ([evidence](evidence.md#the-validator-of-learning-locker)). Each place where the
+verdicts differ is pinned in a test and decided by the text of 1.0.3.
 
 | Rule                                                            | 1.0.3                                                                | The reader of an LRS     | Learning Locker | SQL LRS      |
 | --------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------ | --------------- | ------------ |
@@ -166,8 +166,8 @@ choices to a reader. The rules table `scripts/xapi-profile-rules.ts` and the tes
 | A Statement without a timestamp                            | Statements are ordered by timestamp                                                                                            | It keeps the time of the Statement before it in the list, so it stays where it stands                                                                                                                                                                                                                                                                                |
 | A subregistration (9.0)                                    | "A variant 2 UUID as specified in RFC 4122", for a profile "present in the category context activities"                        | The variant digit is 8, 9, a or b; the `profile` must be in category; each fault is a finding, and the Statement still joins the series of its registration                                                                                                                                                                                                          |
 
-ADL's repository of authored profiles holds 82 profiles at `4e8b1df`; 34 are sound, and the others break these rules, each pinned in
-`profiles.corpus.test.ts`:
+Of the profiles in ADL's repository of authored profiles ([evidence](evidence.md#xapi-profiles)), those that are not sound break
+these rules, each pinned in `profiles.corpus.test.ts`:
 
 | Rule                                                         | Profiles | What they have                                                                                                                                         |
 | ------------------------------------------------------------ | -------: | ------------------------------------------------------------------------------------------------------------------------------------------------------ |

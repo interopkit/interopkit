@@ -171,11 +171,11 @@ Besides `timeoutMs`, `maxBytes` and `maxTokens`:
 
 ## Differences from the references
 
-| Reference    | Difference                                                                                                                                                                                                                                                |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The standard | The LRS "shall" answer a PUT with no precondition over an existing document with 409; the client requires a precondition on 2.0.0, so a write never replaces a document that the caller has not seen                                                      |
-| The standard | A POST of a Statement that exists "shall" give 409 or 204 and not change it; the client takes 200 and 204 as success, and 409 as a `ServiceError`                                                                                                         |
-| The standard | A POST answers 200 with the ids, and an LRS that holds the Statements already answers with none (SQL LRS) or with the new ones: where every Statement has an id the client resolves with the ids of the batch and refuses an answer that names another id |
-| The standard | `more` is "an IRL"; the client follows an address that is relative or on the origin of the LRS, and refuses another                                                                                                                                       |
-| The standard | `Last-Modified` is an HTTP date; `LrsDocument.updated` is the same time as ISO 8601                                                                                                                                                                       |
-| `@xapi/xapi` | It reads no answer into a model, validates no Statement and takes no `AbortSignal`; this client checks every Statement, reads every answer into the model, takes the `signal` of `CallOptions`, and follows no redirect                                   |
+The 409 or 204 of a POST of a Statement that exists, the `more` that is an IRL and the `Last-Modified` that is an HTTP date are
+readings of the standard that [spec gaps](spec-gaps.md) records; what SQL LRS answers to a POST that it holds is in
+[evidence](evidence.md#sql-lrs).
+
+| Reference    | Difference                                                                                                                                                                                                              |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The standard | The LRS "shall" answer a PUT with no precondition over an existing document with 409; the client requires a precondition on 2.0.0, so a write never replaces a document that the caller has not seen                    |
+| `@xapi/xapi` | It reads no answer into a model, validates no Statement and takes no `AbortSignal`; this client checks every Statement, reads every answer into the model, takes the `signal` of `CallOptions`, and follows no redirect |

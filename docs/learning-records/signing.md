@@ -91,9 +91,8 @@ standard asks for the compact one.
 | ----------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | The payload | 10,485,760 bytes, 64 levels and 1,000,000 tokens, those of `parseStatementJson` | A payload over them is `malformed`. The handler of an LRS reads it within its own `maxBodyBytes`, `maxDepth` and `maxTokens` instead |
 
-The worst payload within them, a JWS of 10 MiB near a million tokens of distinct names, ends within a heap of
-176 MiB (88 MiB is the least, measured by `peak-memory.test.ts`). A host that verifies the signatures of many senders checks the size of the
-bytes first, or verifies them through the handler with lower limits.
+The heap of the worst payload within them is in [performance](performance.md#memory). A host that verifies the signatures of many
+senders checks the size of the bytes first, or verifies them through the handler with lower limits.
 
 ## Errors
 
@@ -119,8 +118,8 @@ An error of the signer, of `trustCertificate`, and the `reason` of a `signal` pa
 
 ## Differences from the references
 
-| Reference    | Difference                                                                                                                                                                                                                                                                                                           |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The standard | "Logically equivalent" is not defined for a signature; the package uses the equivalence of the immutability rules (`isSameStatement`) and, since that leaves them out, holds the `id`, the `timestamp` and the Attachments of the payload to the Statement; `stored`, `authority` and `version` are the LRS's to set |
-| The standard | The Statement signed is "the complete Statement before the signature was added"; a Statement without an id is signed without one, and the LRS may give it one without breaking the signature                                                                                                                         |
-| jwcrypto     | Signatures made by jwcrypto with RS256, RS384 and RS512 and an X.509 chain verify, and the cases in which they must not are refused with the reasons above (`validation/xapi_signatures.py`)                                                                                                                         |
+The meaning of "logically equivalent" for a signature and the payload that is signed are readings of the standard that [spec gaps](spec-gaps.md) records.
+
+| Reference | Difference                                                                                                                                                                                   |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| jwcrypto  | Signatures made by jwcrypto with RS256, RS384 and RS512 and an X.509 chain verify, and the cases in which they must not are refused with the reasons above (`validation/xapi_signatures.py`) |
