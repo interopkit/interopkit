@@ -27,8 +27,8 @@ export interface SchemaArbitraryOptions {
 type Node = Readonly<Record<string, unknown>>;
 
 /**
- * The names of members that every reader of the family refuses, since they name the prototype chain (STANDARDS section 5,
- * "Errors"), though a schema that takes any member takes them: a generated value holds none, and the `spec-gaps.md` of each
+ * The names of members that every reader of the family refuses, since they name the prototype chain, though a
+ * schema that takes any member takes them: a generated value holds none, and the `spec-gaps.md` of each
  * package lists the difference.
  */
 const PROTOTYPE_NAMES: readonly string[] = ["__proto__", "constructor", "prototype"];
