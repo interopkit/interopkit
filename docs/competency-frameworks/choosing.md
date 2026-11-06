@@ -1,8 +1,8 @@
 # Choosing competency-frameworks
 
 When `@interopkit/competency-frameworks` fits a project that reads, serves or compares CASE frameworks, and when another tool
-fits better. Each comparator was read at the version that [the comparators](comparators.md) give; that page maps all 26 of their
-capabilities, of which the package has 11, has 2 in part and leaves 13 out with a reason.
+fits better. Each comparator was read at the version that [the comparators](comparators.md) give; that page maps their capabilities and
+counts what the package has, has in part and leaves out.
 
 ```mermaid
 flowchart TD

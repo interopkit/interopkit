@@ -187,7 +187,7 @@ flowchart LR
 A value is in single quotes, and a quote inside a value is written twice: `title='It''s'`. A single quote that neither ends the
 filter nor comes before `AND` or `OR` is read as an apostrophe. `AND` and `OR` may be in either case and need white space on both
 sides. A path with dots reaches into nested objects (`licenseURI.title`, `extensions.source`); only its first name is checked
-against the properties of a CFDocument. The filter is URL encoded, and holds at most 2,048 characters after decoding.
+against the properties of a CFDocument. The filter is URL encoded.
 
 The handler reads these parameters for the names of a CFDocument of CASE 1.1 and gives the store a `ParsedCaseQuery`, or answers 400
 with the code of the binding and a message. On the path of 1.0 the handler holds the names to those of 1.0, which lack
@@ -309,14 +309,6 @@ evaluated by the store.
 ## Differences from the references
 
 The references are the REST binding and the OpenAPI 3 file of 1EdTech for 1.1, whose response schemas the tests validate every
-answer against, and the JSON schemas of 1.0. The provider follows them except where they disagree or are silent; the choices are
-in [spec-gaps](spec-gaps.md), each pinned by a test.
-
-| Case                                      | The references                                                       | The provider                                                                          |
-| ----------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| An empty page                             | The schema of `CFDocumentSet` requires one document                  | `{ "CFDocuments": [] }`, so that a consumer can page to the end                       |
-| `invalid_filter_field`                    | The binding answers with it; the schema of a status does not list it | Answers with it                                                                       |
-| A sort by a property that does not exist  | The binding returns the order of the provider                        | The same, and the same for a direction that is not `asc` or `desc`                    |
-| A name in `fields` that is not a property | The binding returns all the data                                     | The name is left out, and all the properties are returned when none is a property     |
-| A list in a filter                        | `=` has AND semantics and `~` has OR semantics, shown in one example | `=` compares as sets, `~` looks for any term, the order predicates ask for one member |
-| The last link of a page                   | The example of the binding changes the limit of the last link        | The last link keeps the limit                                                         |
+answer against, and the JSON schemas of 1.0. The provider follows them except where they disagree or are silent (an empty page,
+`invalid_filter_field`, a sort by a property that does not exist, a name in `fields` that is not a property, a list in a filter,
+the last link of a page); the choices are in [spec gaps](spec-gaps.md), each pinned by a test.
