@@ -131,6 +131,61 @@ async function answerEntity(
  * `total`.
  * @throws The reason of the `signal` of the options, when it aborts before the answer is ready.
  * @see {@link https://www.imsglobal.org/spec/case/v1p1 | CASE Service 1.1}
+ *
+ * @example
+ * ```ts
+ * import { handleCaseRequest, localizeOpenApi, queryEntities } from "@interopkit/competency-frameworks/provider";
+ *
+ * const documents = [
+ *   {
+ *     identifier: "c1a0f7d2-5e3b-4a96-8d14-7b2e9f60a3c5",
+ *     uri: "https://case.example.org/ims/case/v1p1/CFDocuments/c1a0f7d2-5e3b-4a96-8d14-7b2e9f60a3c5",
+ *     CFPackageURI: {
+ *       title: "Biology",
+ *       identifier: "c1a0f7d2-5e3b-4a96-8d14-7b2e9f60a3c5",
+ *       uri: "https://case.example.org/ims/case/v1p1/CFPackages/c1a0f7d2-5e3b-4a96-8d14-7b2e9f60a3c5",
+ *     },
+ *     creator: "Ministry of Education",
+ *     title: "Biology",
+ *     lastChangeDateTime: "2023-01-09T08:00:00+00:00",
+ *   },
+ * ];
+ * const none = async () => undefined;
+ * const discovery = localizeOpenApi(
+ *   { openapi: "3.0.0", info: { title: "CASE", version: "1.1" }, paths: {} },
+ *   { serverUrl: "https://case.example.org/ims/case/v1p1" },
+ * );
+ * const response = await handleCaseRequest(
+ *   {
+ *     method: "GET",
+ *     url: "https://case.example.org/ims/case/v1p1/CFDocuments?fields=identifier,title",
+ *     headers: {},
+ *     body: new Uint8Array(),
+ *   },
+ *   {
+ *     discovery,
+ *     store: {
+ *       documents: async (query, page) => ({
+ *         documents: queryEntities(documents, query).slice(page.offset, page.offset + page.limit),
+ *         total: queryEntities(documents, query).length,
+ *       }),
+ *       document: async (id) => documents.find((each) => each.identifier === id),
+ *       package: none,
+ *       item: none,
+ *       itemAssociations: none,
+ *       association: none,
+ *       associationGrouping: none,
+ *       concept: none,
+ *       subject: none,
+ *       license: none,
+ *       itemType: none,
+ *       rubric: none,
+ *     },
+ *   },
+ * );
+ * response.status; // => 200
+ * JSON.parse(String(response.body)); // => { CFDocuments: [{ identifier: "c1a0f7d2-5e3b-4a96-8d14-7b2e9f60a3c5", title: "Biology" }] }
+ * ```
  */
 export async function handleCaseRequest(request: HttpRequest, options: CaseProviderOptions): Promise<HttpResponse> {
   checkHttpRequest(request);

@@ -19,6 +19,34 @@ import { type ReadOptions, readSettings } from "./options.js";
  * @throws `DataError` that names the path of the first error and counts the others, when the value has an error, or when the
  * options are not an object with a `version` of `"1.0"` or `"1.1"` and a `maxFindings` that is a positive integer.
  * @see {@link https://www.imsglobal.org/spec/case/v1p1 | CASE Service 1.1}
+ *
+ * @example
+ * ```ts
+ * import { readPackage, validatePackage } from "@interopkit/competency-frameworks";
+ *
+ * const input = {
+ *   CFDocument: {
+ *     identifier: "8f3e2a14-4c1b-4d77-9a3e-1b2c3d4e5f60",
+ *     uri: "https://standards.example.org/ims/case/v1p1/CFDocuments/8f3e2a14-4c1b-4d77-9a3e-1b2c3d4e5f60",
+ *     caseVersion: "1.1",
+ *     creator: "Ministry of Education",
+ *     title: "Mathematics",
+ *     lastChangeDateTime: "2024-06-13T18:46:03+00:00",
+ *   },
+ *   CFItems: [
+ *     {
+ *       identifier: "2b6d1c9e-7a53-4e08-b1f4-5c8a9d0e3f21",
+ *       uri: "https://standards.example.org/ims/case/v1p1/CFItems/2b6d1c9e-7a53-4e08-b1f4-5c8a9d0e3f21",
+ *       fullStatement: "Understand fractions as numbers.",
+ *       lastChangeDateTime: "2024-06-13T18:46:03+00:00",
+ *     },
+ *   ],
+ * };
+ * const pkg = readPackage(input);
+ * pkg.CFItems?.length; // => 1
+ * pkg === input; // => false
+ * validatePackage(pkg).map((finding) => `${finding.severity} ${finding.rule} at ${finding.path}`); // => ["warning item-outside-tree at CFItems[0]"]
+ * ```
  */
 export function readPackage(value: unknown, options?: ReadOptions): CasePackage {
   const { version, maxFindings } = readSettings(options);

@@ -1,6 +1,12 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { guidesWithSamples, runGuideSamples, typecheckGuideSamples } from "../../../scripts/guide-samples.js";
+import {
+  guidesWithSamples,
+  runGuideSamples,
+  runTsdocExamples,
+  typecheckGuideSamples,
+  typecheckTsdocExamples,
+} from "../../../scripts/guide-samples.js";
 import * as client from "../src/client/index.js";
 import * as graph from "../src/graph/index.js";
 import * as root from "../src/index.js";
@@ -24,6 +30,7 @@ const PATHS = {
   "@interopkit/core/checks": [`${PACKAGES}core/src/checks.ts`],
   "@interopkit/core/http": [`${PACKAGES}core/src/http/index.ts`],
 };
+const SOURCES = new URL("../src/", import.meta.url);
 const guides = guidesWithSamples(GUIDES);
 
 describe("the samples of the documentation", () => {
@@ -45,5 +52,15 @@ describe("the samples of the documentation", () => {
 
   it.each(guides)("compile as TypeScript in the guide %s", (guide) => {
     expect(typecheckGuideSamples(new URL(guide, GUIDES), PATHS)).toStrictEqual([]);
+  });
+});
+
+describe("the examples of the TSDoc comments", () => {
+  it("run and show their results", async () => {
+    expect(await runTsdocExamples(SOURCES, modules)).toBeGreaterThan(0);
+  });
+
+  it("compile as TypeScript", () => {
+    expect(typecheckTsdocExamples(SOURCES, PATHS)).toStrictEqual([]);
   });
 });

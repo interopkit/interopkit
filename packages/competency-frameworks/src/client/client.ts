@@ -232,6 +232,30 @@ async function* pagesOfDocuments(
  * @returns The client.
  * @throws `DataError` when the options are not valid.
  * @see {@link https://www.imsglobal.org/spec/case/v1p1 | CASE Service 1.1, REST binding}
+ *
+ * @example
+ * ```ts
+ * import { createCaseClient } from "@interopkit/competency-frameworks/client";
+ *
+ * const item = {
+ *   CFDocumentURI: {
+ *     title: "Mathematics",
+ *     identifier: "8f3e2a14-4c1b-4d77-9a3e-1b2c3d4e5f60",
+ *     uri: "https://standards.example.org/ims/case/v1p1/CFDocuments/8f3e2a14-4c1b-4d77-9a3e-1b2c3d4e5f60",
+ *   },
+ *   identifier: "2b6d1c9e-7a53-4e08-b1f4-5c8a9d0e3f21",
+ *   uri: "https://standards.example.org/ims/case/v1p1/CFItems/2b6d1c9e-7a53-4e08-b1f4-5c8a9d0e3f21",
+ *   fullStatement: "Understand fractions as numbers.",
+ *   lastChangeDateTime: "2024-06-13T18:46:03+00:00",
+ * };
+ * const client = createCaseClient({
+ *   baseUrl: "https://standards.example.org",
+ *   fetch: async (url) => new Response(JSON.stringify({ ...item, uri: url }), { status: 200 }),
+ * });
+ * const found = await client.item("2b6d1c9e-7a53-4e08-b1f4-5c8a9d0e3f21");
+ * found?.fullStatement; // => "Understand fractions as numbers."
+ * found?.uri; // => "https://standards.example.org/ims/case/v1p1/CFItems/2b6d1c9e-7a53-4e08-b1f4-5c8a9d0e3f21"
+ * ```
  */
 export function createCaseClient(options: CaseClientOptions): CaseClient {
   const settings = settingsOf(options);

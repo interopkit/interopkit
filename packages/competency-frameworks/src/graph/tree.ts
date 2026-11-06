@@ -76,6 +76,77 @@ function inOrder(edges: readonly Edge[]): Edge[] {
  * @throws `DataError` when the package lacks the document, or an identifier, URI, association type or node of an item or an
  * association, or holds a value that cannot be copied.
  * @see {@link https://www.imsglobal.org/spec/case/v1p1/impl | CASE Implementation Guide}, 3.3
+ *
+ * @example
+ * ```ts
+ * import { readPackage } from "@interopkit/competency-frameworks";
+ * import { buildFrameworkTree } from "@interopkit/competency-frameworks/graph";
+ *
+ * const base = "https://standards.example.org/ims/case/v1p1";
+ * const time = "2024-06-13T18:46:03+00:00";
+ * const pkg = readPackage({
+ *   CFDocument: {
+ *     identifier: "00000000-0000-4000-8000-000000000001",
+ *     uri: `${base}/CFDocuments/00000000-0000-4000-8000-000000000001`,
+ *     creator: "Ministry of Education",
+ *     title: "Mathematics",
+ *     lastChangeDateTime: time,
+ *   },
+ *   CFItems: [
+ *     {
+ *       identifier: "00000000-0000-4000-8000-000000000002",
+ *       uri: `${base}/CFItems/00000000-0000-4000-8000-000000000002`,
+ *       fullStatement: "Number and operations",
+ *       humanCodingScheme: "N",
+ *       lastChangeDateTime: time,
+ *     },
+ *     {
+ *       identifier: "00000000-0000-4000-8000-000000000003",
+ *       uri: `${base}/CFItems/00000000-0000-4000-8000-000000000003`,
+ *       fullStatement: "Understand fractions as numbers.",
+ *       humanCodingScheme: "N.10",
+ *       lastChangeDateTime: time,
+ *     },
+ *   ],
+ *   CFAssociations: [
+ *     {
+ *       identifier: "00000000-0000-4000-8000-0000000000a1",
+ *       associationType: "isChildOf",
+ *       uri: `${base}/CFAssociations/00000000-0000-4000-8000-0000000000a1`,
+ *       originNodeURI: {
+ *         title: "Number and operations",
+ *         identifier: "00000000-0000-4000-8000-000000000002",
+ *         uri: `${base}/CFItems/00000000-0000-4000-8000-000000000002`,
+ *       },
+ *       destinationNodeURI: {
+ *         title: "Mathematics",
+ *         identifier: "00000000-0000-4000-8000-000000000001",
+ *         uri: `${base}/CFDocuments/00000000-0000-4000-8000-000000000001`,
+ *       },
+ *       lastChangeDateTime: time,
+ *     },
+ *     {
+ *       identifier: "00000000-0000-4000-8000-0000000000a2",
+ *       associationType: "isChildOf",
+ *       uri: `${base}/CFAssociations/00000000-0000-4000-8000-0000000000a2`,
+ *       originNodeURI: {
+ *         title: "Understand fractions as numbers.",
+ *         identifier: "00000000-0000-4000-8000-000000000003",
+ *         uri: `${base}/CFItems/00000000-0000-4000-8000-000000000003`,
+ *       },
+ *       destinationNodeURI: {
+ *         title: "Number and operations",
+ *         identifier: "00000000-0000-4000-8000-000000000002",
+ *         uri: `${base}/CFItems/00000000-0000-4000-8000-000000000002`,
+ *       },
+ *       lastChangeDateTime: time,
+ *     },
+ *   ],
+ * });
+ * const tree = buildFrameworkTree(pkg);
+ * tree.map((node) => node.item.humanCodingScheme); // => ["N"]
+ * tree[0]?.children.map((node) => node.item.humanCodingScheme); // => ["N.10"]
+ * ```
  */
 export function buildFrameworkTree(pkg: CasePackage): readonly FrameworkNode[] {
   checkPackageView(pkg, "The package");
