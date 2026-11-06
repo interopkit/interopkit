@@ -129,7 +129,7 @@ its limit, the sentence says that there may be more.
 ## Bounding the findings
 
 A value that is wrong in a million places must not cost the memory of a million findings: valibot keeps about a kilobyte for each
-issue. The readers and validators of the packages stop at `maxFindings` (`DEFAULT_MAX_FINDINGS`, 1,000).
+issue. The readers and validators of the packages stop at `maxFindings`.
 
 ```mermaid
 flowchart LR
@@ -144,7 +144,7 @@ flowchart LR
 | `DEFAULT_MAX_FINDINGS`                     | 1,000: the limit of a list of findings unless the caller says another                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `createIssueSink(maxFindings, errorsOnly)` | The `IssueSink` of a reader or a validator: a list that takes issues up to the limit. The first one beyond it is dropped and `stopped` turns true, so that the check stops looking, and the list ends with an error with the rule `findings-stopped`. With `errorsOnly` it keeps the errors alone, as a reader does, and a warning does not count toward the limit. `within(place)` gives a view that changes the issues it is given, such as the path of one entry of a batch, and shares the limit |
 | `safeParseBounded(schema, value, limit)`   | `v.safeParse` that stops at the first issue beyond `limit`; the issues are those of `v.safeParse`, in the same order. A schema that makes issues and throws them away, such as a union, is parsed again with no limit when the parse stopped on them                                                                                                                                                                                                                                                 |
-| `hasMoreTokensThan(text, maxTokens)`       | Whether a text of JSON has more tokens than a limit, counted without building anything; `MAX_JSON_TOKENS` is 1,000,000                                                                                                                                                                                                                                                                                                                                                                               |
+| `hasMoreTokensThan(text, maxTokens)`       | Whether a text of JSON has more tokens than a limit, counted without building anything                                                                                                                                                                                                                                                                                                                                                                                                               |
 
 A reader or a client counts the tokens of a text before `JSON.parse`, since the memory of a parse grows with the tokens, not the
 bytes: 16 MiB written `[{},{},...]` takes 700 MB to parse.
@@ -193,6 +193,13 @@ findExceededJsonLimit('["[[[["]', 2, 10); // => undefined
 | ----------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `DataError` | A value fails its check or schema | Read the message: it names the value and what was expected. Input from users or files can be passed in directly, because the entry points check it |
 
+## Not included
+
+| Not included                | Why                                                                                                        |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Checks that no package uses | A check arrives with the first function that needs it                                                      |
+| A validator of its own      | Valibot reads structures; this module adds the sentences of the messages and the few schemas valibot lacks |
+
 ## Differences from the references
 
 The module has the shape of `@assesskit/runtime/checks`, copied, since packages of different families never import each other.
@@ -201,10 +208,3 @@ The module has the shape of `@assesskit/runtime/checks`, copied, since packages 
 | -------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Messages | The same words and the same paths     | The same                                                                                                                                                                                             |
 | Contents | Every check that QTI processing needs | Only what the interopkit packages use, `checkHttpsUrl` with `httpsUrlSchema` for the `https` URLs that LTI and Caliper require, and `checkRemoteUrl` for the URLs that a message or a document gives |
-
-## Not included
-
-| Not included                | Why                                                                                                        |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Checks that no package uses | A check arrives with the first function that needs it                                                      |
-| A validator of its own      | Valibot reads structures; this module adds the sentences of the messages and the few schemas valibot lacks |

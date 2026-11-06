@@ -86,16 +86,16 @@ new URL(pending.url).searchParams.get("code_challenge_method"); // => "S256"
 | `registerClient(server, metadata, options)`                      | Registers a client (RFC 7591) and returns it as a client that the other calls take                                    |
 | `createTokenCache(obtain, options)`                              | Makes a function that gives a current token and obtains a new one only when needed                                    |
 
-| Type                   | Fields                                                                                                                                                                   |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `AuthorizationServer`  | `tokenEndpoint`; optional `authorizationEndpoint`, `registrationEndpoint`, `revocationEndpoint`, `audience`, `issuer`                                                    |
-| `OAuthClient`          | `clientId`, `authentication`                                                                                                                                             |
-| `ClientAuthentication` | `client_secret_basic` or `client_secret_post` with `clientSecret`; `private_key_jwt` with `signer`, `assertionLifetimeSeconds` and `claims`; `none`                      |
-| `OAuthCallOptions`     | `fetch`, `timeoutMs` and `signal` of [service calls](service.md), and `clock`                                                                                            |
-| `AccessToken`          | `accessToken`; `expiresAt`, in epoch milliseconds, when the server gave an `expires_in`; `refreshToken` when it sent one; `scopes`                                       |
-| `PendingAuthorization` | `url`, `state`, `codeVerifier`, `redirectUri`: what the host keeps in the user's session between the redirect and the callback                                           |
-| `ClientMetadata`       | `redirectUris`, `clientName`, `clientUri`, `scopes`; optional `grantTypes`, `logoUri`, `tosUri`, `policyUri`, `softwareId`, `softwareVersion`, `tokenEndpointAuthMethod` |
-| `RegisteredClient`     | An `OAuthClient`, with `registrationAccessToken` and `clientSecretExpiresAt` when the server gave them                                                                   |
+| Type                   | Fields                                                                                                                             |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `AuthorizationServer`  | The fields of [The server](#the-server)                                                                                            |
+| `OAuthClient`          | `clientId`, `authentication`                                                                                                       |
+| `ClientAuthentication` | A `method` and what it needs: [Client authentication](#client-authentication)                                                      |
+| `OAuthCallOptions`     | `fetch`, `timeoutMs` and `signal` of [service calls](service.md), and `clock`                                                      |
+| `AccessToken`          | `accessToken`; `expiresAt`, in epoch milliseconds, when the server gave an `expires_in`; `refreshToken` when it sent one; `scopes` |
+| `PendingAuthorization` | `url`, `state`, `codeVerifier`, `redirectUri`: what the host keeps in the user's session between the redirect and the callback     |
+| `ClientMetadata`       | The fields of [Registration](#registration)                                                                                        |
+| `RegisteredClient`     | An `OAuthClient`, with `registrationAccessToken` and `clientSecretExpiresAt` when the server gave them                             |
 
 ## The server
 
@@ -128,7 +128,7 @@ Each request with `private_key_jwt` gets an assertion of its own:
 | `iss`, `sub` | The `clientId`                                                                                    |
 | `aud`        | `server.audience`, else `server.tokenEndpoint`                                                    |
 | `iat`        | The clock's time in whole seconds                                                                 |
-| `exp`        | `iat` plus `assertionLifetimeSeconds`, which is 300 unless the client says otherwise              |
+| `exp`        | `iat` plus `assertionLifetimeSeconds`                                                             |
 | `jti`        | A new random UUID, so that no assertion can be replayed                                           |
 | Others       | The `claims` of the client, none by default, such as the deployment of LTI 1.3 Core section 6.2.1 |
 
@@ -172,14 +172,14 @@ sequenceDiagram
 
 `createTokenCache(obtain, { clock, refreshSkewSeconds })` returns a function that gives the access token as a string.
 
-| Rule                                     | Value                                                                                              |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| A token is good                          | Until `refreshSkewSeconds` before its `expiresAt`; the skew is 60 unless the options say otherwise |
-| A token with no expiry                   | Never kept: nothing says how long it is good, so each call obtains one                             |
-| Callers that arrive while it is obtained | Share the one call, which runs to its own timeout and receives no caller's `signal`                |
-| A caller that aborts                     | Ends only its own wait; the call goes on, and the token it gets is kept for the next caller        |
-| A failure                                | Reaches every caller that waits, and is not kept: the next call tries again                        |
-| One cache                                | Holds one token, so a host with several clients or scopes makes several caches                     |
+| Rule                                     | Value                                                                                       |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------- |
+| A token is good                          | Until `refreshSkewSeconds` before its `expiresAt`                                           |
+| A token with no expiry                   | Never kept: nothing says how long it is good, so each call obtains one                      |
+| Callers that arrive while it is obtained | Share the one call, which runs to its own timeout and receives no caller's `signal`         |
+| A caller that aborts                     | Ends only its own wait; the call goes on, and the token it gets is kept for the next caller |
+| A failure                                | Reaches every caller that waits, and is not kept: the next call tries again                 |
+| One cache                                | Holds one token, so a host with several clients or scopes makes several caches              |
 
 ```ts
 import { createTokenCache } from "@interopkit/core/oauth";

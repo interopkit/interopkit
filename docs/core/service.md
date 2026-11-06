@@ -186,19 +186,6 @@ readStatusInfo(slow); // => { info: { imsx_codeMajor: "failure", imsx_severity: 
 | `DataError` of `readAnswerJson`  | The body is not UTF-8 (`<what> answered with a body that is not UTF-8 text.`), or not JSON, with the `SyntaxError` as `cause` (`<what> answered with a body that is not JSON.`); or an option is not a positive integer, named in the message                                              | Report the service's answer; fix the option                                                                                |
 | `LimitError` of `readAnswerJson` | `maxDepth`: `<what> answered with JSON that nests more than <maxDepth> levels.` `maxTokens`: `<what> answered with a body of more than <maxTokens> tokens of JSON, above the limit of the option maxTokens.`                                                                               | Raise the option if the service is trusted to send that much                                                               |
 
-## Differences from the references
-
-The reference is `fetch`, which `requestService` calls.
-
-|                                   | `fetch`                                   | `requestService`                                                        |
-| --------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------- |
-| Redirects                         | Followed unless `redirect` says otherwise | Refused                                                                 |
-| Time                              | None unless a signal sets one             | `timeoutMs` for request and body                                        |
-| Size                              | Unbounded                                 | `maxBytes`, 65,536 by default                                           |
-| A non-2xx answer                  | A `Response`                              | A `ServiceError` with the status and the body, unless `expect` lists it |
-| The body                          | A stream                                  | Bytes, read whole                                                       |
-| A `fetch` that ignores its signal | The caller waits                          | The call ends at the deadline                                           |
-
 ## Data flows
 
 | Data                           | Comes from  | Goes to                                                             | Kept by the package |
@@ -215,3 +202,16 @@ The reference is `fetch`, which `requestService` calls.
 | Following redirects         | A redirect could lead from HTTPS to another scheme                                       |
 | Methods other than the five | No standard that the packages implement needs `PATCH` or `OPTIONS`                       |
 | Streaming a body, in or out | The answers are read whole under a limit, and the requests are built whole               |
+
+## Differences from the references
+
+The reference is `fetch`, which `requestService` calls.
+
+|                                   | `fetch`                                   | `requestService`                                                        |
+| --------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------- |
+| Redirects                         | Followed unless `redirect` says otherwise | Refused                                                                 |
+| Time                              | None unless a signal sets one             | `timeoutMs` for request and body                                        |
+| Size                              | Unbounded                                 | `maxBytes`, 65,536 by default                                           |
+| A non-2xx answer                  | A `Response`                              | A `ServiceError` with the status and the body, unless `expect` lists it |
+| The body                          | A stream                                  | Bytes, read whole                                                       |
+| A `fetch` that ignores its signal | The caller waits                          | The call ends at the deadline                                           |
