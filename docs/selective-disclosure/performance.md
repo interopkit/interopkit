@@ -1,7 +1,8 @@
 # Performance of selective-disclosure
 
-The time of the three roles of `@interopkit/selective-disclosure` against Digital Bazaar's suite, and the size of the entry
-point. A budget holds each number in CI: `pnpm bench` for the time, `pnpm test` for the size.
+What the benchmarks of the three roles of `@interopkit/selective-disclosure` time against Digital Bazaar's suite and hold to a
+budget in CI (`pnpm bench`), and the size of the entry point (`pnpm test`). The docs publish no measured time: it differs on
+every machine.
 
 ```mermaid
 flowchart LR
@@ -15,13 +16,13 @@ flowchart LR
 Verifiable Credentials 2.0 with 12 achievements, each a blank node, of which a disclosure reveals 8
 (`packages/selective-disclosure/test/proofs.bench.ts`). A role takes at least 20 samples after a warm-up. The budget is its
 fastest sample as a multiple of the fastest of Digital Bazaar's suite in the same run, so it holds on any machine: twice the
-highest ratio measured in 12 runs of the `bench` job on the runner of CI, on 2026-11-04 and 2026-11-05, rounded up to one significant digit. The measured ratios are the range over those runs.
+highest ratio measured in 12 runs of the `bench` job on the runner of CI, on 2026-11-04 and 2026-11-05, rounded up to one significant digit.
 
-| Role           | Measured ratio | Budget | Where the time goes                                                                         |
-| -------------- | -------------: | -----: | ------------------------------------------------------------------------------------------- |
-| `addBaseProof` |      1.05–1.10 |      3 | Canonicalization in the primitives; Web Crypto signs the statements, as in Digital Bazaar's |
-| `deriveProof`  |      1.09–1.17 |      3 | Canonicalization in the primitives, and the copy and the limits of the input                |
-| `verify`       |      0.92–1.00 |      2 | Canonicalization in the primitives; Web Crypto checks the signatures at once                |
+| Role           | Where the time goes                                                                         |
+| -------------- | ------------------------------------------------------------------------------------------- |
+| `addBaseProof` | Canonicalization in the primitives; Web Crypto signs the statements, as in Digital Bazaar's |
+| `deriveProof`  | Canonicalization in the primitives, and the copy and the limits of the input                |
+| `verify`       | Canonicalization in the primitives; Web Crypto checks the signatures at once                |
 
 ## Size
 

@@ -30,7 +30,7 @@ flowchart LR
 pnpm adl-lrs      # builds the packages first: the example LRS imports them as a host does, from their `dist/`
 ```
 
-Each suite takes about 30 seconds after the first run. The port is free and on the loopback address, and the user and the password are
+The port is free and on the loopback address, and the user and the password are
 random for the run and never printed.
 
 | Setting        | Value                                                                                                                                              |

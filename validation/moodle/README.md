@@ -48,7 +48,7 @@ to read the gradebook afterwards.
 pnpm moodle
 ```
 
-A run takes about three minutes once the source is cached: Moodle installs its database in about two. Nothing is kept between runs but
+Nothing is kept between runs but
 the source.
 
 | Setting     | Value                                                                                                                                                                                                                                                                                                                                           |

@@ -22,17 +22,17 @@ flowchart LR
 
 ## Running it
 
-| Need                                            | Why                                                                                                          |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Docker                                          | The container. The image is linux/amd64 only, so an arm64 host emulates it and takes about a minute to start |
-| About 150 MB of image, and 2 CPUs while it runs | The container is capped at 2 CPUs (`--cpus=2`), so that a shared machine is not slowed                       |
-| Network access to Docker Hub the first time     | The image is not cached                                                                                      |
+| Need                                            | Why                                                                                          |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Docker                                          | The container. The image is linux/amd64 only, so an arm64 host emulates it and starts slower |
+| About 150 MB of image, and 2 CPUs while it runs | The container is capped at 2 CPUs (`--cpus=2`), so that a shared machine is not slowed       |
+| Network access to Docker Hub the first time     | The image is not cached                                                                      |
 
 ```sh
 pnpm sql-lrs
 ```
 
-A run takes about two minutes. Nothing is kept between runs.
+Nothing is kept between runs.
 
 | Setting     | Value                                                                                                                                                                                                                                                                         |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

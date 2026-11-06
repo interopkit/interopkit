@@ -1,7 +1,8 @@
 # Performance of course-launch
 
-The time of the hot paths of `@interopkit/course-launch`, the size of each entry point, and the heap of each reader of untrusted
-input at its worst input. A budget holds each number in CI: `pnpm bench` for the time, `pnpm test` for the size and the heap.
+What the benchmarks of `@interopkit/course-launch` time and hold to a budget in CI (`pnpm bench`), the size of each entry point,
+and the heap of each reader of untrusted input at its worst input (`pnpm test`). The docs publish no measured time: it differs
+on every machine.
 
 ```mermaid
 flowchart LR
@@ -15,16 +16,16 @@ flowchart LR
 Each benchmark is timed in turns with its reference by `scripts/bench-rounds.ts` (`test/budgets.ts`). The ratio of the fastest samples holds
 on any machine: its budget is twice the highest ratio measured in 12 runs of the `bench` job on the runner of CI, on 2026-11-04 and 2026-11-05, rounded up to one significant digit. The time is five times the fastest sample of the runner, rounded up to one significant digit.
 
-| Benchmark                                                             | Reference                    |     Ratio | Budget | Fastest on the runner | Time budget |
-| --------------------------------------------------------------------- | ---------------------------- | --------: | -----: | --------------------: | ----------: |
-| `readCourseStructure` of LMS suite 101 (1,001 units)                  | libxml2 validating it        | 3.45–4.01 |      9 |          54.1–97.2 ms |      300 ms |
-| The same                                                              | saxes parsing it alone       | 1.41–2.72 |      6 |          64.3–96.8 ms |      400 ms |
-| `readCoursePackage` of a ZIP64 archive of 66,001 entries              | zip.js listing its entries   | 0.69–0.98 |      2 |       999.0–1410.6 ms |     5000 ms |
-| The LMS judging the seven statements of a session                     | `validateStatements` of them | 0.91–1.21 |      3 |          0.10–0.17 ms |      0.5 ms |
-| The LMS judging 1,000 allowed statements of one request               | `validateStatements` of them | 0.46–0.72 |      2 |           7.1–14.6 ms |       40 ms |
-| `prepareLaunch` over stores in memory and the LRS in the same process | none                         |       n/a |    n/a |            1.6–2.4 ms |        9 ms |
+| Benchmark                                                             | Reference                    |
+| --------------------------------------------------------------------- | ---------------------------- |
+| `readCourseStructure` of LMS suite 101 (1,001 units)                  | libxml2 validating it        |
+| The same                                                              | saxes parsing it alone       |
+| `readCoursePackage` of a ZIP64 archive of 66,001 entries              | zip.js listing its entries   |
+| The LMS judging the seven statements of a session                     | `validateStatements` of them |
+| The LMS judging 1,000 allowed statements of one request               | `validateStatements` of them |
+| `prepareLaunch` over stores in memory and the LRS in the same process | none                         |
 
-The reader does not reach parity with libxml2: saxes, a parser in JavaScript, takes 2.0 times libxml2 in WebAssembly to parse
+The reader does not reach parity with libxml2: saxes, a parser in JavaScript, is slower than libxml2 in WebAssembly at parsing
 the text alone, and the reader also builds the model and checks the rules of cmi5 that the schema leaves out.
 
 ## Size

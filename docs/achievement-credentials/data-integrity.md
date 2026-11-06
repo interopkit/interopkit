@@ -222,19 +222,18 @@ The values of the options are in the tables above.
 | Findings of `validateJsonLd`                                  | 100                                  | The rest are not reported                                                                                           |
 
 `maxTokens` bounds what a parse builds, and it is far too generous for a JSON-LD processor, whose work grows with the square of the
-values of one property: 10,000 values of one property take about a second, 20,000 take four seconds and 60,000 take 35. So a
+values of one property. So a
 credential with a proof is also counted against `maxJsonLdTokens` before any processor reads it. A CLR that holds many credentials
 as objects can need a higher value; a CLR whose credentials are compact JWS counts each as one token.
 
 The canonicalization of the adopted cryptosuites has no bound of its own, and the work factor of `rdf-canonize` allows one run of
 Hash N-Degree Quads for each blank node that looks like another, with each run copying its path, so a list of 5,000 items would take
-1.7 seconds and 900 MiB. The package canonicalizes with a fixed count of 1,000 runs instead, as `selective-disclosure` does. The
+900 MiB. The package canonicalizes with a fixed count of 1,000 runs instead, as `selective-disclosure` does. The
 examples of Open Badges 3.0 and CLR 2.0 need at most 16. A test pins it with a clique of blank nodes, with a graph of 1,500 alike
 nodes that the allowance of the library would let pass, and with a list of 5,000 items whose peak of memory it measures.
 
-Each proof is checked on its own and may name another key to fetch, so the work and the requests grow with their number: 5,000
-values of one property and 300 proofs would take 95 seconds. Only the first four proofs are looked at, and the credential is
-canonicalized once for all of them. Bounded as it is, a credential at the token limit costs about two seconds to verify.
+Each proof is checked on its own and may name another key to fetch, so the work and the requests grow with their number. Only the
+first four proofs are looked at, and the credential is canonicalized once for all of them.
 
 ## Errors
 

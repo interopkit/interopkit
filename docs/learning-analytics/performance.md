@@ -1,8 +1,8 @@
 # Performance of learning-analytics
 
-The time of the hot paths of `@interopkit/learning-analytics`, the size of each entry point, and the heap of each reader of
-untrusted input at its worst input. A budget holds each number in CI: `pnpm bench` for the time, `pnpm test` for the size and
-the heap.
+What the benchmarks of `@interopkit/learning-analytics` time and hold to a budget in CI (`pnpm bench`), the size of each entry
+point, and the heap of each reader of untrusted input at its worst input (`pnpm test`). The docs publish no measured time: it
+differs on every machine.
 
 ```mermaid
 flowchart LR
@@ -14,33 +14,32 @@ flowchart LR
 ## Speed
 
 `pnpm bench` times the build that ships on 1,000 events and on 1,000 entity describes of the fixtures of `caliper-spec` that the
-draft 4 schemas take (an envelope of 1.2 has 1,469,236 bytes), against those schemas and `JSON.parse` in the same run. The table
-gives the range of the fastest ratios of 12 runs of the `bench` job on the runner of CI, on 2026-11-04 and 2026-11-05, and the
-fastest samples of the runner; the budget of a ratio is between two samples of one run, so it holds on any machine, and the budget
-of a time holds for the class of the runner.
+draft 4 schemas take (an envelope of 1.2 has 1,469,236 bytes), against those schemas and `JSON.parse` in the same run. The budget of a
+ratio is between two samples of one run, so it holds on any machine, and the budget of a time holds for the class of the
+runner.
 
-| Benchmark                                      | Fastest on the runner | Time budget | Reference                               |         Ratio | Budget |
-| ---------------------------------------------- | --------------------: | ----------: | --------------------------------------- | ------------: | -----: |
-| `readEnvelope` of 1.2                          |          23.0–35.5 ms |      200 ms | the draft 4 schemas, 615–868 ms         |    0.03–0.044 |   0.09 |
-| `readEnvelope` of 1.2                          |          23.0–35.5 ms |      200 ms | `JSON.parse` of the text, 3.5–5.0 ms    |     5.39–8.68 |     20 |
-| `validateEvent` over the events                |          22.8–34.4 ms |      200 ms | the draft 4 schemas                     |   0.031–0.043 |   0.09 |
-| `readEntity` over 1,000 entities of 71 classes |           7.5–11.9 ms |       40 ms | the draft 4 schemas, 154–237 ms         |    0.041–0.06 |    0.2 |
-| `validateEntity` over the same                 |           9.0–13.8 ms |       50 ms | the draft 4 schemas                     |    0.051–0.07 |    0.2 |
-| `readEnvelope` of 1.1                          |          21.4–33.7 ms |      200 ms | `schema_1_1`, 7.8–10.5 s                | 0.0023–0.0033 |  0.007 |
-| `readEnvelope` of 1.1                          |          21.4–33.7 ms |      200 ms | `JSON.parse` of the text                |     5.19–8.55 |     20 |
-| `buildEvent` of 1,000 events                   |          21.7–34.3 ms |      200 ms | the draft 4 schemas over what it builds |   0.028–0.041 |   0.09 |
-| `buildEntity` of 1,000 entities                |           8.1–13.0 ms |       50 ms | the same                                |   0.044–0.066 |    0.2 |
-| `sendCaliper` of the envelope                  |            5.0–7.1 ms |       30 ms | `JSON.stringify` of the envelope        |     1.27–2.34 |      5 |
-| `handleCaliperRequest` of the envelope         |          25.1–37.5 ms |      200 ms | `JSON.parse` of the text, 3.5–5.0 ms    |     6.71–8.69 |     20 |
-| `handleCaliperRequest` of the envelope         |          25.1–37.5 ms |      200 ms | the draft 4 schemas                     |   0.039–0.046 |    0.1 |
+| Benchmark                                      | Reference                               |
+| ---------------------------------------------- | --------------------------------------- |
+| `readEnvelope` of 1.2                          | the draft 4 schemas                     |
+| `readEnvelope` of 1.2                          | `JSON.parse` of the text                |
+| `validateEvent` over the events                | the draft 4 schemas                     |
+| `readEntity` over 1,000 entities of 71 classes | the draft 4 schemas                     |
+| `validateEntity` over the same                 | the draft 4 schemas                     |
+| `readEnvelope` of 1.1                          | `schema_1_1`                            |
+| `readEnvelope` of 1.1                          | `JSON.parse` of the text                |
+| `buildEvent` of 1,000 events                   | the draft 4 schemas over what it builds |
+| `buildEntity` of 1,000 entities                | the same                                |
+| `sendCaliper` of the envelope                  | `JSON.stringify` of the envelope        |
+| `handleCaliperRequest` of the envelope         | `JSON.parse` of the text                |
+| `handleCaliperRequest` of the envelope         | the draft 4 schemas                     |
 
 A ratio is twice the highest measured on the runner, whether the reference is a schema or the JSON, and a time five times the
 fastest sample of the runner, each rounded up to one significant digit. The schemas of 1.1 try the
-`oneOf` of every class at each level, so one `Message` event takes about 90 ms.
+`oneOf` of every class at each level.
 
-| Choice                                                                                                                                                                                                    | Against a build without it, alternated in one process                                                                                                                                                                             |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The reader of a time reads the fields of `YYYY-MM-DDTHH:mm:ss.SSSZ` by their places and the days of the month; the endpoint reads the items that `JSON.parse` made of the body without copying them again | `readEnvelope` takes 0.71 to 0.78 of its time, `handleCaliperRequest` 0.65 to 0.70, `buildEvent` 0.70 to 0.95, `readEntity` 0.82 to 0.92; every fixture of `caliper-spec`, in both versions, reads to the same value and findings |
+| Choice                                                                                                                                                                                                    | Against a build without it, alternated in one process                                                                                |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| The reader of a time reads the fields of `YYYY-MM-DDTHH:mm:ss.SSSZ` by their places and the days of the month; the endpoint reads the items that `JSON.parse` made of the body without copying them again | `readEnvelope` takes about 0.75 of its time; every fixture of `caliper-spec`, in both versions, reads to the same value and findings |
 
 What remains is the schemas of valibot, the copy of a host's value, and the counts of the text in `@interopkit/core`; the copy
 and the refusal of the names of the prototype chain are timed in [core](../core/performance.md).

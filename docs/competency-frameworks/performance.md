@@ -1,8 +1,8 @@
 # Performance of competency-frameworks
 
-The time of the hot paths of `@interopkit/competency-frameworks`, the size of each entry point, and the heap of each reader of
-untrusted input at its worst input. A budget holds each number in CI: `pnpm bench` for the time, `pnpm test` for the size and
-the heap.
+What the benchmarks of `@interopkit/competency-frameworks` time and hold to a budget in CI (`pnpm bench`), the size of each
+entry point, and the heap of each reader of untrusted input at its worst input (`pnpm test`). The docs publish no measured
+time: it differs on every machine.
 
 ```mermaid
 flowchart LR
@@ -17,42 +17,39 @@ flowchart LR
 `packages/competency-frameworks/test/bank.ts` makes from the number alone. A benchmark takes at least 10 samples after a
 warm-up, and the gate is the fastest sample.
 
-| Benchmark            | What it times                             | Fastest on the runner | Budget | Holds on                                |
-| -------------------- | ----------------------------------------- | --------------------: | -----: | --------------------------------------- |
-| `readPackage`        | Reading and checking the parsed framework |          71.7–94.2 ms | 400 ms | A machine of the class of the CI runner |
-| `validatePackage`    | The findings of the framework             |          71.2–92.5 ms | 400 ms | A machine of the class of the CI runner |
-| `buildFrameworkTree` | The tree of 10,000 items                  |          54.2–62.9 ms | 300 ms | A machine of the class of the CI runner |
-| `queryEntities`      | A filter and a sort over 10,000 documents |            5.3–8.5 ms |  30 ms | A machine of the class of the CI runner |
+| Benchmark            | What it times                             |
+| -------------------- | ----------------------------------------- |
+| `readPackage`        | Reading and checking the parsed framework |
+| `validatePackage`    | The findings of the framework             |
+| `buildFrameworkTree` | The tree of 10,000 items                  |
+| `queryEntities`      | A filter and a sort over 10,000 documents |
 
-The range of the fastest sample is that of the eight latest green runs of the `bench` job on main.
+The other benchmarks are ratios to a reference in the same run, so they hold on any machine; the published schemas are applied
+by `@cfworker/json-schema`.
 
-The other benchmarks are ratios to a reference in the same run, so they hold on any machine. The table gives the range of the
-ratios of 12 runs of the `bench` job on the runner of CI, on 2026-11-04 and 2026-11-05, and the fastest samples of a reference on
-the runner; the published schemas are applied by `@cfworker/json-schema`.
-
-| Benchmark                                      | Reference                                  |     Ratio | Budget |
-| ---------------------------------------------- | ------------------------------------------ | --------: | -----: |
-| `readPackage` of the framework                 | the package schema of CASE 1.1, 234–315 ms | 0.28–0.33 |    0.7 |
-| `readEntity` of each item alone                | the item schema of CASE 1.1, 124–172 ms    | 0.38–0.49 |      1 |
-| `readPackage` of the framework                 | `JSON.parse` of its text, 21.0–26.5 ms     | 3.38–3.85 |      8 |
-| `buildFrameworkTree`                           | the same                                   | 2.17–2.73 |      6 |
-| `convertCaseVersion` to 1.0                    | the same                                   | 2.38–3.54 |      8 |
-| `diffPackages` of the framework and an edition | the same                                   | 1.85–2.35 |      5 |
-| `crosswalk` to the framework it matches        | the same                                   | 0.71–0.86 |      2 |
-| `listAssociations` an item                     | the same                                   | 0.68–0.83 |      2 |
-| `handleCaseRequest` for the package in 1.1     | `JSON.stringify` of the package            | 0.96–1.06 |      3 |
-| `handleCaseRequest` for the package in 1.0     | the same                                   | 3.96–5.05 |     20 |
-| `package` of a client                          | `JSON.parse` of the answer                 | 5.49–6.96 |     20 |
+| Benchmark                                      | Reference                       |
+| ---------------------------------------------- | ------------------------------- |
+| `readPackage` of the framework                 | the package schema of CASE 1.1  |
+| `readEntity` of each item alone                | the item schema of CASE 1.1     |
+| `readPackage` of the framework                 | `JSON.parse` of its text        |
+| `buildFrameworkTree`                           | the same                        |
+| `convertCaseVersion` to 1.0                    | the same                        |
+| `diffPackages` of the framework and an edition | the same                        |
+| `crosswalk` to the framework it matches        | the same                        |
+| `listAssociations` an item                     | the same                        |
+| `handleCaseRequest` for the package in 1.1     | `JSON.stringify` of the package |
+| `handleCaseRequest` for the package in 1.0     | the same                        |
+| `package` of a client                          | `JSON.parse` of the answer      |
 
 A ratio is twice the highest ratio measured on the runner of CI, rounded up to one significant digit, whether the reference is a published schema or the JSON, and a time five times the fastest sample of the runner of CI (`ubuntu-latest`, Node.js 22) over the eight latest green runs of the
-`bench` job, rounded up to one significant digit; the fastest samples of one benchmark differ by up to 1.6 times from run to run. A budget changes only with the
+`bench` job, rounded up to one significant digit. A budget changes only with the
 reason in the commit that changes it. No other library reads CASE packages, so the references are the schemas and the JSON.
 
-| Choice                                                                                                                                                                                                                               | Against a build without it, alternated in one process                                                               |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| `convertCaseVersion` copies a string, a number, a list of them and a node of plain values without the deep copy, and writes the path of a member only for a warning or an error                                                      | 0.74 to 0.83 of the time; the 1.0 answer of a provider 0.76                                                         |
-| The checks of a package write a path only for a finding                                                                                                                                                                              | About 0.95                                                                                                          |
-| `convertCaseVersion` refuses `__proto__`, `constructor` and `prototype` in each object it walks with `findPrototypeName` of `core`, three lookups, and parses an object with the schema that writes the refusal only when it has one | A schema over every object takes 14 percent of the conversion: 3.53 to 3.91 times `JSON.parse` against 2.59 to 2.96 |
+| Choice                                                                                                                                                                                                                               | Against a build without it, alternated in one process         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| `convertCaseVersion` copies a string, a number, a list of them and a node of plain values without the deep copy, and writes the path of a member only for a warning or an error                                                      | About 0.8 of the time                                         |
+| The checks of a package write a path only for a finding                                                                                                                                                                              | About 0.95                                                    |
+| `convertCaseVersion` refuses `__proto__`, `constructor` and `prototype` in each object it walks with `findPrototypeName` of `core`, three lookups, and parses an object with the schema that writes the refusal only when it has one | A schema over every object takes 14 percent of the conversion |
 
 The six real frameworks, each with an edited copy, read and convert to the same values and findings either way.
 `listAssociations` checks the whole package at each call, as every function of the graph checks its argument, so a host that

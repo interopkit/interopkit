@@ -1,6 +1,6 @@
 # Performance of achievement-credentials
 
-What the hot paths of `@interopkit/achievement-credentials` cost, how much each entry point adds to a bundle, and the heap that each reader of untrusted input needs on its worst input. A budget holds each number and fails a gate of CI: `pnpm bench` for the time, `pnpm test` for the size and the heap. That the package does what it says is in [evidence](evidence.md).
+What the benchmarks of `@interopkit/achievement-credentials` hold to a budget in CI (`pnpm bench`), how much each entry point adds to a bundle, and the heap that each reader of untrusted input needs on its worst input (`pnpm test`). The docs publish no measured time: it differs on every machine. That the package does what it says is in [evidence](evidence.md).
 
 ```mermaid
 flowchart LR
@@ -14,53 +14,53 @@ flowchart LR
 `pnpm bench` times the build that ships against a reference in the same run: the comparator that does the same work where one
 is installable ([comparators](comparators.md)), and otherwise the least work of the same kind. `scripts/bench-rounds.ts` runs the
 function and its reference in three rounds, the reference first in the first and the last, so that the load of a shared machine
-falls on both, and the gate is the ratio of the fastest samples. The table gives the range of the ratios of 12 runs of the `bench` job on the runner of CI, on 2026-11-04 and 2026-11-05; a budget is twice the highest of them, rounded up to one significant digit, and holds on any machine, with no exception for a validator that does the same work.
+falls on both, and the gate is the ratio of the fastest samples. A budget is twice the highest ratio measured in 12 runs of the `bench` job on the runner of CI, rounded up to one significant digit, and holds on any machine, with no exception for a validator that does the same work.
 
-| Benchmark                                                      | Reference                                                             |     Ratio | Budget |
-| -------------------------------------------------------------- | --------------------------------------------------------------------- | --------: | -----: |
-| `verifyCredential` of a JWS                                    | `did-jwt-vc`, which checks the signature and the claims               | 0.18–0.28 |    0.6 |
-| `verifyCredential` of a CLR in a JWS that holds 10 JWS         | `did-jwt-vc` of the 11 JWTs                                           | 0.19–0.29 |    0.6 |
-| `verifyCredential` with an `eddsa-rdfc-2022` proof             | `@digitalbazaar/vc`, which checks the structure and the proof         | 1.06–1.14 |      3 |
-| the same                                                       | `@interop/verifier-core`, which also checks the status and the expiry | 1.03–1.07 |      3 |
-| `addProof` with `eddsa-rdfc-2022`                              | `vc.issue` of `@digitalbazaar/vc` with its suite                      | 1.03–1.09 |      3 |
-| `verifyProof` of `eddsa-rdfc-2022`                             | `vc.verifyCredential` of `@digitalbazaar/vc`                          | 1.04–1.15 |      3 |
-| `verifyProof` of `ecdsa-rdfc-2019`                             | `@interop/verifier-core`                                              | 0.84–0.91 |      2 |
-| `verifyProof` of `Ed25519Signature2020`, `legacyProofs`        | `@interop/verifier-core`                                              | 1.01–1.09 |      3 |
-| `verifyProof` of an `ecdsa-sd-2023` disclosure                 | `@digitalbazaar/vc` with Digital Bazaar's `ecdsa-sd-2023` suite       | 0.92–1.01 |      3 |
-| `readCredentialJwt`                                            | `verifyCredential` of `did-jwt-vc`                                    | 0.16–0.25 |    0.6 |
-| `signCredentialJwt` with EdDSA                                 | `createVerifiableCredentialJwt` of `did-jwt-vc`                       | 0.12–0.19 |    0.4 |
-| `issueStatusListCredential` of 131,072 entries, Data Integrity | `@interop/vc-bitstring-status-list` and `jsigs.sign`                  | 1.09–1.23 |      3 |
-| `verifyCredentialStatus` against that list, fetched each time  | `checkStatus` of `@interop/vc-bitstring-status-list`                  | 1.35–1.71 |      4 |
-| `readCredential` of a CLR of 20 credentials                    | the published schema of CLR 2.0 in `@cfworker/json-schema`            | 0.10–0.17 |    0.4 |
-| `validateCredential` of the same CLR                           | the same                                                              | 0.10–0.17 |    0.4 |
-| `bakePng` of that CLR into an image of 256 KiB                 | `JSON.stringify` of the CLR                                           | 11.3–18.2 |     40 |
-| `readPng` of that image                                        | `JSON.parse` of the CLR                                               | 2.64–3.50 |      8 |
-| `bakeSvg` of that CLR into an SVG of 140,000 characters        | saxes over the SVG                                                    | 1.37–1.72 |      4 |
-| `readSvg` of that SVG, which stops at the credential           | saxes over all of it                                                  | 0.53–0.69 |      2 |
-| `handleCredentialsRequest`, a page of 100 credentials          | `JSON.stringify` of the page                                          | 1.20–1.29 |      3 |
-| `handleCredentialsRequest`, the upsert of that CLR             | `JSON.parse` of its body                                              | 4.11–6.99 |     20 |
-| `handleRefreshRequest` of that CLR                             | `JSON.stringify` of it                                                | 1.05–1.08 |      3 |
+| Benchmark                                                      | Reference                                                             |
+| -------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `verifyCredential` of a JWS                                    | `did-jwt-vc`, which checks the signature and the claims               |
+| `verifyCredential` of a CLR in a JWS that holds 10 JWS         | `did-jwt-vc` of the 11 JWTs                                           |
+| `verifyCredential` with an `eddsa-rdfc-2022` proof             | `@digitalbazaar/vc`, which checks the structure and the proof         |
+| the same                                                       | `@interop/verifier-core`, which also checks the status and the expiry |
+| `addProof` with `eddsa-rdfc-2022`                              | `vc.issue` of `@digitalbazaar/vc` with its suite                      |
+| `verifyProof` of `eddsa-rdfc-2022`                             | `vc.verifyCredential` of `@digitalbazaar/vc`                          |
+| `verifyProof` of `ecdsa-rdfc-2019`                             | `@interop/verifier-core`                                              |
+| `verifyProof` of `Ed25519Signature2020`, `legacyProofs`        | `@interop/verifier-core`                                              |
+| `verifyProof` of an `ecdsa-sd-2023` disclosure                 | `@digitalbazaar/vc` with Digital Bazaar's `ecdsa-sd-2023` suite       |
+| `readCredentialJwt`                                            | `verifyCredential` of `did-jwt-vc`                                    |
+| `signCredentialJwt` with EdDSA                                 | `createVerifiableCredentialJwt` of `did-jwt-vc`                       |
+| `issueStatusListCredential` of 131,072 entries, Data Integrity | `@interop/vc-bitstring-status-list` and `jsigs.sign`                  |
+| `verifyCredentialStatus` against that list, fetched each time  | `checkStatus` of `@interop/vc-bitstring-status-list`                  |
+| `readCredential` of a CLR of 20 credentials                    | the published schema of CLR 2.0 in `@cfworker/json-schema`            |
+| `validateCredential` of the same CLR                           | the same                                                              |
+| `bakePng` of that CLR into an image of 256 KiB                 | `JSON.stringify` of the CLR                                           |
+| `readPng` of that image                                        | `JSON.parse` of the CLR                                               |
+| `bakeSvg` of that CLR into an SVG of 140,000 characters        | saxes over the SVG                                                    |
+| `readSvg` of that SVG, which stops at the credential           | saxes over all of it                                                  |
+| `handleCredentialsRequest`, a page of 100 credentials          | `JSON.stringify` of the page                                          |
+| `handleCredentialsRequest`, the upsert of that CLR             | `JSON.parse` of its body                                              |
+| `handleRefreshRequest` of that CLR                             | `JSON.stringify` of it                                                |
 
 The keyed cache that the key resolver and the status lists share is `createKeyedCache` of `core`, timed with the other hot paths of
 `core` ([signals](../core/signals.md)). The profiles named three hot paths that are written as they are for their speed; each
 alternative was timed as a build of its own, alternated with the package, three runs of each, with identical outputs on every case
 of the fixtures, on the vectors of the W3C and on millions of generated texts:
 
-| Hot path                              | Written so                      | The alternative takes                                                                                                          |
-| ------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| The CRC-32 of a PNG chunk             | By the table of PNG 1.2 annex D | Eight steps for each byte: `readPng` of the CLR 201 µs against 91, `bakePng` 310 against 181                                   |
-| The base64url of a JWS that is signed | By a table in `core`            | A string of the bytes as arguments, and `btoa`: `signCredentialJwt` of a CLR of 20, with its credentials, 1.42 ms against 0.91 |
-| The parts of a JWS that is read       | Decoded in one reading          | Three copies of the text first: `readCredentialJwt` of the CLR 231 µs against 215                                              |
+| Hot path                              | Written so                      | The alternative takes                                                                                                                   |
+| ------------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| The CRC-32 of a PNG chunk             | By the table of PNG 1.2 annex D | Eight steps for each byte: `readPng` of the CLR takes about twice as long                                                               |
+| The base64url of a JWS that is signed | By a table in `core`            | A string of the bytes as arguments, and `btoa`: `signCredentialJwt` of a CLR of 20, with its credentials, takes about 1.6 times as long |
+| The parts of a JWS that is read       | Decoded in one reading          | Three copies of the text first: `readCredentialJwt` of the CLR takes about 7 percent longer                                             |
 
 Where a ratio is above parity, the package does work that the reference does not; no budget is in time, since a ratio holds on
 any machine.
 
-| Path                                     | Work the reference does not do                                                                                                                                                                                               |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `verifyProof`, `addProof` (1.01 to 1.11) | The same libraries of the Interop Alliance, with a bound on canonicalization, the reading of the credential in the model and its limits; each context is copied for each load, so no caller can change what the loader keeps |
-| `verifyCredentialStatus`                 | Reads the list credential in the model, counts its tokens and binds its key to the issuer                                                                                                                                    |
-| The upsert of the provider               | Reads the CLR in the model after `JSON.parse`                                                                                                                                                                                |
-| The baking of a PNG, and its reading     | Reads and copies the credential it bakes; checks the CRC of the chunk                                                                                                                                                        |
+| Path                                 | Work the reference does not do                                                                                                                                                                                               |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `verifyProof`, `addProof`            | The same libraries of the Interop Alliance, with a bound on canonicalization, the reading of the credential in the model and its limits; each context is copied for each load, so no caller can change what the loader keeps |
+| `verifyCredentialStatus`             | Reads the list credential in the model, counts its tokens and binds its key to the issuer                                                                                                                                    |
+| The upsert of the provider           | Reads the CLR in the model after `JSON.parse`                                                                                                                                                                                |
+| The baking of a PNG, and its reading | Reads and copies the credential it bakes; checks the CRC of the chunk                                                                                                                                                        |
 
 ## Size
 

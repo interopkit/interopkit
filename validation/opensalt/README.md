@@ -51,8 +51,7 @@ flows, and record each difference in the evidence guide.
 pnpm opensalt
 ```
 
-A run takes about two minutes after the images are pulled: the schema of the application has 140 migrations. Nothing is kept
-between runs.
+Nothing is kept between runs.
 
 | Setting  | Value                                                                                                                                                                                                                                    |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

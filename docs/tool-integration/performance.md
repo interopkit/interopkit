@@ -1,8 +1,8 @@
 # Performance of tool-integration
 
-The time of the hot paths of `@interopkit/tool-integration`, the size of each entry point, and the heap of each reader of
-untrusted input at its worst input. A budget holds each number in CI: `pnpm bench` for the time, `pnpm test` for the size and
-the heap.
+What the benchmarks of `@interopkit/tool-integration` time against a reference and hold to a budget in CI (`pnpm bench`), the
+size of each entry point, and the heap of each reader of untrusted input at its worst input (`pnpm test`). The docs publish
+no measured time: it differs on every machine.
 
 ```mermaid
 flowchart LR
@@ -16,48 +16,48 @@ flowchart LR
 `pnpm bench` times the build that ships against a reference in the same run, in three rounds that alternate which runs first
 (`alternate` of `scripts/bench-rounds.ts`), so a machine that speeds up or slows down weighs on both. The budget is a ratio of the
 fastest samples, which holds on any machine: twice the highest measured in 12 runs of the `bench` job on the runner of CI, on 2026-11-04 and 2026-11-05,
-rounded up to one significant digit. The table gives the range over those runs; no budget is in time.
+rounded up to one significant digit; no budget is in time.
 
-| Benchmark                                                                 | Reference in the same run                                         |     Ratio |    Budget |
-| ------------------------------------------------------------------------- | ----------------------------------------------------------------- | --------: | --------: |
-| `handleLaunch`, a message with every claim, 0.067 ms                      | `verifyLaunch` of `@lti-tool/core`, same message                  | 1.07–1.29 |         3 |
-| The same                                                                  | `validate` of `lti-core`, same message                            | 1.68–1.95 |         4 |
-| `handleLaunch` with an RS256 `id_token`                                   | `jwtVerify` of jose, same token                                   | 2.12–2.45 |         5 |
-| `handleLaunch` with an ES256 `id_token`                                   | the same                                                          | 1.71–1.88 |         4 |
-| The authorization request that signs an RS256 `id_token` with every claim | `SignJWT` of jose, same claims                                    | 1.39–1.78 |         4 |
-| The same, ES256                                                           | the same                                                          | 2.50–2.88 |         6 |
-| The same, substituting the 44 variables of the platform                   | the same request with the names written plainly                   | 0.98–1.04 |         3 |
-| A key from a cached key set, 0.40 µs                                      | `createRemoteJWKSet` of jose holding the set                      | 1.79–2.63 |         6 |
-| The same                                                                  | `createLocalJWKSet` of jose                                       | 2.60–4.06 |         9 |
-| `members`, a page of 1,000 (295 KB)                                       | `JSON.parse` of its text                                          | 3.50–4.30 |         9 |
-| `results`, a page of 1,000 (243 KB)                                       | the same                                                          | 7.06–8.41 |        20 |
-| `lineItems`, a page of 1,000 (272 KB)                                     | the same                                                          | 9.45–11.2 |        30 |
-| `publishScore`, `control`, `registerTool`                                 | `callService` of core, same request and answer                    | 2.15–5.00 | 10, 7, 10 |
-| The token endpoint, 0.044 ms                                              | `jwtVerify` of jose on its client assertion                       | 2.49–3.02 |         7 |
-| The members of a context, a page of 1,000, 1.1 ms                         | `JSON.stringify` of the page                                      | 4.79–5.92 |        20 |
-| The results of a line item, a page of 1,000, 1.0 ms                       | the same                                                          | 6.96–8.05 |        20 |
-| A score, a control request, a registration                                | `compactVerify` of jose on the token and `JSON.parse` of the body | 2.47–3.57 |   8, 8, 8 |
-| `buildDeepLinkingResponse` with five items, `buildStartAssessmentPage`    | `SignJWT` of jose, same claims                                    | 1.07–1.24 |      3, 3 |
-| `readDeepLinkingResponse`, `readStartAssessment`                          | `jwtVerify` of jose on the JWT                                    | 2.39–3.52 |      8, 6 |
+| Benchmark                                                                 | Reference in the same run                                         |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `handleLaunch`, a message with every claim                                | `verifyLaunch` of `@lti-tool/core`, same message                  |
+| The same                                                                  | `validate` of `lti-core`, same message                            |
+| `handleLaunch` with an RS256 `id_token`                                   | `jwtVerify` of jose, same token                                   |
+| `handleLaunch` with an ES256 `id_token`                                   | the same                                                          |
+| The authorization request that signs an RS256 `id_token` with every claim | `SignJWT` of jose, same claims                                    |
+| The same, ES256                                                           | the same                                                          |
+| The same, substituting the 44 variables of the platform                   | the same request with the names written plainly                   |
+| A key from a cached key set                                               | `createRemoteJWKSet` of jose holding the set                      |
+| The same                                                                  | `createLocalJWKSet` of jose                                       |
+| `members`, a page of 1,000 (295 KB)                                       | `JSON.parse` of its text                                          |
+| `results`, a page of 1,000 (243 KB)                                       | the same                                                          |
+| `lineItems`, a page of 1,000 (272 KB)                                     | the same                                                          |
+| `publishScore`, `control`, `registerTool`                                 | `callService` of core, same request and answer                    |
+| The token endpoint                                                        | `jwtVerify` of jose on its client assertion                       |
+| The members of a context, a page of 1,000                                 | `JSON.stringify` of the page                                      |
+| The results of a line item, a page of 1,000                               | the same                                                          |
+| A score, a control request, a registration                                | `compactVerify` of jose on the token and `JSON.parse` of the body |
+| `buildDeepLinkingResponse` with five items, `buildStartAssessmentPage`    | `SignJWT` of jose, same claims                                    |
+| `readDeepLinkingResponse`, `readStartAssessment`                          | `jwtVerify` of jose on the JWT                                    |
 
 Substituting 44 variables costs what a request without them costs, since the signature takes the time. These choices were timed
 in turns against a build without them, which gave the same output on the tests, on 1,698 inputs (pages with odd users and
 extensions, every token of the fixtures with each last character, the handler of results on odd line items and broken stores),
 and on a property test of the token check against jose's own round trip:
 
-| Choice                                                                                                                                                                     | Against the build without it                                                                                                             |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| A writer drops its `undefined` members in a loop, not with `Object.fromEntries`, which takes half of a page of members                                                     | The members of a context 1.1 ms against 2.2; with the next choice, the results 1.0 ms against 2.2; a score posted 12 percent less        |
-| The address of each result is the address of the results, parsed once, with its user as the query; the platform does not check again the addresses it reads from its store | The results of a line item                                                                                                               |
-| A part of a token is checked as canonical base64url by its alphabet, length and spare bits, without decoding and encoding it                                               | `handleLaunch` 0.064 ms against 0.078; `readDeepLinkingResponse` and `readStartAssessment` 17 and 18 percent less; the token endpoint 15 |
-| Extensions are found by the names of the members                                                                                                                           | `lineItems` 9 percent less                                                                                                               |
+| Choice                                                                                                                                                                     | Against the build without it                                                                                                                   |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| A writer drops its `undefined` members in a loop, not with `Object.fromEntries`, which takes half of a page of members                                                     | The members of a context take about twice as long; with the next choice, the results too; a score posted 12 percent less                       |
+| The address of each result is the address of the results, parsed once, with its user as the query; the platform does not check again the addresses it reads from its store | The results of a line item                                                                                                                     |
+| A part of a token is checked as canonical base64url by its alphabet, length and spare bits, without decoding and encoding it                                               | `handleLaunch` 18 percent less; `readDeepLinkingResponse` and `readStartAssessment` 17 and 18 percent less; the token endpoint 15 percent less |
+| Extensions are found by the names of the members                                                                                                                           | `lineItems` 9 percent less                                                                                                                     |
 
 The gaps to the references have named causes:
 
 | Path                   | Work the reference does not do                                                                                                                                                                                                      |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `handleLaunch`         | Reads the form and the cookie, checks the registration that the lookup returns, counts the JSON tokens of the payload before parsing, and reads every claim with its schema; `lti-core` reads fewer claims and verifies RS256 alone |
-| The key set cache      | Checks the URL of each call, 0.19 of its 0.40 µs, which jose checks once when it makes a set; a launch spends 0.5 percent of its time there                                                                                         |
+| The key set cache      | Checks the URL of each call, about half of the time of a lookup, which jose checks once when it makes a set; a launch spends 0.5 percent of its time there                                                                          |
 | The handler of a page  | Reads each item of the store with the schema of its class, as a reader does, and checks the addresses it writes                                                                                                                     |
 | A reader of line items | Checks two dates of each                                                                                                                                                                                                            |
 

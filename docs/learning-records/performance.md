@@ -1,8 +1,8 @@
 # Performance of learning-records
 
-The time of the hot paths of `@interopkit/learning-records`, the size of each entry point, and the heap of each reader of
-untrusted input at its worst input. A budget holds each number in CI: `pnpm bench` for the time, `pnpm test` for the size and
-the heap.
+What the benchmarks of `@interopkit/learning-records` time against a reference and hold to a budget in CI (`pnpm bench`), the
+size of each entry point, and the heap of each reader of untrusted input at its worst input (`pnpm test`). The docs publish
+no measured time: it differs on every machine.
 
 ```mermaid
 flowchart LR
@@ -15,50 +15,46 @@ flowchart LR
 
 `pnpm bench` times the build that ships on 1,000 Statements of 771 KB that xAPI 1.0.3 and 2.0 both take, against a reference in
 the same run: the validator of Learning Locker for the work on each Statement, `JSON.parse` and `JSON.stringify` for a text,
-node:crypto for a hash and jose for a signature. The ratios are the range over 12 runs of the `bench` job on the runner of CI, on 2026-11-04 and 2026-11-05, and the times of `validateStatement` and `parseStatementJson`
-are those of the eight latest green runs of the runner of CI.
+node:crypto for a hash and jose for a signature.
 
-| Benchmark                                                                                                        | Reference                                                |     Ratio | Budget |
-| ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | --------: | -----: |
-| `validateStatement` of the batch, 20.6 to 38.3 ms on CI                                                          | the validator of Learning Locker, 43.6 to 67.3 ms on CI  | 0.45–0.56 |      2 |
-| `readStatement` of the batch                                                                                     | the same                                                 | 0.44–0.54 |      2 |
-| `validateStatements` of the batch                                                                                | the same                                                 | 0.47–0.55 |      2 |
-| `parseStatementJson` of its text                                                                                 | `JSON.parse` of the text                                 | 2.44–3.03 |      7 |
-| `buildStatement` of the batch                                                                                    | the validator of Learning Locker                         | 0.63–0.79 |      2 |
-| `convertStatementVersion`, `formatStatement`                                                                     | the same                                                 | 0.48–0.62 |   2, 2 |
-| `isSameStatement` of each and its copy                                                                           | the same                                                 | 1.97–2.49 |      5 |
-| `matchesStatementQuery` over the batch                                                                           | the same                                                 | 0.05–0.09 |    0.2 |
-| `handleLrsRequest`, a POST of the batch                                                                          | the same                                                 | 0.90–1.05 |      3 |
-| `handleLrsRequest`, a GET of 100                                                                                 | `JSON.stringify` of the page                             | 1.16–1.31 |      3 |
-| `mboxSha1sum` of 1,000 addresses                                                                                 | the SHA-1 of node:crypto                                 | 1.63–2.01 |      5 |
-| `deriveStatementId` of 1,000 names                                                                               | the same                                                 | 4.34–5.35 |     20 |
-| `hashAttachment` of 1 MiB, 3.8 to 7.2 ms                                                                         | the SHA-256 of node:crypto, 0.33 to 0.39 ms              | 7.52–8.64 |     20 |
-| `readMultipart` of 99 Statements with 6.2 MiB of data                                                            | the parser of the package and the SHA-256 of node:crypto | 6.38–7.01 |     20 |
-| `writeMultipart` of the same                                                                                     | their JSON, the SHA-256 of node:crypto and a copy        | 6.88–7.50 |     20 |
-| `signStatement`, RSA of 2,048 bits                                                                               | the `CompactSign` of jose                                | 1.13–1.26 |      3 |
-| `verifyStatementSignature`                                                                                       | the `compactVerify` of jose                              | 2.69–3.63 |      8 |
-| `validateProfile` of a profile of 907 concepts, 237 KB                                                           | `JSON.parse` of its text                                 | 7.71–10.7 |     30 |
-| `validateProfile` of a profile whose alternates name 40,000 Patterns and that revises 40,000 concepts of another | `JSON.parse` of the two texts                            | 8.72–10.7 |     30 |
-| `validateStatement` of a profile's validator on a relay of 1,000 Statements                                      | `readStatement` of each                                  | 1.23–1.43 |      3 |
-| `validateStatements` of the same, templates and Patterns                                                         | the same                                                 | 1.31–1.59 |      4 |
+| Benchmark                                                                                                        | Reference                                                |
+| ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `validateStatement` of the batch                                                                                 | the validator of Learning Locker                         |
+| `readStatement` of the batch                                                                                     | the same                                                 |
+| `validateStatements` of the batch                                                                                | the same                                                 |
+| `parseStatementJson` of its text                                                                                 | `JSON.parse` of the text                                 |
+| `buildStatement` of the batch                                                                                    | the validator of Learning Locker                         |
+| `convertStatementVersion`, `formatStatement`                                                                     | the same                                                 |
+| `isSameStatement` of each and its copy                                                                           | the same                                                 |
+| `matchesStatementQuery` over the batch                                                                           | the same                                                 |
+| `handleLrsRequest`, a POST of the batch                                                                          | the same                                                 |
+| `handleLrsRequest`, a GET of 100                                                                                 | `JSON.stringify` of the page                             |
+| `mboxSha1sum` of 1,000 addresses                                                                                 | the SHA-1 of node:crypto                                 |
+| `deriveStatementId` of 1,000 names                                                                               | the same                                                 |
+| `hashAttachment` of 1 MiB                                                                                        | the SHA-256 of node:crypto                               |
+| `readMultipart` of 99 Statements with 6.2 MiB of data                                                            | the parser of the package and the SHA-256 of node:crypto |
+| `writeMultipart` of the same                                                                                     | their JSON, the SHA-256 of node:crypto and a copy        |
+| `signStatement`, RSA of 2,048 bits                                                                               | the `CompactSign` of jose                                |
+| `verifyStatementSignature`                                                                                       | the `compactVerify` of jose                              |
+| `validateProfile` of a profile of 907 concepts, 237 KB                                                           | `JSON.parse` of its text                                 |
+| `validateProfile` of a profile whose alternates name 40,000 Patterns and that revises 40,000 concepts of another | `JSON.parse` of the two texts                            |
+| `validateStatement` of a profile's validator on a relay of 1,000 Statements                                      | `readStatement` of each                                  |
+| `validateStatements` of the same, templates and Patterns                                                         | the same                                                 |
 
-A ratio is twice the highest ratio measured on the runner of CI, rounded up to one significant digit, whether the reference does the
-same work (the validator of Learning Locker) or not. A time on CI is five times its fastest sample, rounded up to one significant digit:
+A ratio budget is twice the highest ratio measured on the runner of CI, rounded up to one significant digit, whether the
+reference does the same work (the validator of Learning Locker) or not. A time budget, which `validateStatement` and
+`parseStatementJson` of the batch have, is five times the fastest sample of the runner of CI over its eight latest green runs,
+rounded up to one significant digit.
 
-| Budget                                             | Value | How it was set                                                                                                                                              |
-| -------------------------------------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `validateStatement` of the batch, in milliseconds  | 70    | Five times the fastest of the eight latest samples of the runners of CI, 12.33, rounded up to one significant digit; the samples range from 12.3 to 30.7 ms |
-| `parseStatementJson` of the batch, in milliseconds | 40    | Five times the fastest of the eight latest samples of the runners of CI, 7.13, rounded up to one significant digit; the samples range from 7.1 to 16.4 ms   |
+The budgets come from the runner and from nothing else. A laptop whose CPU hashes in hardware makes the SHA-256 of `node:crypto` faster against the hashes of `@noble/hashes`, so the ratios of `hashAttachment` and `writeMultipart` there are higher than on the runner: `pnpm bench` on such a laptop can report them over their budget while the `bench` job passes.
 
-The budgets come from the runner and from nothing else. A laptop whose CPU hashes in hardware makes the SHA-256 of `node:crypto` faster against the hashes of `@noble/hashes`, so the ratios of `hashAttachment` and `writeMultipart` there are higher than on the runner (21.9 and 22.6 on a macOS laptop, against budgets of 20): `pnpm bench` on such a laptop can report them over their budget while the `bench` job passes.
+| Choice                                                                                                                                                                                                                                                                     | Against the alternative                                                                                                                                        |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `parseStatementJson` searches for a repeated name with a scan of the strings and brackets after `JSON.parse` has judged the syntax, keeping only the names of the open objects; a test checks the scan against a parser that builds a syntax tree on 2,000 generated texts | A parser that builds a syntax tree is about 6 times slower                                                                                                     |
+| The rules of a provider look for an empty object before they walk a Statement to write the paths of its members                                                                                                                                                            | A build that walks first is about a quarter slower, alternated in one process, with the same findings for every rule of both tables in both roles and versions |
+| `isSameStatement` writes the canonical text with `JSON.stringify`                                                                                                                                                                                                          | A text written without it is a little faster, 5 percent, which is not worth its code                                                                           |
 
-| Choice                                                                                                                                                                                                                                                                     | Against the alternative                                                                                                                                  |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `parseStatementJson` searches for a repeated name with a scan of the strings and brackets after `JSON.parse` has judged the syntax, keeping only the names of the open objects; a test checks the scan against a parser that builds a syntax tree on 2,000 generated texts | A parser that builds a syntax tree takes 16 to 18 times `JSON.parse`                                                                                     |
-| The rules of a provider look for an empty object before they walk a Statement to write the paths of its members                                                                                                                                                            | 0.79 of the time of a build that walks first, alternated in one process, with the same findings for every rule of both tables in both roles and versions |
-| `isSameStatement` writes the canonical text with `JSON.stringify`                                                                                                                                                                                                          | A text written without it is 5 percent faster, which is not worth its code                                                                               |
-
-The other gaps have causes outside the code of the package. The hashes are those of `@noble/hashes` in JavaScript, because
+Hashing is slower than the reference for causes outside the code of the package. The hashes are those of `@noble/hashes` in JavaScript, because
 `hashAttachment`, `readMultipart` and `writeMultipart` answer at once and the digest of Web Crypto is asynchronous and has no
 SHA-224; the hash is most of the time of a message. `deriveStatementId` is the name-based UUID of `uuid`.
 

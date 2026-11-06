@@ -169,7 +169,7 @@ A document over `maxBytes`, or over `maxTokens` counted before any processing, i
 | Bytes of a signature, an HMAC key, a label         | 64, 32, 32 | Fixed by the Recommendation; a proof value with other lengths does not parse                                                                                                                                  |
 
 Bytes alone do not bound the work of the JSON-LD processors. `jsonld` searches the values of a property before it adds each,
-so 1 MiB of short numbers in one array takes minutes; `maxTokens` bounds it. `rdf-canonize` allows by default one deep
+so the time to read one array grows with its square; `maxTokens` bounds it. `rdf-canonize` allows by default one deep
 iteration for each blank node that looks like another, and each copies the labels issued on its path, so a document of 40,000
 tokens of alike items exhausts 2 GB; the fixed count of deep iterations bounds it. The examples of Open Badges 3.0 and CLR 2.0
 have at most 2,053 tokens and need at most 16 deep iterations; a caller that trusts its source can raise `maxTokens`.

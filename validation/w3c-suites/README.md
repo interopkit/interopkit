@@ -45,7 +45,7 @@ pnpm w3c-suites            # builds the packages, which the service imports from
 pnpm w3c-suites ecdsa      # the suite that is named
 ```
 
-Each suite takes seconds. The service listens on a free port of the loopback address, with a certificate that `openssl` makes
+The service listens on a free port of the loopback address, with a certificate that `openssl` makes
 for the run, which the suites accept as they accept every certificate.
 
 | Setting        | Value                                                                                                                                                                                      |

@@ -43,7 +43,7 @@ A launch is read back from the cache of the library with `MessageLaunch.from_cac
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | Docker                                | The container; its image is multi-architecture, so an arm64 host runs it natively                                        |
 | The `openssl` command                 | Node.js cannot make certificates; the run makes an authority and a certificate for `lms.example.edu`, valid for two days |
-| Network access to Docker Hub and PyPI | The image is pulled the first time, and the container installs the pinned packages at each start, which takes about 15 s |
+| Network access to Docker Hub and PyPI | The image is pulled the first time, and the container installs the pinned packages at each start                         |
 
 ```sh
 pnpm pylti1p3
