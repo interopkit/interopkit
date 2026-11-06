@@ -22,6 +22,21 @@ import { type AuthorizationServer, checkAuthorizationServer, libraryServer } fro
  * @throws `ServiceError` when the server does not answer, answers with an error status, or refuses the grant: the message
  * names the OAuth `error` and `body` holds the answer.
  * @throws The `reason` of the signal when it aborts.
+ *
+ * @example
+ * ```ts
+ * import { requestClientCredentialsToken } from "@interopkit/core/oauth";
+ *
+ * const fetch = async () =>
+ *   Response.json({ access_token: "at-1", token_type: "Bearer", expires_in: 3600, scope: "read" });
+ * const token = await requestClientCredentialsToken(
+ *   { tokenEndpoint: "https://as.example/token" },
+ *   { clientId: "client-1", authentication: { method: "client_secret_basic", clientSecret: "secret" } },
+ *   ["read"],
+ *   { fetch, timeoutMs: 10_000, clock: { now: () => 1_700_000_000_000 } },
+ * );
+ * // => { accessToken: "at-1", expiresAt: 1700003600000, scopes: ["read"] }
+ * ```
  */
 export async function requestClientCredentialsToken(
   server: AuthorizationServer,

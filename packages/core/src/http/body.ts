@@ -66,6 +66,19 @@ export function readText(request: HttpRequest): string {
  * @returns The parsed value.
  * @throws `LimitError`, a `DataError`, when the body has more bytes, levels or tokens than the limits: answer 413.
  * @throws `DataError` when the options are not valid, or the body is not UTF-8 or not JSON.
+ *
+ * @example
+ * ```ts
+ * import { readJson } from "@interopkit/core/http";
+ *
+ * const statement = {
+ *   method: "POST",
+ *   url: "https://lrs.example/statements",
+ *   headers: { "content-type": "application/json" },
+ *   body: new TextEncoder().encode('{"verb":{"id":"https://example.com/completed"}}'),
+ * };
+ * readJson(statement); // => { verb: { id: "https://example.com/completed" } }
+ * ```
  */
 export function readJson(request: HttpRequest, options: ReadJsonOptions = {}): unknown {
   checkRecord(options, "The options of readJson must be an object");

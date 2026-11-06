@@ -432,6 +432,20 @@ async function exchange(
  * @throws `DataError` when an argument is not valid.
  * @throws `ServiceError` as `requestService` does.
  * @throws The `reason` of a signal when it aborts, before or during the call.
+ *
+ * @example
+ * ```ts
+ * import { callService, DEFAULT_TIMEOUT_MS } from "@interopkit/core";
+ *
+ * const fetch = async () => new Response('{"keys":[]}');
+ * const body = await callService(
+ *   { fetch, timeoutMs: DEFAULT_TIMEOUT_MS },
+ *   "The key set at https://platform.example/jwks",
+ *   "https://platform.example/jwks",
+ *   { method: "GET", headers: { accept: "application/json" } },
+ * );
+ * // => '{"keys":[]}'
+ * ```
  */
 export async function callService(
   service: ServiceCall,

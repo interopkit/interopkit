@@ -493,6 +493,15 @@ export function describeIssue(issue: v.BaseIssue<unknown>): string {
  * @param label - Names the data in the error message, such as `The registration`.
  * @returns The data, as the schema reads it.
  * @throws `DataError` that names the path of the first issue and what was expected there.
+ *
+ * @example
+ * ```ts
+ * import { httpsUrlSchema, mapSchema, nonEmptyStringSchema, parseWith } from "@interopkit/core/checks";
+ *
+ * parseWith(httpsUrlSchema, "https://platform.example/jwks", "The key set address"); // => "https://platform.example/jwks"
+ * const claims = parseWith(mapSchema(nonEmptyStringSchema), { sub: "user-1" }, "The claims");
+ * Object.fromEntries(claims); // => { sub: "user-1" }
+ * ```
  */
 export function parseWith<TSchema extends v.GenericSchema>(
   schema: TSchema,
