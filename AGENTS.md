@@ -485,8 +485,8 @@ listed here with its reason. A file is written `<package>/<path below src>`, and
   site, any other file at its address in the repository. Speed, size and memory are in
   `docs/<package>/performance.md`, and what shows that a package is right is in `evidence.md`.
 - Every package has `supported.md`, `evidence.md` and `choosing.md` (`pnpm check:standards` fails without one). A number on them
-  is a count that a file of the repository holds (a lock, a fixture, a test, a suite's README) and states with its commit and
-  date; a number with no such file is left out. `choosing.md` takes what each comparator has that the package lacks from the
+  is a count that a file of the repository holds (a lock, a fixture, a test, a suite's README) or a run of the tests gives,
+  stated with its commit and date, and with the Node.js of a run; a number with no such source is left out. `choosing.md` takes what each comparator has that the package lacks from the
   rows of `comparators.md` that are Partly or Excluded, with the comparator's version and the date it was read.
 - Every guide's `#` heading names its subject ("The client of an LRS", not "Client"), since the site titles the page with it,
   and every entry point of a package is a `@module` named by its import path, so that its pages sit apart from the guides.
