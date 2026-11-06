@@ -24,11 +24,11 @@ flowchart LR
 
 ## Running it
 
-| Need                                       | Why                                                                                  |
-| ------------------------------------------ | ------------------------------------------------------------------------------------ |
-| Docker                                     | The container; the first build downloads Maven and the dependencies of the validator |
-| `pnpm schemas` first                       | The credentials are signed under the contexts that it downloads at their pins        |
-| Network access to GitHub and Maven Central | The archive and the dependencies of the build                                        |
+| Need                                       | Why                                                                                                             |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| Docker                                     | The container; the first build downloads Maven and the dependencies of the validator, and takes several minutes |
+| `pnpm schemas` first                       | The credentials are signed under the contexts that it downloads at their pins                                   |
+| Network access to GitHub and Maven Central | The archive and the dependencies of the build                                                                   |
 
 ```sh
 pnpm schemas
