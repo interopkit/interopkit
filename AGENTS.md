@@ -443,6 +443,11 @@ listed here with its reason. A file is written `<package>/<path below src>`, and
   `@returns` and `@throws`, an option adds `@defaultValue`, a longer explanation goes under `@remarks`, and a specification
   is cited with `@see {@link url | name}`. A comment carries no history, no section sign and no code of a review or a
   ticket.
+- The main function of each subpath of a package, as its `exports` lists them, has an `@example`: a short use that runs, with
+  a fenced `ts` block that follows the rules of the samples below, taken from the guide of the module where the guide has a
+  sample. A host, a key or a file that it needs is in memory, generated or a fixture. `runTsdocExamples` and
+  `typecheckTsdocExamples` of `scripts/guide-samples.ts` run and compile the examples of a package in its `guides.test.ts`, and
+  `pnpm check:standards` fails on a subpath whose entry exports no function with an `@example`, through its re-exports.
 - `//` comments only explain why something non-obvious is done: an ambiguity of a specification, a trap, an invariant. No
   commented-out code.
 - US English. Docs state facts in short sentences; prefer a table or list to prose. Code samples are complete: they show their

@@ -46,7 +46,7 @@ const violation = (file: string, line: number, rule: string, message: string): V
 });
 
 /** Reads a manifest, or `undefined` when its text is not JSON. */
-function manifestOf(text: string): Record<string, unknown> | undefined {
+export function manifestOf(text: string): Record<string, unknown> | undefined {
   try {
     const value: unknown = JSON.parse(text);
     return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : undefined;

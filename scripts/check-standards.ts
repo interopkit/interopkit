@@ -8,6 +8,7 @@ import {
   checkIdentity,
   checkReadmeLinks,
   checkTrademarks,
+  manifestOf,
 } from "./check-identity.ts";
 
 /** One breach of the standards: the file, the 1-based line (0 for the whole file), the rule and what to do. */
@@ -387,6 +388,108 @@ export function checkEntries(files: Files): Violation[] {
   return found;
 }
 
+/** The entries that a manifest exports, as import specifiers and source files: `./dist/<path>.js` is built from `src/<path>.ts`. */
+function entriesOf(folder: string, text: string): [string, string][] {
+  const manifest = manifestOf(text);
+  const exported = manifest?.exports;
+  if (typeof manifest?.name !== "string" || typeof exported !== "object" || exported === null) return [];
+  return Object.entries(exported).flatMap(([subpath, target]): [string, string][] => {
+    const built = typeof target === "object" && target !== null ? (target as { default?: unknown }).default : undefined;
+    return typeof built === "string" && /^\.\/dist\/.+\.js$/.test(built)
+      ? [[`${manifest.name}${subpath.slice(1)}`, `packages/${folder}/src/${built.slice(7, -3)}.ts`]]
+      : [];
+  });
+}
+
+/** The source file of each entry of the packages, by the import specifier of its subpath, from the `exports` of each manifest. */
+function entrySources(files: Files): ReadonlyMap<string, string> {
+  return new Map(
+    [...files].flatMap(([file, text]) => {
+      const folder = /^packages\/([^/]+)\/package\.json$/.exec(file)?.[1];
+      return folder === undefined ? [] : entriesOf(folder, text);
+    }),
+  );
+}
+
+/** A re-export of a source file: the path of the file it takes from, and the names it takes. */
+interface Reexport {
+  readonly target: string;
+  readonly names: ReadonlySet<string> | "all";
+}
+
+/** The source file of a specifier: a relative path from the file, or an entry of a package of the family; undefined for any other package. */
+function sourceOf(file: string, specifier: string, entries: ReadonlyMap<string, string>): string | undefined {
+  if (specifier.startsWith(".")) return posix.normalize(posix.join(dirname(file), specifier.replace(/\.js$/, ".ts")));
+  return entries.get(specifier);
+}
+
+/** The re-exports of values in a source file, relative or from a package of the family. */
+function reexportsOf(file: string, source: ts.SourceFile, entries: ReadonlyMap<string, string>): Reexport[] {
+  return source.statements.flatMap((statement): Reexport[] => {
+    if (!ts.isExportDeclaration(statement) || statement.isTypeOnly) return [];
+    const specifier = (statement.moduleSpecifier as ts.StringLiteral | undefined)?.text;
+    const target = specifier === undefined ? undefined : sourceOf(file, specifier, entries);
+    if (target === undefined) return [];
+    const { exportClause } = statement;
+    if (exportClause === undefined) return [{ target, names: "all" }];
+    if (!ts.isNamedExports(exportClause)) return [];
+    const names = exportClause.elements
+      .filter((element) => !element.isTypeOnly)
+      .map((element) => (element.propertyName ?? element.name).text);
+    return [{ target, names: new Set(names) }];
+  });
+}
+
+/** The tag `@example` at the start of a line of a comment, and not an address such as `learner@example.org` in its text. */
+const EXAMPLE_TAG = /^[ \t]*\*[ \t]*@example\b/m;
+
+/** Whether a source file declares an exported function, among the names given, whose TSDoc has an `@example`. */
+function declaresExample(source: ts.SourceFile, names: ReadonlySet<string> | "all"): boolean {
+  return source.statements.some(
+    (statement) =>
+      ts.isFunctionDeclaration(statement) &&
+      statement.name !== undefined &&
+      isExported(statement) &&
+      (names === "all" || names.has(statement.name.text)) &&
+      EXAMPLE_TAG.test(source.text.slice(statement.getFullStart(), statement.getStart(source))),
+  );
+}
+
+/** Whether what a file exports includes a function with an `@example`, through the modules it re-exports. */
+function exportsExample(
+  entry: string,
+  files: Files,
+  entries: ReadonlyMap<string, string>,
+  names: ReadonlySet<string> | "all" = "all",
+  reading: ReadonlySet<string> = new Set(),
+): boolean {
+  const text = files.get(entry);
+  if (text === undefined || reading.has(entry)) return false;
+  const source = ts.createSourceFile(entry, text, ts.ScriptTarget.ES2022, true);
+  if (declaresExample(source, names)) return true;
+  return reexportsOf(entry, source, entries).some(({ target, names: taken }) => {
+    const wanted =
+      names === "all" ? taken : taken === "all" ? names : new Set([...taken].filter((name) => names.has(name)));
+    return exportsExample(target, files, entries, wanted, new Set([...reading, entry]));
+  });
+}
+
+/**
+ * The entry of every subpath of a package, as its manifest exports it, exports a function whose TSDoc has an `@example`: the
+ * main function of the module. The samples test of each package runs every example and compares the results that it shows.
+ */
+export function checkModuleExamples(files: Files): Violation[] {
+  const entries = entrySources(files);
+  return [...entries]
+    .filter(([, entry]) => files.has(entry) && !exportsExample(entry, files, entries))
+    .map(([specifier, entry]) => ({
+      file: entry,
+      line: 0,
+      rule: "module-example",
+      message: `The subpath ${specifier} exports no function whose TSDoc has an @example; put one on the main function of the module.`,
+    }));
+}
+
 /** The modules of `scripts/` that read what `pnpm schemas`, `pnpm spec-examples` or `pnpm corpus` download. */
 const DOWNLOAD_READERS = /(^|\/)scripts\/(schemas|schema-oracle|schema-arbitrary|spec-examples|corpus)\.js$/;
 /** The tests that may read a download: the corpus and spec projects, which run after the download. */
@@ -614,6 +717,7 @@ export const CHECKS: readonly ((files: Files) => Violation[])[] = [
   checkPackageNames,
   checkFamilies,
   checkEntries,
+  checkModuleExamples,
   checkDownloads,
   checkConsole,
   checkSecurityLimits,

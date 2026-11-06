@@ -9,6 +9,7 @@ import {
   checkFileNames,
   checkGuideSections,
   checkHistory,
+  checkModuleExamples,
   checkPackageNames,
   checkReadmeSections,
   checkSectionSigns,
@@ -357,6 +358,139 @@ describe("module entries", () => {
   it("accepts the entries of a module, its own files and the files of the package root", () => {
     const accepted = [...files].filter(([file]) => file === "packages/a/src/one/write.ts");
     expect(checkEntries(new Map(accepted))).toStrictEqual([]);
+  });
+});
+
+describe("module examples", () => {
+  const Example = "/**\n * Reads a thing.\n *\n * @example\n * ```ts\n * read(); // => 1\n * ```\n */\n";
+  const manifest = (name: string, exports: Record<string, string>): string =>
+    JSON.stringify({
+      name,
+      exports: Object.fromEntries(
+        Object.entries(exports).map(([subpath, built]) => [
+          subpath,
+          { types: `./dist/${built}.d.ts`, default: `./dist/${built}.js` },
+        ]),
+      ),
+    });
+  const a = manifest("@x/a", { ".": "index", "./one": "one/index", "./checks": "checks" });
+  const violations = (files: Record<string, string>) =>
+    checkModuleExamples(repository(files)).map(({ file, message }) => [file, message.split(" exports")[0]]);
+
+  it("reports the entry of each subpath whose functions have no example, a file or a folder", () => {
+    expect(
+      violations({
+        "packages/a/package.json": a,
+        "packages/a/src/index.ts": "/** Reads. */\nexport function read() {}\n",
+        "packages/a/src/one/index.ts": "export function write() {}\n",
+        "packages/a/src/checks.ts": "export const check = 1;\n",
+      }),
+    ).toStrictEqual([
+      ["packages/a/src/index.ts", "The subpath @x/a"],
+      ["packages/a/src/one/index.ts", "The subpath @x/a/one"],
+      ["packages/a/src/checks.ts", "The subpath @x/a/checks"],
+    ]);
+  });
+
+  it("accepts an exported function with an example in the entry itself", () => {
+    const files = {
+      "packages/a/package.json": a,
+      "packages/a/src/index.ts": `${Example}export function read() {}\n`,
+      "packages/a/src/one/index.ts": `${Example}export async function write() {}\n`,
+      "packages/a/src/checks.ts": `${Example}export function check() {}\n`,
+    };
+    expect(violations(files)).toStrictEqual([]);
+  });
+
+  it("follows the re-exports of values, whole or by name, to the function that has the example", () => {
+    const files = {
+      "packages/a/package.json": a,
+      "packages/a/src/index.ts": 'export { read } from "./read/index.js";\nexport * from "./one/index.js";\n',
+      "packages/a/src/read/index.ts": 'export { read } from "./read.js";\n',
+      "packages/a/src/read/read.ts": `${Example}export function read() {}\nexport function other() {}\n`,
+      "packages/a/src/one/index.ts": 'export { type Shape, other as write } from "../read/read.js";\n',
+      "packages/a/src/checks.ts": `${Example}export function check() {}\n`,
+    };
+    expect(violations(files)).toStrictEqual([["packages/a/src/one/index.ts", "The subpath @x/a/one"]]);
+  });
+
+  it("counts an example of a function that the entry takes by name, and no other", () => {
+    const files = {
+      "packages/a/package.json": a,
+      "packages/a/src/index.ts": 'export { other } from "./read.js";\n',
+      "packages/a/src/one/index.ts": 'export { read } from "../read.js";\n',
+      "packages/a/src/read.ts": `${Example}export function read() {}\nexport function other() {}\n`,
+      "packages/a/src/checks.ts": `${Example}export function check() {}\n`,
+    };
+    expect(violations(files)).toStrictEqual([["packages/a/src/index.ts", "The subpath @x/a"]]);
+  });
+
+  it("follows a re-export from another package of the family by the subpath it names", () => {
+    const files = {
+      "packages/a/package.json": a,
+      "packages/b/package.json": manifest("@x/b", { ".": "index", "./deep": "deep/index" }),
+      "packages/a/src/index.ts": 'export { read } from "@x/b";\nexport type { Shape } from "@x/b/deep";\n',
+      "packages/a/src/one/index.ts": 'export { read } from "@x/b/deep";\n',
+      "packages/a/src/checks.ts": `${Example}export function check() {}\n`,
+      "packages/b/src/index.ts": 'export { read } from "./read.js";\n',
+      "packages/b/src/read.ts": `${Example}export function read() {}\n`,
+      "packages/b/src/deep/index.ts": "export function read() {}\n",
+    };
+    expect(violations(files)).toStrictEqual([
+      ["packages/a/src/one/index.ts", "The subpath @x/a/one"],
+      ["packages/b/src/deep/index.ts", "The subpath @x/b/deep"],
+    ]);
+  });
+
+  it("ignores what is not a function with an example that the entry exports", () => {
+    const files = {
+      "packages/a/package.json": a,
+      "packages/a/src/index.ts": `${Example}function read() {}\n`,
+      "packages/a/src/one/index.ts": `${Example}export const read = () => 1;\n`,
+      "packages/a/src/checks.ts": 'export type { Shape } from "./shape.js";\nexport { type make } from "./shape.js";\n',
+      "packages/a/src/shape.ts": `${Example}export function make() {}\n`,
+    };
+    expect(violations(files).map(([file]) => file)).toStrictEqual([
+      "packages/a/src/index.ts",
+      "packages/a/src/one/index.ts",
+      "packages/a/src/checks.ts",
+    ]);
+  });
+
+  it("takes the tag at the start of a line of the comment, and not an address such as learner@example.org in its text", () => {
+    const files = {
+      "packages/a/package.json": manifest("@x/a", { ".": "index" }),
+      "packages/a/src/index.ts": "/**\n * Writes `learner@example.org`.\n */\nexport function read() {}\n",
+    };
+    expect(violations(files)).toStrictEqual([["packages/a/src/index.ts", "The subpath @x/a"]]);
+  });
+
+  it("stops at modules that re-export each other", () => {
+    const files = {
+      "packages/a/package.json": manifest("@x/a", { ".": "index" }),
+      "packages/a/src/index.ts": 'export * from "./one.js";\n',
+      "packages/a/src/one.ts": 'export * from "./two.js";\n',
+      "packages/a/src/two.ts": 'export * from "./one.js";\n',
+    };
+    expect(violations(files)).toStrictEqual([["packages/a/src/index.ts", "The subpath @x/a"]]);
+  });
+
+  it("looks at the subpaths that the manifests build from a source that the repository holds", () => {
+    const files = {
+      "packages/a/package.json": JSON.stringify({
+        name: "@x/a",
+        exports: {
+          ".": "./dist/index.js",
+          "./data": { default: "./data.json" },
+          "./one": { default: "./dist/one/index.js" },
+        },
+      }),
+      "packages/b/package.json": "not JSON",
+      "packages/c/package.json": JSON.stringify({ name: "@x/c" }),
+      "packages/d/package.json": JSON.stringify({ exports: { ".": { default: "./dist/index.js" } } }),
+      "packages/a/src/index.ts": "export function read() {}\n",
+    };
+    expect(violations(files)).toStrictEqual([]);
   });
 });
 
