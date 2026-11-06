@@ -3,14 +3,15 @@ import { describe, expect, it } from "vitest";
 import { type EntrySize, entryPoints, entrySize } from "../../../scripts/entry-size.js";
 
 /**
- * The budget of each entry point of the package, bundled alone as a host's bundler makes it (`scripts/entry-size.ts`): the most
- * bytes after gzip, 1.25 times those measured rounded up to the next 500, and every module other than its own that it holds, so
- * that an import which pulls another module into an entry point fails until the list says so. docs/achievement-credentials/performance.md lists the sizes. A budget
- * changes only with the reason in the commit that changes it.
+ * The budget of each entry point of the package, bundled alone as a host's bundler makes it (`scripts/entry-size.ts`): the
+ * most bytes after gzip, 1.25 times those measured rounded up to the next 500, and every module other than its own that it
+ * holds, so that an import which pulls another module into an entry point fails until the list says so.
+ * docs/achievement-credentials/performance.md lists the sizes. Every budget is set again by this rule from main before a
+ * release, and one budget, in a commit that says why, when its entry passes it; gzip is measured on Node.js 22.
  */
 const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>> = {
   "@interopkit/achievement-credentials": {
-    gzip: 26_500,
+    gzip: 27_500,
     holds: [
       "@interopkit/core",
       "@noble/hashes",
@@ -23,7 +24,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     ],
   },
   "@interopkit/achievement-credentials/baking": {
-    gzip: 35_000,
+    gzip: 35_500,
     holds: [
       "@interopkit/core",
       "achievement-credentials/base64url",
@@ -37,7 +38,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     ],
   },
   "@interopkit/achievement-credentials/client": {
-    gzip: 25_500,
+    gzip: 26_500,
     holds: [
       "@interopkit/core",
       "achievement-credentials/compact-jws",
@@ -47,7 +48,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     ],
   },
   "@interopkit/achievement-credentials/keys": {
-    gzip: 61_500,
+    gzip: 65_000,
     holds: [
       "@interop/bnid",
       "@interop/data-integrity-core",
@@ -75,7 +76,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     ],
   },
   "@interopkit/achievement-credentials/jwt": {
-    gzip: 31_000,
+    gzip: 32_000,
     holds: [
       "@interopkit/core",
       "achievement-credentials/base64url",
@@ -91,7 +92,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     ],
   },
   "@interopkit/achievement-credentials/data-integrity": {
-    gzip: 169_500,
+    gzip: 171_500,
     holds: [
       "@digitalbazaar/di-sd-primitives",
       "@digitalbazaar/security-context",
@@ -139,7 +140,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     ],
   },
   "@interopkit/achievement-credentials/status": {
-    gzip: 39_500,
+    gzip: 41_000,
     holds: [
       "@interopkit/core",
       "achievement-credentials/base64url",
@@ -156,7 +157,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     ],
   },
   "@interopkit/achievement-credentials/refresh": {
-    gzip: 7000,
+    gzip: 9000,
     holds: [
       "@interopkit/core",
       "achievement-credentials/compact-jws",
@@ -166,7 +167,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     ],
   },
   "@interopkit/achievement-credentials/verify": {
-    gzip: 62_500,
+    gzip: 63_500,
     holds: [
       "@cfworker/json-schema",
       "@interopkit/core",
@@ -189,7 +190,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     ],
   },
   "@interopkit/achievement-credentials/provider": {
-    gzip: 45_500,
+    gzip: 50_000,
     holds: [
       "@interopkit/core",
       "achievement-credentials/base64url",

@@ -2,14 +2,15 @@ import { describe, expect, it } from "vitest";
 import { type EntrySize, entryPoints, entrySize } from "../../../scripts/entry-size.js";
 
 /**
- * The budget of each entry point of the package, bundled alone as a host's bundler makes it (`scripts/entry-size.ts`): the most
- * bytes after gzip, 1.25 times those measured rounded up to the next 500, and every module other than its own that it holds, so
- * that an import which pulls another module into an entry point fails until the list says so. A budget changes only with the
- * reason in the commit that changes it.
+ * The budget of each entry point of the package, bundled alone as a host's bundler makes it (`scripts/entry-size.ts`): the
+ * most bytes after gzip, 1.25 times those measured rounded up to the next 500, and every module other than its own that it
+ * holds, so that an import which pulls another module into an entry point fails until the list says so. Every budget is set
+ * again by this rule from main before a release, and one budget, in a commit that says why, when its entry passes it; gzip
+ * is measured on Node.js 22.
  */
 const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>> = {
   "@interopkit/course-launch": {
-    gzip: 41_000,
+    gzip: 42_000,
     holds: [
       "@interopkit/core",
       "course-launch/model",
@@ -24,7 +25,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     ],
   },
   "@interopkit/course-launch/au": {
-    gzip: 46_000,
+    gzip: 47_500,
     holds: [
       "@interopkit/core",
       "@noble/hashes",
@@ -42,7 +43,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     ],
   },
   "@interopkit/course-launch/lms": {
-    gzip: 51_500,
+    gzip: 53_000,
     holds: [
       "@interopkit/core",
       "course-launch/model",
@@ -60,7 +61,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     ],
   },
   "@interopkit/course-launch/package": {
-    gzip: 92_500,
+    gzip: 93_000,
     holds: [
       "@interopkit/core",
       "@zip.js/zip.js",

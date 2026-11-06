@@ -42,10 +42,10 @@ module that its budget does not list. Gzip is measured on Node.js 22; other vers
 
 | Entry point               |  Bytes |   Gzip | Budget | Holds, besides valibot |
 | ------------------------- | -----: | -----: | -----: | ---------------------- |
-| `@interopkit/core`        | 27,386 |  9,607 | 12,000 | nothing more           |
-| `@interopkit/core/checks` | 23,585 |  8,156 |  8,500 | nothing more           |
-| `@interopkit/core/http`   | 23,124 |  7,472 |  9,000 | nothing more           |
-| `@interopkit/core/oauth`  | 47,472 | 15,429 | 18,500 | oauth4webapi           |
+| `@interopkit/core`        | 27,386 |  9,607 | 12,500 | nothing more           |
+| `@interopkit/core/checks` | 23,585 |  8,156 | 10,500 | nothing more           |
+| `@interopkit/core/http`   | 23,124 |  7,472 |  9,500 | nothing more           |
+| `@interopkit/core/oauth`  | 47,472 | 15,429 | 19,500 | oauth4webapi           |
 
 ## Memory
 

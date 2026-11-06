@@ -5,17 +5,18 @@ import { type EntrySize, entryPoints, entrySize } from "../../../scripts/entry-s
 const SHARED = ["@interopkit/core", "jose", "tool-integration/errors", "tool-integration/protocol", "valibot"];
 
 /**
- * The budget of each entry point of the package, bundled alone as a host's bundler makes it (`scripts/entry-size.ts`): the most
- * bytes after gzip, 1.25 times those measured rounded up to the next 500, and every module other than its own that it holds, so
- * that an import which pulls another module into an entry point fails until the list says so: the platform never holds the tool,
- * nor the tool the platform. docs/tool-integration/performance.md lists the sizes. A budget changes only with the reason in the
- * commit that changes it.
+ * The budget of each entry point of the package, bundled alone as a host's bundler makes it (`scripts/entry-size.ts`): the
+ * most bytes after gzip, 1.25 times those measured rounded up to the next 500, and every module other than its own that it
+ * holds, so that an import which pulls another module into an entry point fails until the list says so: the platform never
+ * holds the tool, nor the tool the platform. docs/tool-integration/performance.md lists the sizes. Every budget is set again
+ * by this rule from main before a release, and one budget, in a commit that says why, when its entry passes it; gzip is
+ * measured on Node.js 22.
  */
 const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>> = {
   "@interopkit/tool-integration": { gzip: 13_000, holds: SHARED },
-  "@interopkit/tool-integration/platform": { gzip: 55_500, holds: SHARED },
+  "@interopkit/tool-integration/platform": { gzip: 57_000, holds: SHARED },
   // The tool obtains its access tokens with the OAuth 2.0 client of core.
-  "@interopkit/tool-integration/tool": { gzip: 54_000, holds: [...SHARED, "oauth4webapi"].sort() },
+  "@interopkit/tool-integration/tool": { gzip: 56_000, holds: [...SHARED, "oauth4webapi"].sort() },
 };
 
 const ENTRIES = entryPoints("tool-integration");

@@ -600,10 +600,12 @@ listed here with its reason. A file is written `<package>/<path below src>`, and
 - Baked images are written by `validation/baked_images.py` (`struct` and `zlib` for the PNG chunks, string edits for the SVG, ElementTree to
   parse every SVG), and `test/baking.test.ts` compares the bytes and the text with the fixture. A reader of images has a test of the
   worst input of each limit.
-- The `test/size.test.ts` of a package bundles each entry point of its `exports` alone with `scripts/entry-size.ts` (esbuild,
-  minified, every dependency inside, and a chunk of its own for what a dynamic `import()` loads, which the entry does not count)
-  and fails when one is above its budget after gzip, 1.25 times the size measured rounded up to the next 500 bytes, or holds a
-  module of the package or a dependency that its budget does not list.
+- Every entry point of a package has a size budget that `pnpm test` holds: the bytes of its first load (its entry chunk and
+  the chunks it loads statically), bundled alone as a host's bundler makes it, minified and with code splitting, after gzip
+  at level 9 on Node.js 22, and the modules other than its own that it holds, so that an import which pulls one module into
+  another fails until the list says so. The bytes are 1.25 times those measured, rounded up to the next 500. Every budget
+  is set again by this rule from main before a release, and one budget, in a commit that says why, when its entry passes
+  it. The `test/size.test.ts` of each package holds them, and `scripts/entry-size.ts` measures them.
 - A benchmark is a `*.bench.ts` in a project named `*-bench` (`pnpm bench`, which runs one package at a time so that none times
   another's load); its budgets are in `test/budgets.ts`. A time is five times the fastest sample of the runner of CI, rounded up to
   one significant digit. A ratio to a reference in the same run is twice the highest ratio measured on the runner (12 runs of the `bench` job on 2026-11-04 and 2026-11-05), rounded up to one significant digit, with no exception for a validator that

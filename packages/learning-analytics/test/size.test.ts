@@ -2,14 +2,15 @@ import { describe, expect, it } from "vitest";
 import { type EntrySize, entryPoints, entrySize } from "../../../scripts/entry-size.js";
 
 /**
- * The budget of each entry point of the package, bundled alone as a host's bundler makes it (`scripts/entry-size.ts`): the most
- * bytes after gzip, 1.25 times those measured rounded up to the next 500, and every module other than its own that it holds, so
- * that an import which pulls another module into an entry point fails until the list says so. docs/learning-analytics/performance.md
- * lists the sizes. A budget changes only with the reason in the commit that changes it.
+ * The budget of each entry point of the package, bundled alone as a host's bundler makes it (`scripts/entry-size.ts`): the
+ * most bytes after gzip, 1.25 times those measured rounded up to the next 500, and every module other than its own that it
+ * holds, so that an import which pulls another module into an entry point fails until the list says so.
+ * docs/learning-analytics/performance.md lists the sizes. Every budget is set again by this rule from main before a release,
+ * and one budget, in a commit that says why, when its entry passes it; gzip is measured on Node.js 22.
  */
 const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>> = {
   "@interopkit/learning-analytics": {
-    gzip: 26_000,
+    gzip: 27_500,
     holds: [
       "@interopkit/core",
       "learning-analytics/build",
@@ -23,7 +24,7 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     ],
   },
   "@interopkit/learning-analytics/endpoint": {
-    gzip: 23_000,
+    gzip: 24_000,
     holds: [
       "@interopkit/core",
       "learning-analytics/model",

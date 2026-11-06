@@ -2,14 +2,15 @@ import { describe, expect, it } from "vitest";
 import { type EntrySize, entryPoints, entrySize } from "../../../scripts/entry-size.js";
 
 /**
- * The budget of each entry point of the package, bundled alone as a host's bundler makes it (`scripts/entry-size.ts`): the most
- * bytes after gzip, 1.25 times those measured rounded up to the next 500, and every module other than its own that it holds, so
- * that an import which pulls another module into an entry point fails until the list says so. docs/competency-frameworks/performance.md
- * lists the sizes. A budget changes only with the reason in the commit that changes it.
+ * The budget of each entry point of the package, bundled alone as a host's bundler makes it (`scripts/entry-size.ts`): the
+ * most bytes after gzip, 1.25 times those measured rounded up to the next 500, and every module other than its own that it
+ * holds, so that an import which pulls another module into an entry point fails until the list says so.
+ * docs/competency-frameworks/performance.md lists the sizes. Every budget is set again by this rule from main before a
+ * release, and one budget, in a commit that says why, when its entry passes it; gzip is measured on Node.js 22.
  */
 const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>> = {
   "@interopkit/competency-frameworks": {
-    gzip: 15_000,
+    gzip: 15_500,
     holds: [
       "@interopkit/core",
       "competency-frameworks/model",
@@ -19,15 +20,15 @@ const ENTRY_BUDGETS: Readonly<Record<string, Pick<EntrySize, "gzip" | "holds">>>
     ],
   },
   "@interopkit/competency-frameworks/client": {
-    gzip: 19_000,
+    gzip: 20_000,
     holds: ["@interopkit/core", "competency-frameworks/model", "competency-frameworks/read", "valibot"],
   },
   "@interopkit/competency-frameworks/graph": {
-    gzip: 9_500,
+    gzip: 10_000,
     holds: ["@interopkit/core", "competency-frameworks/model", "valibot"],
   },
   "@interopkit/competency-frameworks/provider": {
-    gzip: 18_000,
+    gzip: 19_000,
     holds: [
       "@interopkit/core",
       "competency-frameworks/model",
