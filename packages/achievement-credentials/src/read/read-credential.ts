@@ -47,6 +47,37 @@ function inspectAny(value: unknown, kind: CredentialKind | undefined, sink: Issu
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/ | Open Badges 3.0}
  * @see {@link https://www.imsglobal.org/spec/clr/v2p0/main/ | CLR 2.0}
  * @see {@link https://www.imsglobal.org/sites/default/files/Badges/OBv2p0Final/index.html | Open Badges 2.0}
+ *
+ * @example
+ * ```ts
+ * import { readCredential, validateCredential } from "@interopkit/achievement-credentials";
+ *
+ * const input = {
+ *   "@context": ["https://www.w3.org/ns/credentials/v2", "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"],
+ *   id: "https://example.edu/credentials/3732",
+ *   type: ["VerifiableCredential", "OpenBadgeCredential"],
+ *   issuer: { id: "https://example.edu/issuers/565049", type: ["Profile"], name: "Example University" },
+ *   validFrom: "2024-06-13T18:46:03Z",
+ *   credentialSubject: {
+ *     type: ["AchievementSubject"],
+ *     identifier: [
+ *       { type: "IdentityObject", hashed: false, identityHash: "learner@example.edu", identityType: "emailAddress" },
+ *     ],
+ *     achievement: {
+ *       id: "https://example.edu/achievements/1",
+ *       type: ["Achievement"],
+ *       name: "Introduction to Fractions",
+ *       description: "Understands fractions as numbers.",
+ *       criteria: { narrative: "Pass the final assessment." },
+ *     },
+ *   },
+ *   evidence: { type: ["Evidence"], narrative: "A portfolio of worked problems." },
+ * };
+ * const credential = readCredential(input, { kind: "AchievementCredential" });
+ * credential.evidence?.length; // => 1
+ * Object.is(credential, input); // => false
+ * validateCredential(credential); // => []
+ * ```
  */
 export function readCredential(
   value: unknown,

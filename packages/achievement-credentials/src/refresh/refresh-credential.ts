@@ -51,6 +51,40 @@ export interface RefreshOptions extends CallOptions {
  * @throws `ServiceError` when the service did not answer, answered a status other than 200, or sent too much.
  * @throws The `reason` of the signal when it aborts.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/#refreshing | Open Badges 3.0, 9.1}
+ *
+ * @example
+ * ```ts
+ * import { buildAchievementCredential } from "@interopkit/achievement-credentials";
+ * import { handleRefreshRequest, refreshCredential } from "@interopkit/achievement-credentials/refresh";
+ *
+ * // The issuer's service: it gives the current version of the credential 3732.
+ * const current = { id: "https://example.edu/credentials/3732", name: "Fractions badge, reissued" };
+ * const credential = buildAchievementCredential({
+ *   id: "https://example.edu/credentials/3732",
+ *   issuer: { id: "https://example.edu/issuers/565049", type: ["Profile"], name: "Example University" },
+ *   validFrom: "2024-06-13T18:46:03Z",
+ *   name: "Fractions badge",
+ *   subject: { id: "did:example:learner" },
+ *   achievement: {
+ *     id: "https://example.edu/achievements/1",
+ *     type: ["Achievement"],
+ *     name: "Fractions",
+ *     description: "Understands fractions as numbers.",
+ *     criteria: { narrative: "Pass the final assessment." },
+ *   },
+ *   refreshService: { id: "https://example.edu/refresh/3732", type: "1EdTechCredentialRefresh" },
+ * });
+ * const refreshed = await refreshCredential(credential, {
+ *   fetch: async (url) => {
+ *     const answer = await handleRefreshRequest(
+ *       { method: "GET", url, headers: {}, body: new Uint8Array(0) },
+ *       { refresh: async (id) => (id === "3732" ? current : undefined) },
+ *     );
+ *     return new Response(answer.body, { status: answer.status, headers: answer.headers });
+ *   },
+ * });
+ * typeof refreshed === "object" && refreshed.name; // => "Fractions badge, reissued"
+ * ```
  */
 export async function refreshCredential(
   credential: IssuableCredential | CredentialV1p1,

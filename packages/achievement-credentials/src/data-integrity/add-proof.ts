@@ -58,6 +58,64 @@ function proofKeyId(signer: Signer, algorithm: string): string {
  * @throws `ServiceError` when a context cannot be fetched.
  * @throws The `reason` of the signal when it aborts.
  * @see {@link https://www.w3.org/TR/vc-di-eddsa/ | Data Integrity EdDSA Cryptosuites}
+ *
+ * @example
+ * ```ts
+ * import { buildAchievementCredential } from "@interopkit/achievement-credentials";
+ * import { addProof, createContextLoader, verifyProof } from "@interopkit/achievement-credentials/data-integrity";
+ * import { createKeyResolver } from "@interopkit/achievement-credentials/keys";
+ * import { createCryptoKeySigner } from "@interopkit/core";
+ *
+ * const pair = await crypto.subtle.generateKey("Ed25519", true, ["sign", "verify"]);
+ * const publicKeyJwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
+ * const issuer = "https://example.edu/issuers/565049";
+ * const document = {
+ *   id: issuer,
+ *   verificationMethod: [{ id: `${issuer}#key-1`, type: "JsonWebKey", controller: issuer, publicKeyJwk }],
+ *   assertionMethod: [`${issuer}#key-1`],
+ * };
+ * const clock = { now: () => Date.UTC(2024, 5, 14) };
+ * const keys = createKeyResolver({
+ *   clock,
+ *   fetch: async (url) =>
+ *     new Response(url === issuer ? JSON.stringify(document) : "", { status: url === issuer ? 200 : 404 }),
+ * });
+ *
+ * // A host passes the W3C and 1EdTech contexts as documents, which the loader checks against the pins of KNOWN_CONTEXTS. This
+ * // example stands in a small context for each and pins it, which the option pins allows: it takes the place of a known pin.
+ * const small = { "@context": { "@version": 1.1, "@vocab": "https://example.org/vocab#", id: "@id", type: "@type" } };
+ * const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(small)));
+ * const pin = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+ * const addresses = [
+ *   "https://www.w3.org/ns/credentials/v2",
+ *   "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
+ *   "https://purl.imsglobal.org/spec/ob/v3p0/extensions.json",
+ * ];
+ * const contexts = createContextLoader({
+ *   documents: new Map(addresses.map((address) => [address, small])),
+ *   pins: new Map(addresses.map((address) => [address, pin])),
+ * });
+ *
+ * const credential = buildAchievementCredential({
+ *   id: "https://example.edu/credentials/3732",
+ *   issuer: { id: issuer, type: ["Profile"], name: "Example University" },
+ *   validFrom: "2024-06-13T18:46:03Z",
+ *   name: "Fractions badge",
+ *   subject: { id: "did:example:learner" },
+ *   achievement: {
+ *     id: "https://example.edu/achievements/1",
+ *     type: ["Achievement"],
+ *     name: "Fractions",
+ *     description: "Understands fractions as numbers.",
+ *     criteria: { narrative: "Pass the final assessment." },
+ *   },
+ * });
+ * const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "EdDSA", keyId: `${issuer}#key-1` });
+ * const signed = await addProof(credential, signer, { contexts, clock });
+ * signed.proof?.[0]?.cryptosuite; // => "eddsa-rdfc-2022"
+ * signed.proof?.[0]?.created; // => "2024-06-14T00:00:00Z"
+ * (await verifyProof(signed, { keys, clock, contexts })).valid; // => true
+ * ```
  */
 export async function addProof(
   credential: IssuableCredential,

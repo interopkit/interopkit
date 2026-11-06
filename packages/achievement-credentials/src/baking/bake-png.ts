@@ -24,6 +24,39 @@ import { kindOfChunk, TEXT_CHUNK, writeCredentialChunk } from "./png-text.js";
  * `false`, or the image or the result is larger than `maxBytes`.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/#baked-badge | Open Badges 3.0, Baked Badge}
  * @see {@link https://www.imsglobal.org/spec/clr/v2p0/main/#image-format | CLR 2.0, Image Format}
+ *
+ * @example
+ * ```ts
+ * import { bakePng, readPng } from "@interopkit/achievement-credentials/baking";
+ *
+ * const credential = {
+ *   "@context": ["https://www.w3.org/ns/credentials/v2", "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"],
+ *   id: "https://example.edu/credentials/3732",
+ *   type: ["VerifiableCredential", "OpenBadgeCredential"],
+ *   issuer: { id: "https://example.edu/issuers/565049", type: ["Profile"], name: "Example University" },
+ *   validFrom: "2024-06-13T18:46:03Z",
+ *   credentialSubject: {
+ *     id: "did:example:learner",
+ *     type: ["AchievementSubject"],
+ *     achievement: {
+ *       id: "https://example.edu/achievements/1",
+ *       type: ["Achievement"],
+ *       name: "Fractions",
+ *       description: "Understands fractions as numbers.",
+ *       criteria: { narrative: "Pass the final assessment." },
+ *     },
+ *   },
+ * };
+ * const png = Uint8Array.from(
+ *   atob("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII="),
+ *   (character) => character.charCodeAt(0),
+ * );
+ * const baked = bakePng(png, credential);
+ * baked.length > png.length; // => true
+ * readPng(baked)?.kind; // => "badge"
+ * JSON.stringify(readPng(baked)?.credential) === JSON.stringify(credential); // => true
+ * readPng(png); // => undefined
+ * ```
  */
 export function bakePng(image: Uint8Array, credential: string | object, options?: BakeImageOptions): Uint8Array {
   const { maxBytes, maxTokens, replace } = limitsOf(options, ["maxBytes", "maxTokens", "replace"]);

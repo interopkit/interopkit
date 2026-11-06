@@ -131,6 +131,30 @@ function splitDid(reference: string): { readonly did: string; readonly method: s
  * @returns The resolver.
  * @throws `DataError` when an option is not valid.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/impl/ | Open Badges 3.0 Implementation Guide, 3.1.12}
+ *
+ * @example
+ * ```ts
+ * import { createKeyResolver, verifyIssuerKey } from "@interopkit/achievement-credentials/keys";
+ *
+ * const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+ * const publicKeyJwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
+ * const issuer = "https://example.edu/issuers/1";
+ * const document = {
+ *   id: issuer,
+ *   verificationMethod: [{ id: `${issuer}#key-1`, type: "JsonWebKey", controller: issuer, publicKeyJwk }],
+ *   assertionMethod: [`${issuer}#key-1`],
+ * };
+ * const keys = createKeyResolver({
+ *   clock: { now: () => 0 },
+ *   fetch: async (url) =>
+ *     new Response(url === issuer ? JSON.stringify(document) : "", { status: url === issuer ? 200 : 404 }),
+ * });
+ * const key = await keys.resolve(`${issuer}#key-1`);
+ * if (key === undefined) throw new Error("The key is published.");
+ * key.controller; // => "https://example.edu/issuers/1"
+ * key.relationships; // => ["assertionMethod"]
+ * (await verifyIssuerKey(key, issuer, { keys })).outcome; // => "passed"
+ * ```
  */
 export function createKeyResolver(options: KeyResolverOptions): KeyResolver {
   const checked = parseWith(optionsSchema, options, "The options of createKeyResolver");

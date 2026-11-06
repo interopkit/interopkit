@@ -385,6 +385,78 @@ async function readEntry(
  * @throws The `reason` of the signal when it aborts.
  * @see {@link https://www.w3.org/TR/vc-bitstring-status-list/#validate-algorithm | Bitstring Status List, validate algorithm}
  * @see {@link https://www.imsglobal.org/spec/vcrl/v1p0/ | 1EdTech Revocation List Status Method}
+ *
+ * @example
+ * ```ts
+ * import { buildAchievementCredential } from "@interopkit/achievement-credentials";
+ * import { createKeyResolver } from "@interopkit/achievement-credentials/keys";
+ * import {
+ *   allocateStatusIndex,
+ *   createStatusList,
+ *   issueStatusListCredential,
+ *   setCredentialStatus,
+ *   verifyCredentialStatus,
+ * } from "@interopkit/achievement-credentials/status";
+ * import { createCryptoKeySigner, SYSTEM_RANDOM } from "@interopkit/core";
+ *
+ * const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+ * const publicKeyJwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
+ * const issuer = "https://example.edu/issuers/565049";
+ * const listAddress = "https://example.edu/status/revocations/1";
+ * const controller = {
+ *   id: issuer,
+ *   verificationMethod: [{ id: `${issuer}#key-1`, type: "JsonWebKey", controller: issuer, publicKeyJwk }],
+ *   assertionMethod: [`${issuer}#key-1`],
+ * };
+ * const clock = { now: () => Date.UTC(2024, 5, 14) };
+ * const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "ES256", keyId: `${issuer}#key-1` });
+ *
+ * // The issuer gives the credential an index that says nothing of the order of issue, and revokes it.
+ * const index = allocateStatusIndex(new Set(), { length: 131_072, random: SYSTEM_RANDOM });
+ * const list = setCredentialStatus(createStatusList(), index, true);
+ * const jws = await issueStatusListCredential(
+ *   { id: listAddress, issuer, validFrom: "2024-06-01T00:00:00Z", purpose: "revocation", list },
+ *   signer,
+ *   { clock },
+ * );
+ * const documents = new Map([
+ *   [issuer, JSON.stringify(controller)],
+ *   [listAddress, String(jws)],
+ * ]);
+ * const keys = createKeyResolver({
+ *   clock,
+ *   fetch: async (url) => new Response(documents.get(url) ?? "", { status: documents.has(url) ? 200 : 404 }),
+ * });
+ * const entry = {
+ *   id: `${listAddress}#${index}`,
+ *   type: "BitstringStatusListEntry",
+ *   statusPurpose: "revocation",
+ *   statusListIndex: String(index),
+ *   statusListCredential: listAddress,
+ * };
+ * const credential = buildAchievementCredential({
+ *   id: "https://example.edu/credentials/3732",
+ *   issuer: { id: issuer, type: ["Profile"], name: "Example University" },
+ *   validFrom: "2024-06-13T18:46:03Z",
+ *   name: "Fractions badge",
+ *   subject: { id: "did:example:learner" },
+ *   achievement: {
+ *     id: "https://example.edu/achievements/1",
+ *     type: ["Achievement"],
+ *     name: "Fractions",
+ *     description: "Understands fractions as numbers.",
+ *     criteria: { narrative: "Pass the final assessment." },
+ *   },
+ *   credentialStatus: entry,
+ * });
+ * const result = await verifyCredentialStatus(credential, {
+ *   fetch: async (url) => new Response(documents.get(url) ?? "", { status: documents.has(url) ? 200 : 404 }),
+ *   keys,
+ *   clock,
+ * });
+ * result.outcome; // => "failed"
+ * result.detail.startsWith("The credential is revoked"); // => true
+ * ```
  */
 export async function verifyCredentialStatus(
   credential: IssuableCredential | CredentialV1p1,

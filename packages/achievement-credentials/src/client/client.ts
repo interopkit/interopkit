@@ -186,6 +186,20 @@ function credentialBody(settings: Settings, credential: unknown): Body {
  * @throws `DataError` when the options are not valid.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/#open-badges-api | Open Badges 3.0, Open Badges API}
  * @see {@link https://www.imsglobal.org/spec/clr/v2p0/main/#clr-standard-api | CLR 2.0, CLR Standard API}
+ *
+ * @example
+ * ```ts
+ * import { createCredentialsClient } from "@interopkit/achievement-credentials/client";
+ *
+ * const client = createCredentialsClient({
+ *   api: "badges",
+ *   baseUrl: "https://badges.example.org",
+ *   fetch: async () => new Response(null, { status: 304 }),
+ *   token: async () => "863DF0B10F5D432EB2933C2A37CD3135A7BB7B07A68F65D92",
+ * });
+ * const jws = "aGVhZGVy.cGF5bG9hZA.c2ln";
+ * await client.upsertCredential(jws); // => "unchanged"
+ * ```
  */
 export function createCredentialsClient(options: CredentialsClientOptions): CredentialsClient {
   const settings = settingsOf(options);

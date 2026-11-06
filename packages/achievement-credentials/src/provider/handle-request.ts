@@ -85,6 +85,60 @@ function answerFor(
  * @throws The reason of the `signal` of the options, when it aborts before the answer is ready.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/main/#open-badges-api | Open Badges 3.0, Open Badges API}
  * @see {@link https://www.imsglobal.org/spec/clr/v2p0/main/#clr-standard-api | CLR 2.0, CLR Standard API}
+ *
+ * @example
+ * ```ts
+ * import { handleCredentialsRequest } from "@interopkit/achievement-credentials/provider";
+ *
+ * const token = "863DF0B10F5D432EB2933C2A37CD3135A7BB7B07A68F65D92";
+ * const scope = "https://purl.imsglobal.org/spec/ob/v3p0/scope/credential.readonly";
+ * const response = await handleCredentialsRequest(
+ *   {
+ *     method: "GET",
+ *     url: "https://badges.example.org/ims/ob/v3p0/credentials?limit=10",
+ *     headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+ *     body: new Uint8Array(),
+ *   },
+ *   {
+ *     api: "badges",
+ *     credentials: {
+ *       list: async () => ({ credentials: [], total: 0 }),
+ *       upsert: async () => "created",
+ *     },
+ *     profiles: { get: async () => undefined, put: async (_owner, profile) => profile },
+ *     authorize: async (request) =>
+ *       request.headers.authorization === `Bearer ${token}`
+ *         ? { allowed: true, owner: "learner-1" }
+ *         : { allowed: false, reason: "unauthenticated" },
+ *     serviceDescription: {
+ *       openapi: "3.0.1",
+ *       info: {
+ *         title: "Example Provider",
+ *         version: "1.0",
+ *         termsOfService: "https://badges.example.org/terms",
+ *         "x-imssf-privacyPolicyUrl": "https://badges.example.org/privacy",
+ *       },
+ *       components: {
+ *         securitySchemes: {
+ *           OAuth2ACG: {
+ *             type: "oauth2",
+ *             "x-imssf-registrationUrl": "https://auth.example.org/registration",
+ *             flows: {
+ *               authorizationCode: {
+ *                 authorizationUrl: "https://auth.example.org/authorize",
+ *                 tokenUrl: "https://auth.example.org/token",
+ *                 scopes: { [scope]: "Read credentials" },
+ *               },
+ *             },
+ *           },
+ *         },
+ *       },
+ *     },
+ *   },
+ * );
+ * response.status; // => 200
+ * response.headers["x-total-count"]; // => "0"
+ * ```
  */
 export async function handleCredentialsRequest(
   request: HttpRequest,

@@ -57,6 +57,49 @@ async function withNestedJws(
  * nested credential of a CLR is not a compact JWS and `signNested` is not set.
  * @throws The `reason` of the signal when it aborts.
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/#proof-formats | Open Badges 3.0, JSON Web Token proof}
+ *
+ * @example
+ * ```ts
+ * import { buildAchievementCredential } from "@interopkit/achievement-credentials";
+ * import { readCredentialJwt, signCredentialJwt } from "@interopkit/achievement-credentials/jwt";
+ * import { createKeyResolver } from "@interopkit/achievement-credentials/keys";
+ * import { createCryptoKeySigner } from "@interopkit/core";
+ *
+ * const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+ * const publicKeyJwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
+ * const issuer = "https://example.edu/issuers/565049";
+ * const document = {
+ *   id: issuer,
+ *   verificationMethod: [{ id: `${issuer}#key-1`, type: "JsonWebKey", controller: issuer, publicKeyJwk }],
+ *   assertionMethod: [`${issuer}#key-1`],
+ * };
+ * const clock = { now: () => Date.UTC(2024, 5, 14) };
+ * const keys = createKeyResolver({
+ *   clock,
+ *   fetch: async (url) =>
+ *     new Response(url === issuer ? JSON.stringify(document) : "", { status: url === issuer ? 200 : 404 }),
+ * });
+ * const credential = buildAchievementCredential({
+ *   id: "https://example.edu/credentials/3732",
+ *   issuer: { id: issuer, type: ["Profile"], name: "Example University" },
+ *   validFrom: "2024-06-13T18:46:03Z",
+ *   name: "Fractions badge",
+ *   subject: { id: "did:example:learner" },
+ *   achievement: {
+ *     id: "https://example.edu/achievements/1",
+ *     type: ["Achievement"],
+ *     name: "Fractions",
+ *     description: "Understands fractions as numbers.",
+ *     criteria: { narrative: "Pass the final assessment." },
+ *   },
+ * });
+ * const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "ES256" });
+ * const jws = await signCredentialJwt(credential, signer, { kid: `${issuer}#key-1` });
+ * jws.split(".").length; // => 3
+ * const result = await readCredentialJwt(jws, { keys, clock });
+ * result.valid; // => true
+ * "credential" in result && result.credential.id; // => "https://example.edu/credentials/3732"
+ * ```
  */
 export async function signCredentialJwt(
   credential: IssuableCredential,

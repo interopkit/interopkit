@@ -39,6 +39,55 @@ import { verifyOne } from "./verify-one.js";
  * @see {@link https://www.imsglobal.org/spec/ob/v3p0/#verification-and-validation | Open Badges 3.0, 9}
  * @see {@link https://www.imsglobal.org/spec/clr/v2p0/#verification-and-validation | CLR 2.0, 8}
  * @see {@link https://www.imsglobal.org/sites/default/files/Badges/OBv2p0Final/index.html#Verification | Open Badges 2.0, Verification}
+ *
+ * @example
+ * ```ts
+ * import { buildAchievementCredential } from "@interopkit/achievement-credentials";
+ * import { signCredentialJwt } from "@interopkit/achievement-credentials/jwt";
+ * import { createKeyResolver } from "@interopkit/achievement-credentials/keys";
+ * import { verifyCredential } from "@interopkit/achievement-credentials/verify";
+ * import { createCryptoKeySigner } from "@interopkit/core";
+ *
+ * const issuer = "https://example.edu/issuers/565049";
+ * const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+ * const document = {
+ *   id: issuer,
+ *   verificationMethod: [
+ *     {
+ *       id: `${issuer}#key-1`,
+ *       type: "JsonWebKey",
+ *       controller: issuer,
+ *       publicKeyJwk: await crypto.subtle.exportKey("jwk", pair.publicKey),
+ *     },
+ *   ],
+ *   assertionMethod: [`${issuer}#key-1`],
+ * };
+ * const clock = { now: () => Date.UTC(2024, 5, 14) };
+ * const keys = createKeyResolver({
+ *   clock,
+ *   fetch: async (url) =>
+ *     new Response(url === issuer ? JSON.stringify(document) : "", { status: url === issuer ? 200 : 404 }),
+ * });
+ * const credential = buildAchievementCredential({
+ *   id: "https://example.edu/credentials/3732",
+ *   issuer: { id: issuer, type: ["Profile"], name: "Example University" },
+ *   validFrom: "2024-06-13T18:46:03Z",
+ *   name: "Fractions badge",
+ *   subject: { id: "did:example:learner" },
+ *   achievement: {
+ *     id: "https://example.edu/achievements/1",
+ *     type: ["Achievement"],
+ *     name: "Fractions",
+ *     description: "Understands fractions as numbers.",
+ *     criteria: { narrative: "Pass the final assessment." },
+ *   },
+ * });
+ * const signer = createCryptoKeySigner(pair.privateKey, { algorithm: "ES256" });
+ * const jws = await signCredentialJwt(credential, signer, { kid: `${issuer}#key-1` });
+ * const result = await verifyCredential(jws, { keys, clock });
+ * result.verified; // => true
+ * result.checks.map(({ check, outcome }) => `${check} ${outcome}`).join(", "); // => "format passed, schema passed, proof passed, issuer passed, refresh skipped, status skipped, validity passed, recipient skipped"
+ * ```
  */
 export async function verifyCredential(input: string | object, options: VerifyOptions): Promise<VerificationResult> {
   const settings = verifySettings(options);
