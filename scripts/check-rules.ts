@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { ACHIEVEMENT_CREDENTIALS_RULES } from "./rules/achievement-credentials.ts";
 import { COMPETENCY_FRAMEWORKS_RULES } from "./rules/competency-frameworks.ts";
 import { CORE_RULES } from "./rules/core.ts";
@@ -40,6 +40,8 @@ export const RULES: readonly Rule[] = [
 
 /** The folders that a scratch copy leaves out: generated output and installed packages, which it links instead. */
 const SKIPPED = new Set(["node_modules", ".git", "dist", "coverage", ".cache", ".vitest"]);
+/** The generated API reference, which no test reads. */
+const API_DOCS = "docs/api";
 /** The longest a test of a mutated copy may take, in milliseconds: a removed deadline makes a test wait for ever. */
 const TEST_TIMEOUT_MS = 5_000;
 /** The same for a test in a browser, which starts a page, waits for messages between frames and keeps quiet to see none. */
@@ -114,7 +116,10 @@ function foldersIn(root: string, folder: string): string[] {
 
 /** Copies the repository into a scratch directory without generated output, and links the installed packages. */
 function copyRepository(root: string, scratch: string): void {
-  cpSync(root, scratch, { recursive: true, filter: (path) => !SKIPPED.has(basename(path)) });
+  cpSync(root, scratch, {
+    recursive: true,
+    filter: (path) => !SKIPPED.has(basename(path)) && relative(root, path) !== API_DOCS,
+  });
   for (const directory of [root, ...foldersIn(root, "packages"), ...foldersIn(root, "examples")]) {
     const modules = join(directory, "node_modules");
     if (existsSync(modules)) symlinkSync(modules, join(scratch, directory.slice(root.length), "node_modules"));
@@ -136,7 +141,8 @@ interface TestRun {
 function runTest(root: string, scratch: string, test: string, browser: boolean, limit: number): TestRun {
   const vitest = join(root, "node_modules/vitest/vitest.mjs");
   const testTimeout = `--testTimeout=${browser ? BROWSER_TEST_TIMEOUT_MS : TEST_TIMEOUT_MS}`;
-  const where = browser ? ["--project", "tool-integration-browser"] : [];
+  // A browser test runs in the browser project of its package: packages/<package>/test/ is in <package>-browser.
+  const where = browser ? ["--project", `${/^packages\/([^/]+)\//.exec(test)?.[1] ?? "tool-integration"}-browser`] : [];
   const run = spawnSync(
     process.execPath,
     [vitest, "run", "--reporter=default", "--maxWorkers=2", testTimeout, ...where, test],
