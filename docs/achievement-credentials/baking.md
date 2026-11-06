@@ -141,24 +141,17 @@ an overwrite. `replace` removes every chunk or element of either kind before it 
 
 ## Limits
 
-| Limit                                                | Value         | Refused with                                                              |
-| ---------------------------------------------------- | ------------- | ------------------------------------------------------------------------- |
-| Bytes of an image, and of a baked image (`maxBytes`) | 10,485,760    | `LimitError`, before any of the image is read                             |
-| Tokens of JSON in a credential (`maxTokens`)         | 1,000,000     | `LimitError`, before the text is parsed                                   |
-| Levels of JSON in a credential that an image holds   | 64            | `LimitError` (`maxDepth`), before the text is parsed                      |
-| Elements open at once in an SVG                      | 256           | `LimitError` (`maxSvgDepth`), when the parser meets the 257th             |
-| Attributes of one element of an SVG                  | 256           | `LimitError` (`maxSvgAttributes`), when the parser meets the 257th        |
-| Bytes of one PNG chunk                               | 2,147,483,647 | `DataError`; a chunk that claims more than the image holds is refused too |
+| Limit                                              | Value         | Refused with                                                              |
+| -------------------------------------------------- | ------------- | ------------------------------------------------------------------------- |
+| Bytes of an image, and of a baked image            | `maxBytes`    | `LimitError`, before any of the image is read                             |
+| Tokens of JSON in a credential                     | `maxTokens`   | `LimitError`, before the text is parsed                                   |
+| Levels of JSON in a credential that an image holds | 64            | `LimitError` (`maxDepth`), before the text is parsed                      |
+| Elements open at once in an SVG                    | 256           | `LimitError` (`maxSvgDepth`), when the parser meets the 257th             |
+| Attributes of one element of an SVG                | 256           | `LimitError` (`maxSvgAttributes`), when the parser meets the 257th        |
+| Bytes of one PNG chunk                             | 2,147,483,647 | `DataError`; a chunk that claims more than the image holds is refused too |
 
-The limits are set so that no image costs much more than its size to read. Measured on Node.js 26 with images of 10 MiB:
-
-| Image                                                              | Time of `readSvg` or `readPng` | Memory above the image |
-| ------------------------------------------------------------------ | ------------------------------ | ---------------------- |
-| Elements nested 3.5 million deep, or 1.7 million attributes        | 20 ms (refused)                | 10 MiB                 |
-| 2.6 million empty elements, one after the other                    | 1.2 s                          | 40 MiB                 |
-| 2 million entity references in one text                            | 0.5 s                          | 110 MiB                |
-| 870,000 empty chunks in a PNG                                      | 0.1 s                          | 20 MiB                 |
-| A credential element of 10 MiB of empty arrays (10 million tokens) | 0.2 s (refused)                | 20 MiB                 |
+The limits are set so that no image costs much more than its size to read; the heap of the worst PNG and the worst SVG is in
+[performance](performance.md#memory).
 
 The SVG parser keeps an object for each open element and keeps the attributes of a tag until it ends, which is why those two
 limits exist. `JSON.parse` takes about forty times the text of small objects in memory, which is why the credential has a limit of
@@ -208,13 +201,10 @@ Every error is a `DataError` with a sentence that names the fault.
 
 ## Differences from the references
 
-| Case                                              | The specification                                        | This module                                                 |
-| ------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------- |
-| An image that holds a credential                  | The baker may choose an error or an overwrite            | An error, unless `replace` is `true`                        |
-| Where the chunk goes                              | Anywhere an `iTXt` chunk may be                          | Right after `IHDR`, so that a reader meets it first         |
-| Where the SVG element goes                        | Directly after the `svg` tag                             | The same; a reader finds the first element anywhere         |
-| The prefix of the SVG element                     | `openbadges` and `clr`                                   | Written as those; read with any prefix, by namespace        |
-| A prefix that the root binds to another namespace | Silent                                                   | The declaration goes on the new element                     |
-| Text after the credential element                 | The rest may be discarded                                | Not parsed: a fault after the first credential is not found |
-| Compression                                       | A baker must not use it; the reader's duty is not stated | A reader refuses a compressed credential chunk              |
-| A 2.0 SVG element with both a body and `verify`   | 2.0 Baking: with a body, the body is the assertion       | The body; `verify` is not read                              |
+The choice between an error and an overwrite, the place of the chunk, the prefix of the element, compression and an element with both a body and `verify` are readings that [spec gaps](spec-gaps.md) records.
+
+| Case                                              | The specification            | This module                                                 |
+| ------------------------------------------------- | ---------------------------- | ----------------------------------------------------------- |
+| Where the SVG element goes                        | Directly after the `svg` tag | The same; a reader finds the first element anywhere         |
+| A prefix that the root binds to another namespace | Silent                       | The declaration goes on the new element                     |
+| Text after the credential element                 | The rest may be discarded    | Not parsed: a fault after the first credential is not found |

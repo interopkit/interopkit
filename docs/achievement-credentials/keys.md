@@ -137,16 +137,16 @@ document while it loads share one fetch, which runs to its own timeout.
 
 ## Limits
 
-| Limit                                                          | Value                  | Refused with                   |
-| -------------------------------------------------------------- | ---------------------- | ------------------------------ |
-| Bytes of a document                                            | `maxBytes`, 65,536     | `ServiceError`                 |
-| Levels that a document nests                                   | 16                     | The document holds nothing     |
-| Tokens of JSON in a document                                   | `maxTokens`, 1,000,000 | The document holds nothing     |
-| Keys that a document lists                                     | 100                    | The document publishes nothing |
-| Bits of an RSA modulus                                         | 8,192                  | The key is left out            |
-| Characters of a `did:jwk`                                      | 4,096                  | The issuer publishes nothing   |
-| Documents in the cache                                         | 1,000, the oldest out  | A fetch                        |
-| Time between two fetches of a document for a key that it lacks | 60 s                   | The cached answer              |
+| Limit                                                          | Value                 | Refused with                   |
+| -------------------------------------------------------------- | --------------------- | ------------------------------ |
+| Bytes of a document                                            | `maxBytes`            | `ServiceError`                 |
+| Levels that a document nests                                   | 16                    | The document holds nothing     |
+| Tokens of JSON in a document                                   | `maxTokens`           | The document holds nothing     |
+| Keys that a document lists                                     | 100                   | The document publishes nothing |
+| Bits of an RSA modulus                                         | 8,192                 | The key is left out            |
+| Characters of a `did:jwk`                                      | 4,096                 | The issuer publishes nothing   |
+| Documents in the cache                                         | 1,000, the oldest out | A fetch                        |
+| Time between two fetches of a document for a key that it lacks | 60 s                  | The cached answer              |
 
 Documents are fetched over HTTPS only, from an address with no user, without redirects. The `fetch` of a host whose addresses
 come from a counterparty must refuse loopback, private and link-local addresses, checked on the address that the connection
@@ -176,8 +176,5 @@ an invented `kid` cannot make the resolver fetch on every call. `issuerKeys` ser
 
 ## Differences from the references
 
-| Case                                      | The references                                                                                                 | This package                                                                                 |
-| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| A self-describing method `issuer#z6Mk...` | 1EdTech's validator reads the key from the fragment and the controller from the prefix, which anyone can write | The method counts only when the document at `issuer.id` lists the key                        |
-| How an issuer publishes keys              | Open Badges 8.2.3 makes `kid` any URI to a JWK, and the Profile has no key field                               | The rules of Implementation Guide 3.1.12: a controller document, a DID document or a key set |
-| `jwt` for `jwk`                           | Guide 3.1.12.2 writes `jwt` where the JOSE header is `jwk`                                                     | `jwk`                                                                                        |
+How an issuer publishes keys, a self-describing verification method and `jwt` for `jwk` in the Implementation Guide are readings
+that [spec gaps](spec-gaps.md) records.

@@ -8,7 +8,7 @@ peak memory are in [performance](performance.md).
 ```mermaid
 flowchart LR
   schemas["Schemas and examples of 1EdTech,<br/>vectors of the cryptosuites<br/>pnpm test:corpus, test:spec"] --> example["Example: university, wallet,<br/>employer, guild, VC-API service<br/>pnpm test"]
-  example --> suites["W3C suites: 4 suites, 218 tests<br/>pnpm w3c-suites"]
+  example --> suites["W3C suites<br/>pnpm w3c-suites"]
   example --> validator["Public validator of 1EdTech<br/>in a container<br/>pnpm validator"]
   schemas --> counterparties["Digital Bazaar, the Interop Alliance,<br/>the DCC, did-jwt-vc<br/>pnpm test:corpus"]
   example --> runtimes["Node.js, Deno, Bun, workerd<br/>pnpm compat:runtimes"]
@@ -40,6 +40,28 @@ given; an employer lists them with the client and verifies each. The tests check
 | An Open Badges 2.0 badge that a guild hosts verifies at its address, for a recipient that the guild names                         | `scenario.test.ts`                   |
 | The service issues, verifies, refuses a credential whose name changed, refuses a base proof and verifies a derived disclosure     | `scenario.test.ts`, `vc-api.test.ts` |
 | The service answers 404, 405 and 400 where its API says so, and serves the lists that it fills                                    | `vc-api.test.ts`                     |
+
+## The vectors of the Recommendations
+
+The vectors of the Recommendations and of the `did:key` specification run through the functions of [Data Integrity](data-integrity.md) and of [keys](keys.md), in
+`vectors.spec.test.ts`. The pages are downloaded at pinned hashes (`pnpm spec-examples`) and were read on 2026-11-02:
+[EdDSA Cryptosuites](https://www.w3.org/TR/2025/REC-vc-di-eddsa-20250515/) (appendix B),
+[ECDSA Cryptosuites](https://www.w3.org/TR/2025/REC-vc-di-ecdsa-20250515/) (appendix A) and
+[the did:key Method v0.9](https://w3c-ccg.github.io/did-key-spec/). What a vector can show depends on the cryptosuite:
+
+| Vector                                                                                                                            | Through                                       | Result                                                                                                                                                                                                                          |
+| --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `eddsa-rdfc-2022`, the alumni credential                                                                                          | `addProof`, then `verifyProof`                | The proof equals the printed one byte for byte: EdDSA is deterministic. The signature verifies, with `bound: false`                                                                                                             |
+| `Ed25519Signature2020`                                                                                                            | `verifyProof` with `legacyProofs`             | The signature verifies; without the option it is refused                                                                                                                                                                        |
+| `ecdsa-rdfc-2019`, the alumni credential, P-256 and P-384                                                                         | `verifyProof`                                 | The signature verifies, and a changed credential does not. Not compared byte for byte: Web Crypto signs with a random nonce, and `addProof` writes no `ecdsa-rdfc-2019` proof                                                   |
+| `did:key` of Ed25519                                                                                                              | `createKeyResolver`                           | The method, the controller, the four relationships and the key equal the document that the specification prints; its key agreement key is not a key for a signature and is not resolved                                         |
+| `did:key` of P-256 and P-384                                                                                                      | `createKeyResolver`                           | The key equals the point that an independent decompression of the compressed key gives                                                                                                                                          |
+| `eddsa-jcs-2022`, `ecdsa-jcs-2019`                                                                                                | `verifyProof`                                 | No suite verifies them: Open Badges names `eddsa-rdfc-2022` and `ecdsa-sd-2023`. A host adds a suite in `suites`                                                                                                                |
+| The employment authorization and permanent resident card of the EdDSA and ECDSA pages, including both examples of `ecdsa-sd-2023` | `addProof`, `verifyProof`, `deriveDisclosure` | Refused: the `issuer` of these credentials is an object with an `id` and an `image` and no `type`, and the Profile of Open Badges requires a type. They are no credentials of the model, and the glue does not bypass the check |
+
+The two examples of `ecdsa-sd-2023` are reproduced byte for byte by the tests of `@interopkit/selective-disclosure`, which knows no
+model. Through this module they cannot run, for the reason in the last row, and no example of the page has an issuer that is
+a Profile or an address.
 
 ## The suites of the W3C
 
@@ -92,12 +114,12 @@ the package in four places, and the test pins each so that a new build that chan
 `counterparties.corpus.test.ts` signs and verifies beside four libraries that other projects wrote, as devDependencies. Each pair
 is checked in both directions where the library does both, and each refuses what the other changed.
 
-| Library                                                                                               | Signs                             | Verifies                   | Result                                                                                                                                 |
-| ----------------------------------------------------------------------------------------------------- | --------------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `@digitalbazaar/vc` 7.3.0, `@digitalbazaar/data-integrity` 2.5.0, `eddsa-rdfc-2022-cryptosuite` 1.3.0 | `eddsa-rdfc-2022`                 | `eddsa-rdfc-2022`          | Each verifies the credential that the other signed, refuses it once its name changed, and refuses one that another issuer's key signed |
-| `@interop/verifier-core` 4.1.0                                                                        |                                   | `eddsa-rdfc-2022`          | Verifies the credentials that we and Digital Bazaar sign, and refuses ours once its name changed                                       |
-| `@digitalcredentials/verifier-core` 1.0.0-beta.11                                                     |                                   | `eddsa-rdfc-2022`          | Verifies the signature of ours and answers `invalid_signature` for a changed name                                                      |
-| `did-jwt-vc` 5.0.1 with `did-jwt` 9.0.2                                                               | The `vc` claim form of VC-JWT 1.1 | The JWT of Open Badges 8.2 | It verifies the JWT that we sign; we verify the one it signs, bound to the issuer; each refuses a changed payload                      |
+| Library                                                                                               | Signs                             | Verifies                   | Result                                                                                                                                  |
+| ----------------------------------------------------------------------------------------------------- | --------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `@digitalbazaar/vc` 7.3.0, `@digitalbazaar/data-integrity` 2.5.0, `eddsa-rdfc-2022-cryptosuite` 1.3.0 | `eddsa-rdfc-2022`                 | `eddsa-rdfc-2022`          | Each verifies the credential that the other signed, refuses it once its name changed, and refuses one that another issuer's key signed  |
+| `@interop/verifier-core` 4.1.0                                                                        |                                   | `eddsa-rdfc-2022`          | Verifies the credentials that this package and Digital Bazaar sign, and refuses the package's once its name changed                     |
+| `@digitalcredentials/verifier-core` 1.0.0-beta.11                                                     |                                   | `eddsa-rdfc-2022`          | Verifies the signature of this package's credential and answers `invalid_signature` for a changed name                                  |
+| `did-jwt-vc` 5.0.1 with `did-jwt` 9.0.2                                                               | The `vc` claim form of VC-JWT 1.1 | The JWT of Open Badges 8.2 | It verifies the JWT that this package signs; the package verifies the one it signs, bound to the issuer; each refuses a changed payload |
 
 The verifier of the Digital Credentials Consortium carries the contexts that it needs and fetches the schema that a credential
 names, so the test serves the schema that `pnpm schemas` pinned.

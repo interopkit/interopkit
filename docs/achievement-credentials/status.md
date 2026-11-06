@@ -204,15 +204,15 @@ the same chance; the indexes of credentials then say nothing of when they were i
 
 ## Limits
 
-| Limit                                                        | Value                  | Refused with                            |
-| ------------------------------------------------------------ | ---------------------- | --------------------------------------- |
-| Entries of a list when it is created, and the least accepted | 131,072, 131,072       | `DataError`; `STATUS_LIST_LENGTH_ERROR` |
-| Entries of a list, at most                                   | 134,217,728            | `DataError`                             |
-| Bytes that a list inflates to                                | 16,777,216             | `failed`, and the stream is cancelled   |
-| Bytes of the list credential                                 | `maxBytes`, 1,048,576  | `unavailable`                           |
-| Levels that a JSON list credential nests                     | 64                     | `failed`                                |
-| Tokens of JSON in a list credential                          | `maxTokens`, 1,000,000 | `failed`, before it is parsed           |
-| List credentials in the cache                                | `maxEntries`, 1,000    | The oldest goes first                   |
+| Limit                                                        | Value            | Refused with                            |
+| ------------------------------------------------------------ | ---------------- | --------------------------------------- |
+| Entries of a list when it is created, and the least accepted | 131,072, 131,072 | `DataError`; `STATUS_LIST_LENGTH_ERROR` |
+| Entries of a list, at most                                   | 134,217,728      | `DataError`                             |
+| Bytes that a list inflates to                                | 16,777,216       | `failed`, and the stream is cancelled   |
+| Bytes of the list credential                                 | `maxBytes`       | `unavailable`                           |
+| Levels that a JSON list credential nests                     | `maxDepth`       | `failed`                                |
+| Tokens of JSON in a list credential                          | `maxTokens`      | `failed`, before it is parsed           |
+| List credentials in the cache                                | `maxEntries`     | The oldest goes first                   |
 
 The list is inflated through a `DecompressionStream` and the library's own decoder is never called, because it inflates with no
 limit: a list credential within the fetch limit could fill the memory. A test inflates a bomb of 20 MiB from under 100 KB and

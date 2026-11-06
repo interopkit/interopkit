@@ -146,13 +146,13 @@ lookup and the result says `bound: false`.
 
 ## Limits
 
-| Limit                                           | Value                      | Refused with                               |
-| ----------------------------------------------- | -------------------------- | ------------------------------------------ |
-| Characters of the JWS                           | `maxInputBytes`, 1,048,576 | `valid: false`, before anything is decoded |
-| Characters of the header                        | 16,384                     | `valid: false`                             |
-| Levels that the header and payload nest         | `maxDepth`, 64             | `valid: false`, before they are parsed     |
-| Tokens of JSON in the header and in the payload | `maxTokens`, 1,000,000     | `valid: false`, before they are parsed     |
-| Bits of an RSA modulus of a key                 | 8,192                      | The key is not a key                       |
+| Limit                                           | Value           | Refused with                               |
+| ----------------------------------------------- | --------------- | ------------------------------------------ |
+| Characters of the JWS                           | `maxInputBytes` | `valid: false`, before anything is decoded |
+| Characters of the header                        | 16,384          | `valid: false`                             |
+| Levels that the header and payload nest         | `maxDepth`      | `valid: false`, before they are parsed     |
+| Tokens of JSON in the header and in the payload | `maxTokens`     | `valid: false`, before they are parsed     |
+| Bits of an RSA modulus of a key                 | 8,192           | The key is not a key                       |
 
 The size is checked first, then the shape, and the depth of each part is counted from its text before a parser builds anything.
 
@@ -179,9 +179,8 @@ The size is checked first, then the shape, and the depth of each part is counted
 
 ## Differences from the references
 
-| Case                             | The references                                                                              | This package                                                                           |
-| -------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| The data model of the `vc` claim | Open Badges 8.2.6 and 9.1 attribute `issuanceDate` and the `vc` claim to the Data Model 2.0 | They belong to 1.1: the `vc` form is read as 1.1, and the OB 8.2 form as 2.0           |
-| The form of VC-JOSE-COSE         | Open Badges 8.2 says the JOSE text was under revision                                       | Both forms are read; the Open Badges form is written                                   |
-| The example of section 5         | It embeds a key for `https://example.edu/issuers/565049` that the issuer does not publish   | A valid signature with `bound: false`; with the default options the proof is not valid |
-| Unbound keys                     | A verifier checks the signature                                                             | The key must be published by the issuer, unless the host says otherwise                |
+The data model of the `vc` claim, the form of VC-JOSE-COSE and the example of section 5 are readings that [spec gaps](spec-gaps.md) records.
+
+| Case         | The references                  | This package                                                            |
+| ------------ | ------------------------------- | ----------------------------------------------------------------------- |
+| Unbound keys | A verifier checks the signature | The key must be published by the issuer, unless the host says otherwise |

@@ -90,11 +90,11 @@ host routes the requests that reach it.
 
 ## Limits
 
-| Limit                        | Value                  | Refused with   |
-| ---------------------------- | ---------------------- | -------------- |
-| Bytes of the answer          | `maxBytes`, 1,048,576  | `ServiceError` |
-| Levels that the answer nests | 64                     | `LimitError`   |
-| Tokens of JSON in the answer | `maxTokens`, 1,000,000 | `LimitError`   |
+| Limit                        | Value       | Refused with   |
+| ---------------------------- | ----------- | -------------- |
+| Bytes of the answer          | `maxBytes`  | `ServiceError` |
+| Levels that the answer nests | 64, fixed   | `LimitError`   |
+| Tokens of JSON in the answer | `maxTokens` | `LimitError`   |
 
 ## Errors
 
@@ -116,6 +116,4 @@ A failed refresh does not make a credential invalid: the verifier continues with
 
 ## Differences from the references
 
-| Case          | The references                                                                       | This package                   |
-| ------------- | ------------------------------------------------------------------------------------ | ------------------------------ |
-| The type name | Open Badges 9.1 says `1EdTechCredentialRefresh`, CLR 8.1 says `ImsCredentialRefresh` | Both are accepted when reading |
+The two names of the refresh type are a reading that [spec gaps](spec-gaps.md) records.

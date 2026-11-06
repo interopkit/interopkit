@@ -158,10 +158,6 @@ it.
 
 The reference is the text of Open Badges 3.0 and its examples, which the tests read at pinned hashes: the credentials that the
 page prints are rebuilt from their parts, and the examples of section 10.1 give the verdicts of `isSameCredential` and
-`selectNewerCredential`. The hash is checked against the example of the specification and against another implementation.
-
-| Case                              | The references                                                                                       | This package                                                                                 |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| The schema in a CLR example       | The ClrCredential examples of CLR 2.0 name the schema of an AchievementCredential                    | A ClrCredential names its own schema, as 7.2 asks                                            |
-| The address of a credential       | Any string                                                                                           | An absolute URI                                                                              |
-| The comparison of two credentials | Equal when the id and the issuer id are equal after unescaping; the more recent `validFrom` replaces | The same, with `validFrom` compared as an instant, and the first when the instants are equal |
+`selectNewerCredential`. The hash is checked against the example of the specification and against another implementation. The
+schema of a CLR example, the address of a credential and the comparison of two credentials are readings that [spec gaps](spec-gaps.md)
+records.

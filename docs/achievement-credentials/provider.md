@@ -296,16 +296,15 @@ Every failure is an `imsx_StatusInfo` with `failure`, the severity that OB B.3.6
 
 ## Limits
 
-| Limit                                 | Value                                                                                             | Refused with                         |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| Bytes of a body (`maxBodyBytes`)      | 1,048,576                                                                                         | 413                                  |
-| Tokens of JSON (`maxTokens`)          | 1,000,000                                                                                         | 400, or 422 for the payload of a JWS |
-| Levels of JSON                        | 64                                                                                                | 400                                  |
-| Credentials in a page (`maxPageSize`) | 1,000                                                                                             | Lowered to the limit                 |
-| The verification                      | The limits of `verifyCredential`: its input, its fetches, its endorsements and nested credentials | 422                                  |
+| Limit                 | Value                                                                                             | Refused with                         |
+| --------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| Bytes of a body       | `maxBodyBytes`                                                                                    | 413                                  |
+| Tokens of JSON        | `maxTokens`                                                                                       | 400, or 422 for the payload of a JWS |
+| Levels of JSON        | 64, fixed                                                                                         | 400                                  |
+| Credentials in a page | `maxPageSize`                                                                                     | Lowered to the limit                 |
+| The verification      | The limits of `verifyCredential`: its input, its fetches, its endorsements and nested credentials | 422                                  |
 
-A body at the limits that holds the most objects that the tokens allow ends within a heap of 112 MiB, which
-`peak-memory.test.ts` measures; it raises the peak memory of the process by about 120 MiB.
+The heap of a body at the limits is in [performance](performance.md#memory).
 
 ## Errors
 
@@ -332,13 +331,6 @@ A body at the limits that holds the most objects that the tokens allow ends with
 
 The references are the API sections of Open Badges 3.0 and CLR 2.0 and their OpenAPI files, which `provider.corpus.test.ts`
 reads: the paths, the methods, the scopes, the query parameters and the media types come from the files, and every answer is
-validated against the schema of its status. The choices are in [spec-gaps](spec-gaps.md).
-
-| Case                                      | The references                                                                 | The provider                                           |
-| ----------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------ |
-| A body that is JSON and not a credential  | The files list 400; OB B.3.6 pairs `invalid_data` with 422                     | 422 `invalid_data`; 400 for a body that does not parse |
-| 304 of an upsert                          | The files give it an `imsx_StatusInfo`                                         | No body: a 304 has none (RFC 9110)                     |
-| The last link when the store cannot count | OB 6.4: `last` MUST always appear, and `X-Total-Count` is omitted when unknown | No `last`; `next` while the page is full               |
-| `since`                                   | The table says `YYYY-MM-DDThh:mm:ss`; the files give the format `date-time`    | A date and time of RFC 3339 with an offset             |
-| A member of `@context` in the files       | A `oneOf` of two schemas of a string, which no context passes                  | The tests read it as `anyOf`                           |
-| 413, 415 and 429                          | Not listed; `default` is an `imsx_StatusInfo`                                  | Answered with an `imsx_StatusInfo`                     |
+validated against the schema of its status. Where the files and the text disagree (a body that is JSON and not a credential, the
+304 of an upsert, the last link when the store cannot count, `since`, a member of `@context`, 413, 415 and 429), the choices are in
+[spec gaps](spec-gaps.md), each pinned by a test.

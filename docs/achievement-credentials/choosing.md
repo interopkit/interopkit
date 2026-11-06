@@ -2,7 +2,7 @@
 
 When `@interopkit/achievement-credentials` fits a project that issues, holds or verifies Open Badges and CLR credentials, and
 when another library fits better. Each comparator was read on 2026-11-02 at the version that [the comparators](comparators.md)
-give; that page maps all 66 of their capabilities, of which the package has 44, has 3 in part and leaves 19 out with a reason.
+give; that page maps their capabilities and counts what the package has, has in part and leaves out.
 
 ```mermaid
 flowchart TD

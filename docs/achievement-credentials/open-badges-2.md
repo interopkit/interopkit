@@ -162,8 +162,8 @@ The options are those of `readCredential` and `validateCredential` in the model 
 | Findings                     | `maxFindings` | The last finding is `findings-stopped` |
 
 The reader takes a value that was already parsed, so the caller limits the bytes of the text and counts its tokens with
-`hasMoreTokensThan` of `@interopkit/core/checks` before it parses it. A list of a million wrong values is read in about 90 MiB, and
-its findings stop at the limit.
+`hasMoreTokensThan` of `@interopkit/core/checks` before it parses it. The heap of a list of a million wrong values is in
+[performance](performance.md#memory), and its findings stop at the limit.
 
 ## Errors
 
@@ -191,19 +191,12 @@ The references are the vocabulary of Open Badges 2.0 and its examples, which the
 validators of `openbadges-validator-core` at commit `0a66b52`, whose files `pnpm schemas` pins: the table of
 `scripts/open-badges-v2-rules.ts` follows them, and a test compares the required properties of each class and the terms of the
 context with them. The reader gives
-their verdict, except in the cases below.
+their verdict, except in the cases of [spec gaps](spec-gaps.md) (the first example, a revoked document, several keys or prefixes, an endorsement without `verification`, an assertion with two verification types, an image, a list of contexts) and in these.
 
-| Case                                                                                | The references                                                               | The reader                                                                                                    |
-| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| The first example of the specification                                              | Its recipient has no `hashed`, which the IdentityObject table requires       | `missing-property` at `recipient.hashed`                                                                      |
-| A revoked assertion or endorsement that holds only its `id`, `revoked` and `issuer` | The specification lets a revoked document leave out the other properties     | Refused as a document without them: verification reads `revoked` before the rest                              |
-| A property of one value written as a list of one                                    | A JSON-LD processor reads the list as the value                              | `wrong-type`                                                                                                  |
-| A BadgeClass or a profile embedded without an `id`                                  | The validator gives it a blank node and warns                                | `missing-property`: the class requires an `id`                                                                |
-| Several `publicKey` of a profile, or several `startsWith`                           | The specification allows several; the validator takes one                    | Several, as the specification says                                                                            |
-| An endorsement without `verification`                                               | The specification requires it; the validator does not check it               | `missing-property`                                                                                            |
-| A verification object of an assertion with `HostedBadge` and `SignedBadge`          | The validator takes one type                                                 | `invalid-value`: one of them                                                                                  |
-| `@language`                                                                         | The validator looks the tag up in the registry of IANA                       | A tag that is well-formed by RFC 5646                                                                         |
-| A date and time in the basic form of ISO 8601, such as `20161231T235959Z`           | The validator reads it                                                       | `invalid-format`: the form that the specification describes                                                   |
-| The properties of an embedded related edition                                       | The validator checks those it has against its class                          | Its `id`, `@language` and `version`; the others are kept as JSON                                              |
-| An image                                                                            | The validator fetches it                                                     | Its address and, for a data URI, its media type                                                               |
-| A list of contexts that holds that of 2.0 and a remote context                      | The validator loads every context and compacts the document into that of 2.0 | The reader loads none: it reads the terms of 2.0 as their context defines them, and warns of every other name |
+| Case                                                                      | The references                                         | The reader                                                       |
+| ------------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------- |
+| A property of one value written as a list of one                          | A JSON-LD processor reads the list as the value        | `wrong-type`                                                     |
+| A BadgeClass or a profile embedded without an `id`                        | The validator gives it a blank node and warns          | `missing-property`: the class requires an `id`                   |
+| `@language`                                                               | The validator looks the tag up in the registry of IANA | A tag that is well-formed by RFC 5646                            |
+| A date and time in the basic form of ISO 8601, such as `20161231T235959Z` | The validator reads it                                 | `invalid-format`: the form that the specification describes      |
+| The properties of an embedded related edition                             | The validator checks those it has against its class    | Its `id`, `@language` and `version`; the others are kept as JSON |

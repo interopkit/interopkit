@@ -203,42 +203,23 @@ event: a property that no context defines, a relative `id` or `type`. At most 10
 credential survive safe mode. The builders write the context of the 1EdTech extensions, which defines the type of the
 `credentialSchema`, so that a built credential loses no term.
 
-## Test vectors
-
-The vectors of the Recommendations and of the `did:key` specification run through the functions above, in
-`vectors.spec.test.ts`. The pages are downloaded at pinned hashes (`pnpm spec-examples`) and were read on 2026-11-02:
-[EdDSA Cryptosuites](https://www.w3.org/TR/2025/REC-vc-di-eddsa-20250515/) (appendix B),
-[ECDSA Cryptosuites](https://www.w3.org/TR/2025/REC-vc-di-ecdsa-20250515/) (appendix A) and
-[the did:key Method v0.9](https://w3c-ccg.github.io/did-key-spec/). What a vector can show depends on the cryptosuite:
-
-| Vector                                                                                                                            | Through                                       | Result                                                                                                                                                                                                                          |
-| --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `eddsa-rdfc-2022`, the alumni credential                                                                                          | `addProof`, then `verifyProof`                | The proof equals the printed one byte for byte: EdDSA is deterministic. The signature verifies, with `bound: false`                                                                                                             |
-| `Ed25519Signature2020`                                                                                                            | `verifyProof` with `legacyProofs`             | The signature verifies; without the option it is refused                                                                                                                                                                        |
-| `ecdsa-rdfc-2019`, the alumni credential, P-256 and P-384                                                                         | `verifyProof`                                 | The signature verifies, and a changed credential does not. Not compared byte for byte: Web Crypto signs with a random nonce, and `addProof` writes no `ecdsa-rdfc-2019` proof                                                   |
-| `did:key` of Ed25519                                                                                                              | `createKeyResolver`                           | The method, the controller, the four relationships and the key equal the document that the specification prints; its key agreement key is not a key for a signature and is not resolved                                         |
-| `did:key` of P-256 and P-384                                                                                                      | `createKeyResolver`                           | The key equals the point that an independent decompression of the compressed key gives                                                                                                                                          |
-| `eddsa-jcs-2022`, `ecdsa-jcs-2019`                                                                                                | `verifyProof`                                 | No suite verifies them: Open Badges names `eddsa-rdfc-2022` and `ecdsa-sd-2023`. A host adds a suite in `suites`                                                                                                                |
-| The employment authorization and permanent resident card of the EdDSA and ECDSA pages, including both examples of `ecdsa-sd-2023` | `addProof`, `verifyProof`, `deriveDisclosure` | Refused: the `issuer` of these credentials is an object with an `id` and an `image` and no `type`, and the Profile of Open Badges requires a type. They are no credentials of the model, and the glue does not bypass the check |
-
-The two examples of `ecdsa-sd-2023` are reproduced byte for byte by the tests of `@interopkit/selective-disclosure`, which knows no
-model. Through this module they cannot run, for the reason in the last row, and no example of the page has an issuer that is
-a Profile or an address.
-
 ## Limits
 
-| Limit                                                         | Value                      | Refused with                                                                                                        |
-| ------------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Characters of the credential as JSON                          | `maxInputBytes`, 1,048,576 | `valid: false`, before it is read                                                                                   |
-| Levels that the credential nests                              | `maxDepth`, 64             | `valid: false`, before it is read; signing, deriving and validating: `LimitError`, at 64, before anything copies it |
-| Tokens of JSON in the credential                              | `maxTokens`, 1,000,000     | `valid: false`, before it is read                                                                                   |
-| Tokens of JSON in a credential that a JSON-LD processor reads | `maxJsonLdTokens`, 20,000  | `valid: false` with the limit; signing, deriving and validating: `LimitError`                                       |
-| Runs of Hash N-Degree Quads in one canonicalization           | 1,000, fixed               | `valid: false` with the limit; signing: `LimitError` (`maxDeepIterations`)                                          |
-| Proofs of a credential that are checked                       | 4, fixed                   | The rest are not looked at, and the reason says so                                                                  |
-| Bytes of a context, levels of a context                       | `maxBytes`, 64             | `ServiceError`, `LimitError`                                                                                        |
-| Tokens of JSON in a context                                   | `maxTokens`, 1,000,000     | `LimitError`, before it is parsed                                                                                   |
-| Contexts kept in memory                                       | 100                        | The oldest goes first                                                                                               |
-| Findings of `validateJsonLd`                                  | 100                        | The rest are not reported                                                                                           |
+The values of the options are in the tables above.
+
+| Limit                                                         | Value                                | Refused with                                                                                                        |
+| ------------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Characters of the credential as JSON                          | `maxInputBytes`                      | `valid: false`, before it is read                                                                                   |
+| Levels that the credential nests                              | `maxDepth`                           | `valid: false`, before it is read; signing, deriving and validating: `LimitError`, at 64, before anything copies it |
+| Tokens of JSON in the credential                              | `maxTokens`                          | `valid: false`, before it is read                                                                                   |
+| Tokens of JSON in a credential that a JSON-LD processor reads | `maxJsonLdTokens`                    | `valid: false` with the limit; signing, deriving and validating: `LimitError`                                       |
+| Runs of Hash N-Degree Quads in one canonicalization           | 1,000, fixed                         | `valid: false` with the limit; signing: `LimitError` (`maxDeepIterations`)                                          |
+| Proofs of a credential that are checked                       | 4, fixed                             | The rest are not looked at, and the reason says so                                                                  |
+| Bytes of a context                                            | `maxBytes` of `createContextLoader`  | `ServiceError`                                                                                                      |
+| Levels of a context                                           | 64, fixed                            | `LimitError`                                                                                                        |
+| Tokens of JSON in a context                                   | `maxTokens` of `createContextLoader` | `LimitError`, before it is parsed                                                                                   |
+| Contexts kept in memory                                       | 100                                  | The oldest goes first                                                                                               |
+| Findings of `validateJsonLd`                                  | 100                                  | The rest are not reported                                                                                           |
 
 `maxTokens` bounds what a parse builds, and it is far too generous for a JSON-LD processor, whose work grows with the square of the
 values of one property: 10,000 values of one property take about a second, 20,000 take four seconds and 60,000 take 35. So a
@@ -279,11 +260,12 @@ canonicalized once for all of them. Bounded as it is, a credential at the token 
 
 ## Differences from the references
 
-| Case                            | The references                                                                               | This package                                                                                                          |
-| ------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| The controller of the key       | VC Data Integrity 2.6: the method's `controller` is the issuer, checked by the proof purpose | The key must be among what the issuer itself publishes under `assertionMethod`, and its controller must be the issuer |
-| A base proof of `ecdsa-sd-2023` | Verify Derived Proof is the only algorithm defined                                           | A credential that carries a base proof is not valid, and the reason says to derive a disclosure first                 |
-| Contexts                        | A processor loads a context by its address                                                   | Only at a pinned hash                                                                                                 |
-| Proofs                          | The compacted form writes a single proof as an object                                        | The result of `addProof` holds a list of one                                                                          |
-| The number of proofs            | Data Integrity 4.5 checks all of them, or a subset whose chains it follows                   | At most four, those that a chain names among them; each costs a canonicalization and may cost a fetch of a key        |
-| Canonicalization                | RDF Dataset Canonicalization 4.8: a work factor bounds the runs of Hash N-Degree Quads       | A fixed count of 1,000 runs, and a count of the tokens that a processor reads                                         |
+A base proof of `ecdsa-sd-2023` given to a verifier is a reading that [spec gaps](spec-gaps.md) records.
+
+| Case                      | The references                                                                               | This package                                                                                                          |
+| ------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| The controller of the key | VC Data Integrity 2.6: the method's `controller` is the issuer, checked by the proof purpose | The key must be among what the issuer itself publishes under `assertionMethod`, and its controller must be the issuer |
+| Contexts                  | A processor loads a context by its address                                                   | Only at a pinned hash                                                                                                 |
+| Proofs                    | The compacted form writes a single proof as an object                                        | The result of `addProof` holds a list of one                                                                          |
+| The number of proofs      | Data Integrity 4.5 checks all of them, or a subset whose chains it follows                   | At most four, those that a chain names among them; each costs a canonicalization and may cost a fetch of a key        |
+| Canonicalization          | RDF Dataset Canonicalization 4.8: a work factor bounds the runs of Hash N-Degree Quads       | A fixed count of 1,000 runs, and a count of the tokens that a processor reads                                         |
