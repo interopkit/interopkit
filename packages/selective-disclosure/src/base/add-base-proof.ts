@@ -95,6 +95,38 @@ function checkSignature(signature: unknown): Uint8Array {
  * contexts (a term the contexts do not define, blank nodes that take more than 1,000 runs of Hash N-Degree Quads to tell apart).
  * @throws The error of the signer or of the context loader when one fails, and the `reason` of the signal when it aborts.
  * @see {@link https://www.w3.org/TR/vc-di-ecdsa/#create-base-proof-ecdsa-sd-2023 | Create Base Proof (ecdsa-sd-2023)}
+ *
+ * @example
+ * ```ts
+ * import { createCryptoKeySigner } from "@interopkit/core";
+ * import { addBaseProof, isBaseProof } from "@interopkit/selective-disclosure";
+ *
+ * // A host serves the contexts it has checked, here from memory.
+ * const contexts = new Map([
+ *   [
+ *     "https://example.org/contexts/v1",
+ *     { "@context": { "@vocab": "https://example.org/vocab#", id: "@id", type: "@type" } },
+ *   ],
+ * ]);
+ * const credential = {
+ *   "@context": ["https://example.org/contexts/v1"],
+ *   type: ["VerifiableCredential"],
+ *   issuer: "https://example.org/issuers/1",
+ *   credentialSubject: { type: "Person", name: "Sam Taylor", birthDate: "2001-05-17" },
+ * };
+ * const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+ * const signer = createCryptoKeySigner(pair.privateKey, {
+ *   algorithm: "ES256",
+ *   keyId: "https://example.org/issuers/1#key-1",
+ * });
+ * const base = await addBaseProof(credential, {
+ *   signer,
+ *   mandatoryPointers: ["/issuer"],
+ *   created: "2026-11-01T09:30:00Z",
+ *   contexts: async (url) => contexts.get(url),
+ * });
+ * isBaseProof(base.proof); // => true
+ * ```
  */
 export async function addBaseProof(document: JsonDocument, options: BaseProofOptions): Promise<JsonDocument> {
   return addBaseProofWith(document, options, createSecrets);
