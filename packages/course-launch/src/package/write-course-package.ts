@@ -94,6 +94,34 @@ function* urlsOf(members: readonly (AssignableUnit | Block)[], path: string): Ge
  * to an extractor, a file is not a `Blob` or bytes, or a relative URL names no file.
  * @throws The reason of the signal, when it aborts.
  * @see {@link https://github.com/AICC/CMI-5_Spec_Current/blob/quartz/cmi5_spec.md#course_packages_in_zip_format | cmi5, 14.1 Course Packages in ZIP Format}
+ *
+ * @example
+ * ```ts
+ * import { readCourseStructure } from "@interopkit/course-launch";
+ * import { readCoursePackage, writeCoursePackage } from "@interopkit/course-launch/package";
+ *
+ * const structure = readCourseStructure(
+ *   `<courseStructure xmlns="https://w3id.org/xapi/profiles/cmi5/v1/CourseStructure.xsd">
+ *   <course id="https://example.org/courses/geology">
+ *     <title><langstring>Introduction to Geology</langstring></title>
+ *     <description><langstring>Plate tectonics.</langstring></description>
+ *   </course>
+ *   <au id="https://example.org/courses/geology/au/1">
+ *     <title><langstring>Plate tectonics</langstring></title>
+ *     <description><langstring>How the plates move.</langstring></description>
+ *     <url>lesson/index.html?part=1</url>
+ *   </au>
+ * </courseStructure>`,
+ *   { packaged: true },
+ * );
+ * const files = new Map([["lesson/index.html", new TextEncoder().encode("<!doctype html><title>Plates</title>")]]);
+ * const archive = await writeCoursePackage(structure, files);
+ * const read = await readCoursePackage(archive);
+ * read.source;
+ * // => "zip"
+ * read.paths;
+ * // => ["cmi5.xml", "lesson/index.html"]
+ * ```
  */
 export async function writeCoursePackage(
   structure: CourseStructure,

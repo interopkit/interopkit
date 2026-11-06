@@ -41,6 +41,26 @@ export function readStructureWith(xml: unknown, settings: CourseReadSettings): C
  * that says which, when it is not a string or bytes, is not valid in its encoding, declares another, or passes a limit; and
  * that names the option, when an option is not valid.
  * @see {@link https://github.com/AICC/CMI-5_Spec_Current/blob/quartz/cmi5_spec.md#course_structure_data_model | cmi5, 13.0 Course Structure Data Requirements}
+ *
+ * @example
+ * ```ts
+ * import { readCourseStructure } from "@interopkit/course-launch";
+ *
+ * const xml = `<courseStructure xmlns="https://w3id.org/xapi/profiles/cmi5/v1/CourseStructure.xsd">
+ *   <course id="https://example.org/courses/geology">
+ *     <title><langstring lang="en-US">Introduction to Geology</langstring></title>
+ *     <description><langstring lang="en-US">Plate tectonics and the history of the Earth.</langstring></description>
+ *   </course>
+ *   <au id="https://example.org/courses/geology/au/1" moveOn="CompletedOrPassed" masteryScore="0.8">
+ *     <title><langstring lang="en-US">Plate tectonics</langstring></title>
+ *     <description><langstring lang="en-US">How the plates move.</langstring></description>
+ *     <url>https://content.example.org/geology/1/index.html</url>
+ *   </au>
+ * </courseStructure>`;
+ * const [unit] = readCourseStructure(xml).children;
+ * unit?.kind === "au" ? [unit.moveOn, unit.masteryScore] : undefined;
+ * // => ["CompletedOrPassed", 0.8]
+ * ```
  */
 export function readCourseStructure(xml: string | Uint8Array, options?: CourseReadOptions): CourseStructure {
   return readStructureWith(xml, readCourseReadOptions(options));

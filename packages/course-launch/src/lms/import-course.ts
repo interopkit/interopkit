@@ -173,6 +173,32 @@ function publisherIdsOf(structure: CourseStructure): ReadonlySet<string> {
  * @throws `DataError` that names the fault: a structure that a rule of cmi5 refuses, a relative URL without `contentBase`, or
  * an input that is not valid.
  * @see {@link https://github.com/AICC/CMI-5_Spec_Current/blob/quartz/cmi5_spec.md#launch_method_activityid | cmi5, 8.1.5 activityId}
+ *
+ * @example
+ * ```ts
+ * import { readCourseStructure } from "@interopkit/course-launch";
+ * import { importCourse } from "@interopkit/course-launch/lms";
+ *
+ * const xml = `<courseStructure xmlns="https://w3id.org/xapi/profiles/cmi5/v1/CourseStructure.xsd">
+ *   <course id="https://publisher.example.org/geology">
+ *     <title><langstring>Geology</langstring></title><description><langstring>Rocks.</langstring></description>
+ *   </course>
+ *   <au id="https://publisher.example.org/geology/rocks" moveOn="Completed">
+ *     <title><langstring>Rocks</langstring></title><description><langstring>Kinds of rock.</langstring></description>
+ *     <url>rocks/index.html</url>
+ *   </au>
+ * </courseStructure>`;
+ * const course = importCourse(readCourseStructure(xml, { packaged: true }), {
+ *   courseId: "geology",
+ *   idBase: "https://lms.example.org/activities/",
+ *   idNamespace: "4a8f0c2e-5b1d-4e7a-9c3f-2d6e8b0a1c4f",
+ *   contentBase: "https://content.example.org/geology/",
+ * });
+ * course.aus.map(({ url, moveOn }) => [url, moveOn]);
+ * // => [["https://content.example.org/geology/rocks/index.html", "Completed"]]
+ * course.aus[0]?.lmsId.startsWith("https://lms.example.org/activities/");
+ * // => true
+ * ```
  */
 export function importCourse(structure: CourseStructure, input: ImportInput): ImportedCourse {
   const read = parseWith(inputSchema, input, "The input of the import");

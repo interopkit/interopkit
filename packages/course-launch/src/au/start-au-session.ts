@@ -135,6 +135,24 @@ function rootOf(endpoint: string): string {
  * @throws `ServiceError` when the fetch URL or the LRS fails, answers with what cmi5 does not define, or with more than its limit.
  * @throws The reason of the `signal` when it aborts.
  * @see {@link https://github.com/AICC/CMI-5_Spec_Current/blob/quartz/cmi5_spec.md#content_launch | cmi5, 8.0 Content Launch Mechanisms}
+ *
+ * @example
+ * ```ts
+ * import { startAuSession } from "@interopkit/course-launch/au";
+ *
+ * // The fetch URL of this launch was used already, so the LMS answers its error code 1.
+ * const fetch = async () => new Response(JSON.stringify({ "error-code": "1", "error-text": "Already used." }));
+ * const query = new URLSearchParams({
+ *   endpoint: "https://lms.example.org/xapi",
+ *   fetch: "https://lms.example.org/fetch?code=c1",
+ *   actor: JSON.stringify({ account: { homePage: "https://lms.example.org", name: "ana" } }),
+ *   registration: "1b0e3f5c-2c4e-4f6a-9b1d-3e5f7a9c1b2d",
+ *   activityId: "https://lms.example.org/activities/rocks",
+ * });
+ * const launchUrl = `https://content.example.org/rocks/index.html?${query}`;
+ * await startAuSession(launchUrl, { fetch });
+ * // => { refusal: "used-or-expired", message: "Already used." }
+ * ```
  */
 export async function startAuSession(
   launchUrl: string,
