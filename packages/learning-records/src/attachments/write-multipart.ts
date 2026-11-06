@@ -105,6 +105,33 @@ function join(chunks: readonly Uint8Array[]): Uint8Array<ArrayBuffer> {
  * @throws `DataError` when a Statement is not valid, a part is not valid or holds data of another hash, or the parts and the
  * Attachments do not match.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
+ *
+ * @example
+ * ```ts
+ * import { hashAttachment, readMultipart, writeMultipart } from "@interopkit/learning-records/attachments";
+ *
+ * const body = new TextEncoder().encode("A certificate of completion");
+ * const sha2 = hashAttachment(body);
+ * const statement = {
+ *   actor: { name: "Example Learner", mbox: "mailto:learner@example.org" },
+ *   verb: { id: "http://adlnet.gov/expapi/verbs/completed", display: { "en-US": "completed" } },
+ *   object: { id: "https://example.org/activities/course-1" },
+ *   attachments: [
+ *     {
+ *       usageType: "https://example.org/attachments/certificate",
+ *       display: { "en-US": "Certificate" },
+ *       contentType: "text/plain",
+ *       length: body.byteLength,
+ *       sha2,
+ *     },
+ *   ],
+ * };
+ * const message = writeMultipart(statement, [{ sha2, contentType: "text/plain", body }]);
+ * message.contentType.startsWith("multipart/mixed; boundary="); // => true
+ * const read = readMultipart(message.contentType, message.body);
+ * read.statements; // => statement
+ * new TextDecoder().decode(read.parts.get(sha2)?.body); // => "A certificate of completion"
+ * ```
  */
 export function writeMultipart(statements: MultipartStatements, parts: readonly AttachmentData[]): MultipartMessage {
   const first = readStatementsPart(statements);

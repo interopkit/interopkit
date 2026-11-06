@@ -204,6 +204,77 @@ async function answer(
  * @throws The reason of the `signal` of the options, when it aborts before the answer is ready.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
  * @see {@link https://github.com/adlnet/xAPI-Spec/blob/1.0.3/xAPI-Communication.md | xAPI 1.0.3, Communication}
+ *
+ * @example
+ * ```ts
+ * import { handleLrsRequest } from "@interopkit/learning-records/store";
+ *
+ * const held = new Map();
+ * const statement = {
+ *   id: "6690e6c9-3ef0-4ed3-8b37-7f3964730bee",
+ *   actor: { name: "Example Learner", mbox: "mailto:learner@example.org" },
+ *   verb: { id: "http://adlnet.gov/expapi/verbs/completed", display: { "en-US": "completed" } },
+ *   object: { id: "https://example.org/activities/course-1" },
+ * };
+ * const response = await handleLrsRequest(
+ *   {
+ *     method: "POST",
+ *     url: "https://lrs.example.org/xapi/statements",
+ *     headers: { "x-experience-api-version": "2.0.0", "content-type": "application/json" },
+ *     body: new TextEncoder().encode(JSON.stringify(statement)),
+ *   },
+ *   {
+ *     statements: {
+ *       async insert(batch) {
+ *         const existing = batch.filter((entry) => held.has(entry.statement.id));
+ *         for (const entry of batch) if (!held.has(entry.statement.id)) held.set(entry.statement.id, entry);
+ *         return { existing };
+ *       },
+ *       async get() {
+ *         return undefined;
+ *       },
+ *       async query() {
+ *         return { statements: [] };
+ *       },
+ *       async consistentThrough() {
+ *         return "2026-01-15T10:30:00.000Z";
+ *       },
+ *       async attachments() {
+ *         return new Map();
+ *       },
+ *     },
+ *     documents: {
+ *       async get() {
+ *         return undefined;
+ *       },
+ *       async write() {
+ *         return "written";
+ *       },
+ *       async delete() {
+ *         return "absent";
+ *       },
+ *       async list() {
+ *         return [];
+ *       },
+ *       async deleteAll() {},
+ *     },
+ *     activities: {
+ *       async get() {
+ *         return undefined;
+ *       },
+ *       async observe() {},
+ *     },
+ *     access: async () => ({
+ *       allowed: true,
+ *       authority: { account: { homePage: "https://lrs.example.org", name: "client" } },
+ *       actions: ["statements.write"],
+ *     }),
+ *     clock: { now: () => Date.parse("2026-01-15T10:30:00.000Z") },
+ *   },
+ * );
+ * response.status; // => 200
+ * held.get(statement.id).statement.authority.account.name; // => "client"
+ * ```
  */
 export async function handleLrsRequest(request: HttpRequest, options: LrsOptions): Promise<HttpResponse> {
   checkHttpRequest(request);

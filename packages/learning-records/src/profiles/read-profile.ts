@@ -157,6 +157,35 @@ function inspectProfile(input: unknown, others: readonly Profile[], sink: IssueS
  * not JSON, or when the options are not an object with `profiles` as a list of profiles of the right shape, and `maxFindings`,
  * `maxTokens` and `maxBytes` as positive integers.
  * @see {@link https://github.com/adlnet/xapi-profiles/blob/master/xapi-profiles-structure.md | xAPI Profiles 1.0, Part Two}
+ *
+ * @example
+ * ```ts
+ * import { readProfile, validateProfile } from "@interopkit/learning-records/profiles";
+ *
+ * const QUIZ = "https://example.org/profiles/quiz";
+ * const profile = {
+ *   "@context": "https://w3id.org/xapi/profiles/context",
+ *   id: QUIZ,
+ *   type: "Profile",
+ *   conformsTo: "https://w3id.org/xapi/profiles#1.0",
+ *   prefLabel: { en: "Quiz" },
+ *   definition: { en: "A quiz of questions, then its completion." },
+ *   versions: [{ id: `${QUIZ}/v1`, generatedAtTime: "2024-06-13T00:00:00Z" }],
+ *   author: { type: "Organization", name: "Example" },
+ *   templates: [
+ *     {
+ *       id: `${QUIZ}/templates/completed`,
+ *       type: "StatementTemplate",
+ *       inScheme: `${QUIZ}/v1`,
+ *       prefLabel: { en: "Completed" },
+ *       definition: { en: "A learner completes the quiz." },
+ *       verb: "http://adlnet.gov/expapi/verbs/completed",
+ *     },
+ *   ],
+ * };
+ * validateProfile(profile); // => []
+ * readProfile(JSON.stringify(profile)).templates?.length; // => 1
+ * ```
  */
 export function readProfile(input: unknown, options?: ProfileReadOptions): Profile {
   return readProfileAndOthers(input, options).profile;

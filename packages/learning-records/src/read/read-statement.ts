@@ -31,6 +31,27 @@ import { item } from "./path.js";
  * options are not an object with a `role` of `"lrs"` or `"provider"`, a `version` of `"2.0.0"` or `"1.0.3"` and a `maxFindings`
  * that is a positive integer.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
+ *
+ * @example
+ * ```ts
+ * import { parseStatementJson, readStatement, validateStatement } from "@interopkit/learning-records";
+ *
+ * const text = JSON.stringify({
+ *   id: "6690e6c9-3ef0-4ed3-8b37-7f3964730bee",
+ *   actor: { name: "Example Learner", mbox: "mailto:learner@example.org" },
+ *   verb: { id: "http://adlnet.gov/expapi/verbs/completed", display: { "en-US": "completed" } },
+ *   object: { id: "https://example.org/activities/course-1" },
+ *   result: { score: { scaled: 0.9 }, duration: "PT1H30M" },
+ *   context: { contextActivities: { parent: { id: "https://example.org/activities/program-1" } } },
+ *   timestamp: "2024-06-13T20:46:03.250+02:00",
+ * });
+ * const statement = readStatement(parseStatementJson(text));
+ * statement.result?.duration; // => "PT1H30M"
+ * statement.context?.contextActivities?.parent?.length; // => 1
+ * validateStatement(statement, { role: "provider" }).map(
+ *   (finding) => `${finding.severity} ${finding.rule} at ${finding.path}`,
+ * ); // => ["error timestamp-not-utc at timestamp"]
+ * ```
  */
 export function readStatement(value: unknown, options?: ReadOptions): Statement {
   const { rules, maxFindings } = readSettings(options);

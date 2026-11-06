@@ -137,6 +137,18 @@ function statementGetter(settings: Settings): LrsClient["getStatement"] {
  * @returns The client.
  * @throws `DataError` when the options are not valid.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
+ *
+ * @example
+ * ```ts
+ * import { createLrsClient } from "@interopkit/learning-records/client";
+ *
+ * const client = createLrsClient({
+ *   endpoint: "https://lrs.example.org/xapi/",
+ *   fetch: async () => new Response(JSON.stringify({ version: ["2.0.0", "1.0.3"] }), { status: 200 }),
+ *   authorization: async () => "Bearer a-token-that-the-host-refreshes",
+ * });
+ * await client.about(); // => { version: ["2.0.0", "1.0.3"] }
+ * ```
  */
 export function createLrsClient(options: LrsClientOptions): LrsClient {
   const settings = settingsOf(options);

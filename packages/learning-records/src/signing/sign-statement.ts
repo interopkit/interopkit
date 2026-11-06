@@ -88,6 +88,30 @@ function checkAlgorithm(signer: unknown): asserts signer is Signer {
  * RS256, RS384 or RS512, or the options are not valid.
  * @throws The `reason` of the signal when it aborts, and the error of the signer when it rejects.
  * @see {@link https://opensource.ieee.org/xapi/xapi-base-standard-documentation | IEEE 9274.1.1, xAPI base standard}
+ *
+ * @example
+ * ```ts
+ * import { createCryptoKeySigner } from "@interopkit/core";
+ * import { signStatement, verifyStatementSignature } from "@interopkit/learning-records/signing";
+ *
+ * const { privateKey, publicKey } = await crypto.subtle.generateKey(
+ *   { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
+ *   false,
+ *   ["sign", "verify"],
+ * );
+ * const signer = createCryptoKeySigner(privateKey, { algorithm: "RS256" });
+ * const { statement, signature } = await signStatement(
+ *   {
+ *     actor: { name: "Example Learner", mbox: "mailto:learner@example.org" },
+ *     verb: { id: "http://adlnet.gov/expapi/verbs/completed", display: { "en-US": "completed" } },
+ *     object: { id: "https://example.org/activities/course-1" },
+ *   },
+ *   signer,
+ * );
+ * statement.attachments?.[0]?.usageType; // => "http://adlnet.gov/expapi/attachments/signature"
+ * signature.contentType; // => "application/octet-stream"
+ * await verifyStatementSignature(statement, signature.body, { key: publicKey }); // => { valid: true, certified: false }
+ * ```
  */
 export async function signStatement(
   statement: Statement,
