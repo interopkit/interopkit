@@ -17,7 +17,6 @@
   "router": "structure-dir",
   "favicon": "docs/favicon.svg",
   "plugin": ["typedoc-plugin-mermaid", "./docs/typedoc-seo.ts"],
-  "mermaidVersion": "11.17.2",
   "treatWarningsAsErrors": true,
   "highlightLanguages": ["bash", "console", "html", "javascript", "json", "jsonc", "typescript", "yaml"]
 }

@@ -329,7 +329,8 @@
     "tincan",
     "NELC",
     "SPARQL",
-    "stablelib"
+    "stablelib",
+    "katex"
   ],
   "ignoreRegExpList": ["GHSA(?:-[0-9a-z]{4}){3}"]
 }
