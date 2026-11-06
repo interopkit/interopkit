@@ -473,11 +473,16 @@ listed here with its reason. A file is written `<package>/<path below src>`, and
   since npm shows a diagram as its source. GitHub
   renders the diagrams, and the Mermaid plugin of TypeDoc renders them on the docs site (`typedoc.json` pins the version of
   Mermaid that the site loads).
-- Each guide has the diagram, a quick start that runs, the options with their defaults, the limits with their values, the
-  errors with what to do about them, what is not included and why, and the differences from the references. The guide of a
-  module has the sections `## Quick start`, `## Errors`, `## Not included` and `## Differences from the references`, with
-  "None" and the reason where there is nothing to say, and every page writes what it leaves out as a table that opens with
-  `| Not included | Why |`; `pnpm check:standards` fails on a guide without them. The README of a package opens with its
+- A guide of a module has its sections in this order, each fact in one of them: its diagram, before the first heading;
+  `## Quick start`, a minimal sample of the main call that runs; the topics of the module, in the order a reader uses them,
+  each option once with its default, in a table under the call that takes it, or in `## Options` where one options object
+  serves the module's calls; `## Limits`, where the module has limits, each once with its value and the option that sets it;
+  `## Errors`, every error a user can meet, with what to do about it, and one row of `LimitError` for every limit;
+  `## Not included`, the table `| Not included | Why |`; `## Differences from the references`; and last, where the guide
+  has them, `## Build or adopt`, `## Evidence`, `## Files` and `## References`. A section with nothing to say says "None"
+  and why. `pnpm check:standards` fails on a guide without Quick start, Errors, Not included or Differences from the
+  references (`guide-sections`). Every other page writes what it leaves out as the same table.
+- The README of a package opens with its
   description as its first sentence and the install line, and has the sections `## Quick start`, `## Architecture`, `## API`,
   `## Supported`, `## Documentation` and `## License`; the root README opens with the family's sentence and has
   `## Which package`, with each package's description, `## Documentation`, `## Development`, `## Layout` and `## License`, in
